@@ -1,0 +1,40 @@
+# macOS and editor state
+.DS_Store
+._*
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# Credentials and local configuration
+.env
+.env.*
+!.env.example
+local.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+.aws/
+.codex/
+.agents/
+
+# Dependencies, build output and caches
+node_modules/
+.gradle/
+.kotlin/
+build/
+.venv/
+__pycache__/
+*.pyc
+*.apk
+*.aab
+
+# Local captures, temporary files and generated deliveries
+/output/
+/tmp/
+/verification/local/
+*.log
