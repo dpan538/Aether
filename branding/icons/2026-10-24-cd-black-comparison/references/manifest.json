@@ -1,0 +1,16 @@
+[
+  {
+    "file": "main-cd-noise-reference.png",
+    "bytes": 304544,
+    "width": 664,
+    "height": 448,
+    "sha256": "0b36f7eacfc297b93715950aa70af67cc39c4aeff0f9c2850564d94b68e73c81"
+  },
+  {
+    "file": "selector-cd-reference.png",
+    "bytes": 369688,
+    "width": 506,
+    "height": 594,
+    "sha256": "ee4903a00bcaa69c2c136948fc60b156a607bc2a9f3e2f94c17248c76e3e627a"
+  }
+]
