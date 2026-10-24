@@ -1,76 +1,84 @@
 # 漫频 Aether
 
 **不设边界，漫游频率。**
-
 *No boundaries. Just frequencies.*
 
 In the unseen Aether, hear the distant.
-
 （在无形的风波里，听见远方。）
 
-**漫频 Aether** 是一款专注于声音纯粹性与视觉美学的电台套件。我们拒绝信息流干预、拒绝算法推荐，将调频的控制权完全交还给双手。
+漫频 Aether 专注声音纯粹性与视觉美学。中立索引，无广告、排行榜、信息流或算法推荐；通过搜索、分类、收藏与主动随机调频探索电台。
 
-在这里，无线电波如同充斥宇宙的无形介质，无形，无界，却无处不在。从东京深夜的爵士窄频，到柏林地下的电子脉冲；从巴黎街头的午后谈资，再到悉尼海岸的浪潮与广播。只需轻拨旋钮，即可在星罗棋布的全球频率中自由漫游。
+## 当前状态 · 2026-10-24
 
-## 项目阶段
+用户已确定 **两个页面足够**：现代主页面与纯沉浸页。本轮视觉状态已冻结为 [two-page-baseline](design/snapshots/2026-10-24-two-page-baseline/README.md)，包含可独立运行的源码、3408×2272 参考图、控件局部、浏览器检查记录与 SHA-256 清单，并按用户要求同步仓库备份。早期复古第三页只保留历史参考，不再建设。
 
-**2026-10-24：正式进入产品规划与设计阶段。**
+下一阶段进入 **Kotlin Android 应用构建**，由单独任务使用 **GPT‑6.1 Sol / Extra High** 执行；以冻结稿逐轮截图对照、叠加和差异检查，包含手势、动画及连续线性动画。实现与验收要求见 [Android 交接书](docs/ANDROID-HANDOFF.md) 和 [动效规格](docs/MOTION-SPEC.md)。当前设计窗口开始应用图标探索，图标尚未定稿。
 
-当前仓库保存品牌文案、功能需求、三页视觉方向、参考原图、页面元素草案与决策记录。功能清单表达产品目标；目前尚无可运行应用、原创 UI 稿、播放实测或发布版本。
+**当前仓库是可运行的视觉原型，尚无 Android 工程、安装包或真实音频接入。** 四组电台布局样本中的节目、曲目、码率、时钟与仪表均明确标记 MOCK；连接保持 `not-connected`。浏览器检查不代表 Android 或全球电台可播性验收。
 
-**Aether 是以视觉驱动、视觉体验特化的项目。** 功能围绕选台与收听，以及三页各自的视觉体验取舍。首个产品聚焦网络电台；本地音乐播放和外部音乐 App 的美化套件属于后续独立产品。
+## 两页设计
 
-## 三个页面与三套 UI
+| 页面 | 视觉与操作 |
+| --- | --- |
+| 现代主页面 · 默认入口 | 银灰设备、默认墨水屏、四枚实体键与双旋钮、目录与统一设置、四枚实体预设、哑光拉丝播放键、Tempo 实体滑块、0–30 音量旋钮 |
+| 纯沉浸页 | 月相艺术 CD、石墨蓝灰切台组件、暖灰白信息面板；上下滑动及两枚三角切台；没有菜单、设置或播放按钮 |
 
-| 页面 | 已确定的方向 | 角色 |
-| --- | --- | --- |
-| 第一页：纯沉浸播放 | 图一／图二的虹彩同心圆、深色背景与印刷质感 | 以观赏和聆听为主 |
-| 第二页：复古调节 | 图三的成组音响设备、多按键与旋钮层次 | 提供复古操作体验 |
-| 第三页：现代主页面 | 下部参考图四，上方增加与其蓝色显示屏同款的可筛选电台屏幕 | 主要入口，清晰选台，并承载设置 |
+两页共用同一电台、播放状态和连接，左右滑动切换。设置位于现代页大屏内，仅有语言、更新检查和 About。小旋钮四维调谐、Tempo 数值及 Equalizer 的功能映射仍为样机提案，不能据此外推真实变速、DSP 或回听能力。
 
-三页方向与现代页的主页面身份已确定，具体控件映射和页面切换方式仍在讨论。四张用户参考原图已[归档](design/references/README.md)；当前继续[页面元素规划](docs/PAGE-ELEMENTS.md)。
+现代页默认墨水态：
 
-## 产品方向
+![现代主页面：默认墨水与哑光拉丝金属](design/snapshots/2026-10-24-two-page-baseline/renders/modern-ink.png)
 
-- **中立索引**：应用不投放广告，不做人气榜、付费置顶或算法推荐。电台原始节目内容由电台提供。
-- **直达搜索**：以电台名称、城市、呼号找到想听的频道。
-- **自主探索**：按国家／地区、类型、语言浏览，收藏常听的台，主动触发随机调频。
-- **看见声音的来处**：呈现电台身份、真实播放状态，以及数据允许时的节目名、音频规格和当地时间。
-- **尊重真实信息**：缺失数据自然降级，直播属性、连接质量和音频电平分别表达。
+点亮态：上屏暖白、下屏冰蓝、仪表绿色，前光约 1.05 秒渐亮。
 
-上述能力仍在规划；具体数据依赖、候选功能和待定事项见下列文档。
+![现代主页面：协调照明](design/snapshots/2026-10-24-two-page-baseline/renders/modern-lit.png)
 
-## 文档
+沉浸页保留已接受的原创月相构图：
+
+![沉浸页：月相 CD 与印刷信息板](design/snapshots/2026-10-24-two-page-baseline/renders/immersive.png)
+
+## 本地运行与复原
+
+需要 Node.js 22+，无需安装依赖。
+
+```sh
+npm run dev
+```
+
+- 现代页：`http://127.0.0.1:4176/preview.html?page=modern`
+- 沉浸页：`http://127.0.0.1:4176/preview.html?page=immersive`
+- 语法检查：`npm run check`
+- 校验冻结包：`node scripts/verify-snapshot.mjs`
+
+参考画幅为 3408×2272（3:2），逻辑坐标为 1704×1136。预览按比例缩放。冻结包可在自己的 `source/` 内启动，详见[快照说明](design/snapshots/2026-10-24-two-page-baseline/README.md)。不同浏览器标签是独立示例会话；同一宿主中的两页共享状态。
+
+## 设计与开发文档
 
 | 文档 | 内容 |
 | --- | --- |
-| [品牌文案](branding/README.md) | 已确定的中英文名称、标语与完整介绍 |
-| [视觉方向](design/README.md) | 视觉体验特化原则、三个页面与四张参考图的对应关系 |
-| [页面元素](docs/PAGE-ELEMENTS.md) | 各页必须表达的内容、控件候选和待定项 |
-| [产品范围](docs/PRODUCT-SCOPE.md) | 用户已提出的功能、条件信息、候选能力与范围边界 |
-| [体验规划](docs/EXPERIENCE-PLAN.md) | 搜索、浏览、收听、收藏与随机探索的行为草案 |
-| [决策记录](docs/DECISIONS.md) | 已确定事项、待讨论问题与阶段推进顺序 |
-| [项目协作规则](AGENTS.md) | 后续设计、实现与记录的工作约束 |
-
-## 仓库结构
+| [冻结包与状态清单](design/snapshots/2026-10-24-two-page-baseline/README.md) | 原始尺寸图片、复现步骤、源文件和哈希 |
+| [Android 交接书](docs/ANDROID-HANDOFF.md) | Kotlin 构建范围、不可偏离的细节、视觉迭代与交付证据 |
+| [动效规格](docs/MOTION-SPEC.md) | 点亮、刷新、机械行程、阻尼、连续动画和减弱动态 |
+| [现代页规格](docs/MODERN-UI.md) / [沉浸页规格](docs/IMMERSIVE-UI.md) | 具体几何、材质、交互及模拟边界 |
+| [视觉方向](design/README.md) / [页面元素](docs/PAGE-ELEMENTS.md) | 当前两页的设计职责 |
+| [产品范围](docs/PRODUCT-SCOPE.md) / [体验规划](docs/EXPERIENCE-PLAN.md) | 已提出需求、已实现样机行为与待定问题 |
+| [决策记录](docs/DECISIONS.md) | 历史三页方向及最新两页冻结决定 |
+| [品牌文案](branding/README.md) / [协作规则](AGENTS.md) | 正式品牌文字与工程约束 |
+| [十四张参考原图](design/references/README.md) | 原字节归档；不是应用发布素材 |
 
 ```text
-Aether/
-├── README.md
-├── AGENTS.md
-├── branding/       # 已确定的品牌内容
-├── design/         # 三页视觉方向与参考原图
-└── docs/           # 产品与体验规划、决策记录
+branding/                 # 品牌；图标工作在此独立开展
+design/modern/            # 现代原型 HTML/CSS/SVG/JS
+design/immersive/         # 沉浸原型与圆盘着色器
+design/shared/            # 两页共用示例会话
+design/snapshots/         # 不可覆盖的源码、渲染与校验基线
+design/references/        # 用户授权归档的外部参考原图
+docs/                     # 产品、设计、动画与 Android 交接
+scripts/                  # 本机预览与快照校验
 ```
 
-技术路线候选为 Android、Kotlin、Jetpack Compose 与 Media3，电台目录候选为 Radio Browser。技术选型不代表工程已经创建；它服务于已确定的三页视觉方向，具体实现方式尚未决定。
-
-代码与品牌资产的许可方式待确定。
+Kotlin 已由用户确定；Compose、Media3 与目录接入的具体实现需在 Android 任务中核对官方资料并验证。尚无签名、商店上架或许可决定。代码和品牌资产的许可方式待确定。
 
 ## English
 
-**Aether · No boundaries. Just frequencies.**
-
-A radio app shaped around pure listening, visual craft and personal control. Discover stations through direct search, countries and regions, languages, genres, favorites and deliberate random tuning, without an algorithmic recommendation feed.
-
-The project entered product planning and design on **24 October 2026**. Aether specializes in visual listening experiences through three distinct interfaces: immersive playback, retro controls, and a modern main page for station selection and settings. Four user-provided references are archived alongside the page-element proposals. There is no playable app or release yet.
+Aether is a radio app shaped around visual craft and personal control. The **modern and immersive views** are the frozen two-page baseline. The earlier retro third page is historical only. This repository currently contains browser prototypes and deterministic MOCK data, not a tested Android player. The next task is a Kotlin Android implementation with screenshot comparison and motion verification against the archived design.

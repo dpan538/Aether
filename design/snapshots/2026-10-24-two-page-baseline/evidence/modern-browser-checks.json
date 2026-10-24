@@ -1,0 +1,44 @@
+{
+  "recordedOn": "2026-10-24",
+  "scope": "Local browser visual refinement; no audio or hardware validation",
+  "checks": {
+    "intersections": 0,
+    "minimumWheelClearancePxAtHD": 1.9313890090585915,
+    "samePathCommands": true,
+    "threeEqualRadiusCornersPerLead": true,
+    "cornerRadiusPxAtHD": 4.0889882812500105
+  },
+  "typography": {
+    "presetDigits": "004 tested without overflow",
+    "trackingEm": -0.025,
+    "suffixGapCqh": 0.8
+  },
+  "material": {
+    "surface": "Matte grey brushed metal",
+    "baseRgb": [
+      183,
+      190,
+      193
+    ],
+    "reflectiveHighlightBands": false,
+    "grainOnly": true
+  },
+  "outputs": {
+    "Aether-modern-v10-ink.png": [
+      3408,
+      2272
+    ],
+    "Aether-modern-v10-controls.png": [
+      1543,
+      370
+    ],
+    "Aether-modern-v10-guides.png": [
+      635,
+      1033
+    ],
+    "Aether-modern-v10-lit.png": [
+      3408,
+      2272
+    ]
+  }
+}

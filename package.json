@@ -1,0 +1,14 @@
+{
+  "name": "aether-design",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local visual prototypes for Aether immersive and modern pages.",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "check": "node --check scripts/serve.mjs && node --check design/immersive/main.js && node --check design/immersive/disc.js && node --check design/immersive/print.js && node --check design/immersive/session.js && node --check design/shared/session.js && node --check design/modern/main.js && node --check design/modern/hardware.js && node --check design/modern/filters.js && node --check design/modern/status.js && node --check design/modern/rotary.js && node --check design/modern/volume.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
