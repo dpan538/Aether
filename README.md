@@ -14,7 +14,7 @@ In the unseen Aether, hear the distant.
 
 **Kotlin Android 应用构建**由单独任务使用 **GPT‑6.1 Sol / Extra High** 执行；以冻结稿逐轮截图对照、叠加和差异检查，包含手势、动画及连续线性动画。实现与验收要求见 [Android 交接书](docs/ANDROID-HANDOFF.md) 和 [动效规格](docs/MOTION-SPEC.md)。
 
-用户已选择 **[E1 双球构图作为临时图标](branding/icons/current/README.md)**：黑底、灰噪圆窗、中央彩球与底部白球，保存本次上传原图及 Android 派生尺寸。最终图标未定稿；用户认为生成图的 AI 感过强，暂停继续生成，后续以人工控制的平面几何与细线构成重新考虑。此前研究及来源见[品牌记录](branding/README.md)。
+用户已选择 **[E1 双球构图作为临时图标](branding/icons/current/README.md)**：黑底、灰噪圆窗、中央彩球与底部白球，保存本次上传原图及 Android 派生尺寸。最终图标未定稿；用户认为生成图的 AI 感过强，暂停 imagegen。最新按新请求完成[四组十二张图形研究](branding/icons/2026-10-25-fine-studies/README.md)：负空间、轴向折光、折叠球与放射球，每组黑白、绿／金、珊瑚／金，颜色仅取自指定 CD 色段。同组保持结构；参考曲线拟合与参数化源文件分别记录，不替换 E1。此前研究及来源见[品牌记录](branding/README.md)。
 
 **已归档的设计基线是可运行的浏览器视觉原型；Android 工程由独立任务推进，实际构建与验收状态由该任务记录。** 视觉原型四组电台布局样本中的节目、曲目、码率、时钟与仪表均明确标记 MOCK；连接保持 `not-connected`。浏览器检查不代表 Android 或全球电台可播性验收。
 

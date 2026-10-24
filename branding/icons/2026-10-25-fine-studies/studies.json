@@ -1,0 +1,99 @@
+{
+  "date": "2026-10-25",
+  "status": "Four selected reference studies, three variants each; proposals only",
+  "palette": {
+    "black": "#080808",
+    "paper": "#f1f1f1",
+    "ink": "#080808",
+    "silver": "#cccccc"
+  },
+  "colorAnchors": {
+    "green": "#4e7759",
+    "gold": "#d5bb67",
+    "coral": "#c26364"
+  },
+  "variants": [
+    {
+      "id": "mono",
+      "name": "黑白",
+      "en": "MONOCHROME",
+      "colors": []
+    },
+    {
+      "id": "green-gold",
+      "name": "绿／金",
+      "en": "GREEN / GOLD",
+      "colors": [
+        "#4e7759",
+        "#d5bb67"
+      ]
+    },
+    {
+      "id": "coral-gold",
+      "name": "珊瑚／金",
+      "en": "CORAL / GOLD",
+      "colors": [
+        "#c26364",
+        "#d5bb67"
+      ]
+    }
+  ],
+  "studies": [
+    {
+      "id": "J1",
+      "slug": "negative-echo",
+      "name": "负空间回声",
+      "en": "NEGATIVE ECHO",
+      "reference": "R0-negative-space.png",
+      "note": "黑白主结构保留，配色集中于圆心。",
+      "detail": [
+        248,
+        300,
+        528,
+        450
+      ]
+    },
+    {
+      "id": "J3",
+      "slug": "axial-caustic",
+      "name": "轴向折光",
+      "en": "AXIAL CAUSTIC",
+      "reference": "R2-axial-light.png",
+      "note": "保留上方光环、两层弧面和向下收束的细轴。",
+      "detail": [
+        330,
+        480,
+        364,
+        364
+      ]
+    },
+    {
+      "id": "J5",
+      "slug": "phase-fold",
+      "name": "相位折叠",
+      "en": "PHASE FOLD",
+      "reference": "R4-phase-fold.png",
+      "note": "按原图折面与遮挡重建，灰阶和颗粒细度保持一致。",
+      "detail": [
+        330,
+        300,
+        370,
+        370
+      ]
+    },
+    {
+      "id": "J6",
+      "slug": "radial-phase",
+      "name": "放射相位",
+      "en": "RADIAL PHASE",
+      "reference": "R5-radial-phase.png",
+      "note": "224 枚等角收尖射线，球体亮缘与细颗粒保持独立。",
+      "detail": [
+        500,
+        340,
+        360,
+        360
+      ]
+    }
+  ]
+}

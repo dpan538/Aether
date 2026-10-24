@@ -1,0 +1,394 @@
+{
+  "date": "2026-10-25",
+  "method": "Reference-fitted cubic SVG contours for J1/J3/J5; parametric 224-ray geometry for J6. No imagegen or embedded raster in icon masters.",
+  "status": "Four groups × monochrome and two limited-color variants = twelve studies; current E1 app icon unchanged",
+  "palette": {
+    "source": "references/cd-palette-crop.png",
+    "method": "Median RGB of specified 7×7 patches; black and white remain neutral",
+    "anchors": {
+      "green": "#4e7759",
+      "gold": "#d5bb67",
+      "coral": "#c26364"
+    },
+    "samples": {
+      "green": [
+        28,
+        176
+      ],
+      "gold": [
+        28,
+        64
+      ],
+      "coral": [
+        115,
+        20
+      ]
+    }
+  },
+  "exports": {
+    "masterPNG": 3072,
+    "previewPNG": 896
+  },
+  "files": [
+    {
+      "file": "references/R0-negative-space.png",
+      "bytes": 68005,
+      "sha256": "4d62265e73a54e1b9d5ee23ecdc9b48483e456b3221cc77bc4dfb90509859104"
+    },
+    {
+      "file": "references/R2-axial-light.png",
+      "bytes": 255729,
+      "sha256": "4b8423b08e939a020f498cb44a443d81edb0e0d37a592c897b25e35714893a59"
+    },
+    {
+      "file": "references/R4-phase-fold.png",
+      "bytes": 659872,
+      "sha256": "ef44dca060480942a738c329c93cd1c7ae9b01692fc312defd9481a7d35fad10"
+    },
+    {
+      "file": "references/R5-radial-phase.png",
+      "bytes": 1165662,
+      "sha256": "eb5c7c86362cde946235a8e77b16a1b5835b95b5f1c518c7649080b779de3af5"
+    },
+    {
+      "file": "references/cd-palette-crop.png",
+      "bytes": 52189,
+      "sha256": "6c2ac2be3686315aae70b02a40ba4589adb7ca399abca5a0502bc69d90a12b2f"
+    },
+    {
+      "file": "svg/J1-negative-echo-coral-gold.svg",
+      "bytes": 56562,
+      "sha256": "6e96bc89b4bcc78db5e2a95cd9fa5680dd3f90daefbf1ac09ecd6cac1419c939"
+    },
+    {
+      "file": "svg/J1-negative-echo-green-gold.svg",
+      "bytes": 56562,
+      "sha256": "180a89d50b4035f5a7a30ff6fb4e4b9a9cc5f07c32dddbd3bff046900e2ef306"
+    },
+    {
+      "file": "svg/J1-negative-echo-mono.svg",
+      "bytes": 50937,
+      "sha256": "2968b55542ce1966c9c3556cca7d3a156636ad30e3cebd774471e674d6a8f3ca"
+    },
+    {
+      "file": "svg/J3-axial-caustic-coral-gold.svg",
+      "bytes": 3590330,
+      "sha256": "3efc841e84cc890a782d928230d32370e2c786cd328257c46814657ba2af84a7"
+    },
+    {
+      "file": "svg/J3-axial-caustic-green-gold.svg",
+      "bytes": 3590330,
+      "sha256": "27cf4bdf7827638ed88078e851d1200adc73bd6bcfa28e9e56e083ff04db1381"
+    },
+    {
+      "file": "svg/J3-axial-caustic-mono.svg",
+      "bytes": 3590312,
+      "sha256": "73410756142599e261a2269ff34c279f3509b4f754f6f9df3c4c4c5585a09034"
+    },
+    {
+      "file": "svg/J5-phase-fold-coral-gold.svg",
+      "bytes": 5491251,
+      "sha256": "d13dc2a3017b736b4fe7025862c26b8afb9c5b3b0117d9158c7599d61db6e073"
+    },
+    {
+      "file": "svg/J5-phase-fold-green-gold.svg",
+      "bytes": 5491251,
+      "sha256": "59f38677c0ccd4ff0580e74e9894f729016bb87aaff852fb82264ff5f164ea34"
+    },
+    {
+      "file": "svg/J5-phase-fold-mono.svg",
+      "bytes": 5491233,
+      "sha256": "7bb739232483d5f4c4d3f766e48f6592b969498d79de75c2c3980d2419bf0746"
+    },
+    {
+      "file": "svg/J6-radial-phase-coral-gold.svg",
+      "bytes": 280262,
+      "sha256": "a858a8a9e05482599b8ed7133974d11b37febc638818e1ad5132c4e533481c3b"
+    },
+    {
+      "file": "svg/J6-radial-phase-green-gold.svg",
+      "bytes": 280262,
+      "sha256": "85a0cae5144e40489dc49b8891eed1c325eeeb5e10d901379b70a42368b7532b"
+    },
+    {
+      "file": "svg/J6-radial-phase-mono.svg",
+      "bytes": 280244,
+      "sha256": "13a2adfaa6e532bfa8021605c7d7dd82127735918dd1b09611b6e640874f577f"
+    },
+    {
+      "file": "exports/J1-negative-echo-coral-gold.png",
+      "bytes": 355624,
+      "sha256": "8a0519a2d69a4a7b552fed0d08edd6b619b6cf2bbc220525dd72bfe1e092d1a5"
+    },
+    {
+      "file": "exports/J1-negative-echo-green-gold.png",
+      "bytes": 382362,
+      "sha256": "5b378046fcf164155e48c67279ef0360bebd0cdb8d3295c03b790c8641983004"
+    },
+    {
+      "file": "exports/J1-negative-echo-mono.png",
+      "bytes": 329692,
+      "sha256": "12cb26eb757bda54f7ad9e4bfc526d12903e045144a5f19308564e81c29b0c3e"
+    },
+    {
+      "file": "exports/J3-axial-caustic-coral-gold.png",
+      "bytes": 3926570,
+      "sha256": "2c1c184f457f55a5d910171f5f9720a486a0b7ee06a906d1bea34e0c44bc0107"
+    },
+    {
+      "file": "exports/J3-axial-caustic-green-gold.png",
+      "bytes": 3885555,
+      "sha256": "702e3d1c97d21098a20e47ddd164a6c1b17eb7fa646be01b84b80f98a2e2a421"
+    },
+    {
+      "file": "exports/J3-axial-caustic-mono.png",
+      "bytes": 2082900,
+      "sha256": "97b50954c0b1f07ecd55327c6ec43a41d8d028a3e6a69fd343991d947d14aa4a"
+    },
+    {
+      "file": "exports/J5-phase-fold-coral-gold.png",
+      "bytes": 4730504,
+      "sha256": "f4bc51a6aeff91d7c6c3d2a5be6db22db5d9b9fe5c3a779f25c74d186d1f1fab"
+    },
+    {
+      "file": "exports/J5-phase-fold-green-gold.png",
+      "bytes": 4767775,
+      "sha256": "b644db2648a43016d8f19fb9abac9c7cb927d2062a273a3696ff1162ad7aaed2"
+    },
+    {
+      "file": "exports/J5-phase-fold-mono.png",
+      "bytes": 2644075,
+      "sha256": "74301ff39bc220c400ccae40437f7e9a35eb641b8d697682db58d52044546ac1"
+    },
+    {
+      "file": "exports/J6-radial-phase-coral-gold.png",
+      "bytes": 1775446,
+      "sha256": "7cc71dca447300c2bdf9683f685ba9ddf846d87cc1d232c0af686cc624a43fc8"
+    },
+    {
+      "file": "exports/J6-radial-phase-green-gold.png",
+      "bytes": 1764500,
+      "sha256": "bab81442447ff47c7d59a34ef9e05bac7d8d528b76b980c3c891892f2dae847e"
+    },
+    {
+      "file": "exports/J6-radial-phase-mono.png",
+      "bytes": 1642085,
+      "sha256": "a44973d9703563bdd6e8e91c7cd59d4bb6124b3e377e1573f428797caada9a9a"
+    },
+    {
+      "file": "previews/J1-negative-echo-coral-gold.png",
+      "bytes": 55470,
+      "sha256": "8734a99f93827fca3b80ea0ce4bcef5debad0cac5ed2f1178d3a86b509d75b3a"
+    },
+    {
+      "file": "previews/J1-negative-echo-green-gold.png",
+      "bytes": 56477,
+      "sha256": "bd5af85bf4b766a9d0b79b30c251fab935cc08cc4055e86c89de10d391c43ca8"
+    },
+    {
+      "file": "previews/J1-negative-echo-mono.png",
+      "bytes": 51515,
+      "sha256": "222d3f7ff8c4e7d81843be291af25bb2f5db6f0ef2feea2753dfa46ad44a2764"
+    },
+    {
+      "file": "previews/J3-axial-caustic-coral-gold.png",
+      "bytes": 452999,
+      "sha256": "da83f28851cce69a5fdf9ac8ba754ad413087977fb7bcb127c88da72a38806f3"
+    },
+    {
+      "file": "previews/J3-axial-caustic-green-gold.png",
+      "bytes": 461741,
+      "sha256": "2db24394555c2920afb9630f77bdf98f54acd94316409624e3ab8c76a7ac58fb"
+    },
+    {
+      "file": "previews/J3-axial-caustic-mono.png",
+      "bytes": 243097,
+      "sha256": "9d26339d0a2b373ce00966f5e8bcc2cf6c786f5fe7c14ba23bf063ad7067fe0b"
+    },
+    {
+      "file": "previews/J5-phase-fold-coral-gold.png",
+      "bytes": 511187,
+      "sha256": "a0180624b22d6a2b9ae9b130f82b81481c6da041b1a8ada12d024c96472c08c5"
+    },
+    {
+      "file": "previews/J5-phase-fold-green-gold.png",
+      "bytes": 516917,
+      "sha256": "5e6947eab18acd3c7e361ac565454b4546fe5acf63ad5a4351c772b9673fd236"
+    },
+    {
+      "file": "previews/J5-phase-fold-mono.png",
+      "bytes": 264662,
+      "sha256": "ec5cbadf67d8160488d85ffea50f62f73230d8b7488df633ba15035120096694"
+    },
+    {
+      "file": "previews/J6-radial-phase-coral-gold.png",
+      "bytes": 318173,
+      "sha256": "0de7661d3094b801b8b277167d206426abb4ebe601317763b4af09cd974e5ee2"
+    },
+    {
+      "file": "previews/J6-radial-phase-green-gold.png",
+      "bytes": 314009,
+      "sha256": "9e685c5526856cac4068d60060cd7f6abe99a97c1c36781b77bb6f6896413d26"
+    },
+    {
+      "file": "previews/J6-radial-phase-mono.png",
+      "bytes": 293210,
+      "sha256": "82fb6968b0393eeda2600ff62fd86f2fe9f215364aa7764d9a9281b7ea0d9b30"
+    },
+    {
+      "file": "details/J1-negative-echo-coral-gold.png",
+      "bytes": 116586,
+      "sha256": "a13a514cb49acb4f756d88b9e3201ca08ddbbe783f87a18e7e4905f8a9c32f24"
+    },
+    {
+      "file": "details/J1-negative-echo-green-gold.png",
+      "bytes": 128611,
+      "sha256": "88b0853870613368e33a0fa92805558da9daabc55bb0699309dda78dc0500974"
+    },
+    {
+      "file": "details/J1-negative-echo-mono.png",
+      "bytes": 100331,
+      "sha256": "18885f4e9e51b801b52e9b146bdfa2fc3fa1ab23f4debc02d9bf44b02487fead"
+    },
+    {
+      "file": "details/J3-axial-caustic-coral-gold.png",
+      "bytes": 1139312,
+      "sha256": "dc80b088a7b3d29fff865d6a6e466053ef0d1356bf6c8603db9661bef292c14e"
+    },
+    {
+      "file": "details/J3-axial-caustic-green-gold.png",
+      "bytes": 1122898,
+      "sha256": "b0da01d8dbc5f0c214d23b7605279d0bc9ca042af0f51e959471f477b8937409"
+    },
+    {
+      "file": "details/J3-axial-caustic-mono.png",
+      "bytes": 554488,
+      "sha256": "390eee3cf2861f6db4f6f037ce474bcd1cf97791b1113ad8a3af7a06eeb31e95"
+    },
+    {
+      "file": "details/J5-phase-fold-coral-gold.png",
+      "bytes": 1862702,
+      "sha256": "5571a895bc334785a298ad9998e45e7ede9cff3c1be2c0dbc5c83be27adcb5ff"
+    },
+    {
+      "file": "details/J5-phase-fold-green-gold.png",
+      "bytes": 1862723,
+      "sha256": "31074a954d6304865203da981241cc672b568044d73d24088a9fea12365428d2"
+    },
+    {
+      "file": "details/J5-phase-fold-mono.png",
+      "bytes": 1214722,
+      "sha256": "2ab3a950125b5b5a7276a1447ecacba657ba7b2bf7f5e31ca17ca6fe8f9eb6f7"
+    },
+    {
+      "file": "details/J6-radial-phase-coral-gold.png",
+      "bytes": 630935,
+      "sha256": "fade469a587dacb3035f69150eb8fa8cb9e905c7829c7eb1d008089f59c25f24"
+    },
+    {
+      "file": "details/J6-radial-phase-green-gold.png",
+      "bytes": 623463,
+      "sha256": "2eed2b7190126a3b93666a1c41a6cf8013eccd17818f90f4f08a2ebef56f5670"
+    },
+    {
+      "file": "details/J6-radial-phase-mono.png",
+      "bytes": 481627,
+      "sha256": "2a51a7b2bb688751d46930afe423b53f000f78eb7fb2786457637ba809c33f45"
+    },
+    {
+      "file": "reference-checks/J1.png",
+      "bytes": 123769,
+      "sha256": "fed978e2d66e281c70f94409e3c38d188f693217d7570aac951a5c1974f6fb5f"
+    },
+    {
+      "file": "reference-checks/J3.png",
+      "bytes": 381928,
+      "sha256": "88605ab82e0f0aaf02215f1460b11068529e8a21aa32c66b2b940a6c2e31ee2b"
+    },
+    {
+      "file": "reference-checks/J5.png",
+      "bytes": 459594,
+      "sha256": "56fcdd9e336baf3689d6576db76191f53006ddd7c9b53e1034b43f6a31356a5d"
+    },
+    {
+      "file": "reference-checks/J6.png",
+      "bytes": 849340,
+      "sha256": "423de7ab5cb91a95eeeafc9d8f58f54cbe4ca11832220b6421c52df1785d7824"
+    },
+    {
+      "file": "overview.svg",
+      "bytes": 4721845,
+      "sha256": "7b5fed575de2fea04eea40eae4a2968258e128a20ad67eec04bb0c9435cc5661"
+    },
+    {
+      "file": "overview.png",
+      "bytes": 1315163,
+      "sha256": "5a97c043ef55b7ba7bbc3ecd89c1dae3677435bcc8845b9bd1b396b7e088c088"
+    },
+    {
+      "file": "overview-01.svg",
+      "bytes": 1763339,
+      "sha256": "34dcc67d6762a8e126825af8bf30af6e5f57b60965d5c636d21f13f64f6d2a44"
+    },
+    {
+      "file": "overview-01.png",
+      "bytes": 582665,
+      "sha256": "0eb6c5a3ff9e0b2d7b8349dfedaeb9eef881592222c6a200a14f147b6e996529"
+    },
+    {
+      "file": "overview-02.svg",
+      "bytes": 2959147,
+      "sha256": "246abe5cabb792cf68e2dbbe34f57f3c3e0872c4ad4bc1b640ab4193fa55868d"
+    },
+    {
+      "file": "overview-02.png",
+      "bytes": 752876,
+      "sha256": "44e964dcc58146a6db0ddb67fcb93c5569c5f8d581877b3ca42dc30207c5a679"
+    },
+    {
+      "file": "scale-check.png",
+      "bytes": 148771,
+      "sha256": "bcca433f9daa61900a2e51e05d7dba5f9908bbd1ba3a5b618eeede9211552c87"
+    },
+    {
+      "file": "index.html",
+      "bytes": 14260,
+      "sha256": "47724e25bf9b76e77eb24a2451af34e2637e83a55ee249d6a487c1ea6cbd0f64"
+    },
+    {
+      "file": "geometry.mjs",
+      "bytes": 6635,
+      "sha256": "f554a3143d88ccd025510ca4f147ec9cfca30cbc72c01b9e8eebcf0730ed9494"
+    },
+    {
+      "file": "build.mjs",
+      "bytes": 12971,
+      "sha256": "a6665bf933268f1604e6182908c2f422a4cc597482f702346d91f7a44e68fabb"
+    },
+    {
+      "file": "studies.json",
+      "bytes": 2048,
+      "sha256": "3c0a630ec88d0d73bff7a008cbf3c809a3e5b48d50bb8914eac77dafa79e6d57"
+    },
+    {
+      "file": "contours.json",
+      "bytes": 9139674,
+      "sha256": "eb5c5149063efa1099c36c24abb36663f6f15de7994ccaba7c2fc9de2cb90cfe"
+    },
+    {
+      "file": "reconstruct.py",
+      "bytes": 7883,
+      "sha256": "9d8737e7cd4dfbd745e655144f3df835ebebbeabb9e1f931afb49d09047ec27e"
+    },
+    {
+      "file": "verify.py",
+      "bytes": 4784,
+      "sha256": "cb2a4f3341195755002f415ecddb8e6d49bb14d9a264ec96e37dae1fcc417a7e"
+    },
+    {
+      "file": "README.md",
+      "bytes": 4469,
+      "sha256": "5474b482a317c97c03c23452f39746f55e516e6d765a4fc5a6e887e88c3773d3"
+    }
+  ]
+}
