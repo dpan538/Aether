@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-24",
+  "mode": "Built-in imagegen edit",
+  "calls": 2,
+  "status": "Design studies; final launcher not selected",
+  "files": [
+    {
+      "file": "E1-chromatic-sphere-white-horizon.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 3589294,
+      "sha256": "38bc7f0af1fea3526effddcf4a9cf70b70c9028139ce1759cd32cc6e89506f1d"
+    },
+    {
+      "file": "E2-inverted-spectral-globe.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 2016009,
+      "sha256": "0ba3b37a696ac92da472d393e738464b90353deb3f7a97ffc825def9591a07da"
+    },
+    {
+      "file": "references/E1-target.png",
+      "width": 1080,
+      "height": 1080,
+      "bytes": 1040631,
+      "sha256": "df39082f9860e11e861ebee3a16788342099805e111f705a990ea6493a14a1bb"
+    },
+    {
+      "file": "references/E2-target.png",
+      "width": 468,
+      "height": 402,
+      "bytes": 294654,
+      "sha256": "2217f989578720de0b786e9d3a5dbbda39e616026ae8a24afbec4d6e3e8366ba"
+    },
+    {
+      "file": "references/aether-disc-palette.png",
+      "width": 506,
+      "height": 594,
+      "bytes": 369688,
+      "sha256": "ee4903a00bcaa69c2c136948fc60b156a607bc2a9f3e2f94c17248c76e3e627a"
+    }
+  ],
+  "validation": "Both results visually inspected for requested layout, color roles, background and line inversion; PNG integrity and dimensions checked.",
+  "E2Status": "Superseded by E2-v2 after user identified disconnected upper/lower spherical structure."
+}

@@ -1,0 +1,179 @@
+{
+  "date": "2026-10-25",
+  "projection": "Orthographic projection of one unit sphere",
+  "center": [
+    512,
+    512
+  ],
+  "radius": 365.2,
+  "pole": [
+    -0.5500580341840712,
+    0.4000422066793245,
+    0.7330773437398621
+  ],
+  "axisU": [
+    0.5881716976750462,
+    0.8087360843031884,
+    0
+  ],
+  "axisV": [
+    -0.5928661004675586,
+    0.4311753457945881,
+    -0.6801452845497851
+  ],
+  "curveCount": 25,
+  "gridSHA256": "df95348b6d9c93417516885bf05d262213bba65a2dcac0098add10bdfffd4c48",
+  "sharedDefinition": "shared-spherical-grid",
+  "upperReference": "shared-spherical-grid",
+  "lowerReference": "shared-spherical-grid",
+  "independentHalfTransforms": false,
+  "geometryDifferenceByConstruction": 0,
+  "maximumSphereRadiusError": 3.3306690738754696e-16,
+  "frontCenterlineCrossings": [
+    {
+      "curve": "latitude-70",
+      "x": 864.8049,
+      "y": 512,
+      "tangent": [
+        0.1206,
+        -0.9927
+      ]
+    },
+    {
+      "curve": "latitude-90",
+      "x": 804.1122,
+      "y": 512,
+      "tangent": [
+        0.2534,
+        -0.9674
+      ]
+    },
+    {
+      "curve": "latitude-110",
+      "x": 701.214,
+      "y": 512,
+      "tangent": [
+        0.3733,
+        -0.9277
+      ]
+    },
+    {
+      "curve": "latitude-130",
+      "x": 150.0531,
+      "y": 512,
+      "tangent": [
+        0.0813,
+        0.9967
+      ]
+    },
+    {
+      "curve": "latitude-130",
+      "x": 566.4966,
+      "y": 512,
+      "tangent": [
+        0.5179,
+        -0.8554
+      ]
+    },
+    {
+      "curve": "latitude-150",
+      "x": 209.2865,
+      "y": 512,
+      "tangent": [
+        0.598,
+        0.8015
+      ]
+    },
+    {
+      "curve": "latitude-150",
+      "x": 400.4868,
+      "y": 512,
+      "tangent": [
+        0.7857,
+        -0.6186
+      ]
+    },
+    {
+      "curve": "meridian-7",
+      "x": 150.6335,
+      "y": 512,
+      "tangent": [
+        0.2272,
+        -0.9738
+      ]
+    },
+    {
+      "curve": "meridian-8",
+      "x": 192.9433,
+      "y": 512,
+      "tangent": [
+        0.413,
+        -0.9107
+      ]
+    },
+    {
+      "curve": "meridian-9",
+      "x": 236.7059,
+      "y": 512,
+      "tangent": [
+        0.2996,
+        -0.9541
+      ]
+    },
+    {
+      "curve": "meridian-10",
+      "x": 276.6373,
+      "y": 512,
+      "tangent": [
+        0.0986,
+        -0.9951
+      ]
+    },
+    {
+      "curve": "meridian-11",
+      "x": 318.2099,
+      "y": 512,
+      "tangent": [
+        -0.1615,
+        -0.9869
+      ]
+    },
+    {
+      "curve": "meridian-12",
+      "x": 370.0027,
+      "y": 512,
+      "tangent": [
+        -0.4548,
+        -0.8906
+      ]
+    },
+    {
+      "curve": "meridian-13",
+      "x": 449.7002,
+      "y": 512,
+      "tangent": [
+        -0.7164,
+        -0.6976
+      ]
+    },
+    {
+      "curve": "meridian-14",
+      "x": 599.8976,
+      "y": 512,
+      "tangent": [
+        -0.8649,
+        -0.5019
+      ]
+    },
+    {
+      "curve": "meridian-15",
+      "x": 821.528,
+      "y": 512,
+      "tangent": [
+        -0.7712,
+        -0.6366
+      ]
+    }
+  ],
+  "note": "Both halves use the same complete projected paths; color masks only. No raster pixel-accuracy claim. Texture is imagegen output; contour geometry is authored."
+}

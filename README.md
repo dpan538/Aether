@@ -12,7 +12,7 @@ In the unseen Aether, hear the distant.
 
 用户已确定 **两个页面足够**：现代主页面与纯沉浸页。本轮视觉状态已冻结为 [two-page-baseline](design/snapshots/2026-10-24-two-page-baseline/README.md)，包含可独立运行的源码、3408×2272 参考图、控件局部、浏览器检查记录与 SHA-256 清单，并按用户要求同步仓库备份。早期复古第三页只保留历史参考，不再建设。
 
-下一阶段进入 **Kotlin Android 应用构建**，由单独任务使用 **GPT‑6.1 Sol / Extra High** 执行；以冻结稿逐轮截图对照、叠加和差异检查，包含手势、动画及连续线性动画。实现与验收要求见 [Android 交接书](docs/ANDROID-HANDOFF.md) 和 [动效规格](docs/MOTION-SPEC.md)。应用图标已进入[几何探索集](branding/icons/2026-10-24-wave-atlas/README.md)：16个基础构图与2个蓝色介质延展，含单色SVG和几何动效。后续保存了[棋格／频谱带配色研究](branding/icons/2026-10-24-spectral-refinement/README.md)，最新为[原生 CD 黑底对照](branding/icons/2026-10-24-cd-black-comparison/README.md)：原版、白灰颗粒、旋律折光三个版本。尚未选定最终图标。
+下一阶段进入 **Kotlin Android 应用构建**，由单独任务使用 **GPT‑6.1 Sol / Extra High** 执行；以冻结稿逐轮截图对照、叠加和差异检查，包含手势、动画及连续线性动画。实现与验收要求见 [Android 交接书](docs/ANDROID-HANDOFF.md) 和 [动效规格](docs/MOTION-SPEC.md)。图标最新为[共享球面修正版与两个构图延展](branding/icons/2026-10-24-globe-structure/README.md)：E2-v2 的上下颜色区域引用同一套完整球面网格，另保存空结构内彩球 F1、黑白球伸出彩手 F2。生成色域与确定几何分开记录，尚未选定最终图标。此前的[双球与原 E2](branding/icons/2026-10-24-spectral-globes/README.md)、[界面月相 D1–D3](branding/icons/2026-10-24-interface-dna/README.md)、[18个几何方向](branding/icons/2026-10-24-wave-atlas/README.md)、[棋格／频谱带配色](branding/icons/2026-10-24-spectral-refinement/README.md)和[虹彩 CD 黑底对照](branding/icons/2026-10-24-cd-black-comparison/README.md)保留为探索历史。
 
 **当前仓库是可运行的视觉原型，尚无 Android 工程、安装包或真实音频接入。** 四组电台布局样本中的节目、曲目、码率、时钟与仪表均明确标记 MOCK；连接保持 `not-connected`。浏览器检查不代表 Android 或全球电台可播性验收。
 

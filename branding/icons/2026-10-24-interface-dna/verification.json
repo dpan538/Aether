@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-24",
+  "method": "Native SVG geometry exported using installed sharp",
+  "colorSVGs": 3,
+  "monochromeSVGs": 3,
+  "PNGExports": 3,
+  "PNGDimensions": [
+    1024,
+    1024
+  ],
+  "overviewDimensions": [
+    1440,
+    1370
+  ],
+  "contextMatchesFrozenFiles": [
+    {
+      "file": "immersive.png",
+      "sha256": "6b996703994b1353485825ba6d5de118d6c0d3a1bec0278f935ae7d1a4bfcd8d"
+    },
+    {
+      "file": "modern-ink.png",
+      "sha256": "7b693460526c072539bfc72a6aa19d346b18538e8867b52bf9471952041dd578"
+    }
+  ],
+  "browserVisualReview": "Three designs, context pages, and small/mono samples were visually inspected in the comparison page before export.",
+  "imagegenCalls": 0,
+  "limitations": [
+    "The final icon is not selected.",
+    "No Android integration or launcher validation.",
+    "PNG/overview native export checked visually; this is not a browser screenshot."
+  ]
+}

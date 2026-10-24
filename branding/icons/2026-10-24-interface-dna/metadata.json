@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-24",
+  "status": "UI-derived studies, not approved launcher",
+  "colors": {
+    "background": "#080a0e",
+    "face": "#0c131b",
+    "paper": "#e5e5db",
+    "gold": "#e9dda3",
+    "ice": "#a6c5d1",
+    "blue": "#278bbb",
+    "silver": "#a8bdc6",
+    "quiet": "#475c67"
+  },
+  "studies": [
+    {
+      "id": "D1",
+      "slug": "lunar-disc",
+      "name": "月相原盘",
+      "rule": "月相边界 · 盘芯 · 颗粒",
+      "note": "保留主 CD 的偏心比例，将材质收成平面色域。"
+    },
+    {
+      "id": "D2",
+      "slug": "phase-echo",
+      "name": "月相回声",
+      "rule": "月相负形 · 双回声弧",
+      "note": "放大盘芯负形、减少颗粒，强调两道连续回声。"
+    },
+    {
+      "id": "D3",
+      "slug": "tuning-phase",
+      "name": "调频相位",
+      "rule": "月相 · 旋钮校准刻度",
+      "note": "以现代页的印刷刻度连接月相，形成仪器感。"
+    }
+  ]
+}
