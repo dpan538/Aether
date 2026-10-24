@@ -2,7 +2,8 @@
   "date": "2026-10-24",
   "mode": "Built-in imagegen edit",
   "calls": 2,
-  "status": "Design studies; final launcher not selected",
+  "status": "E1 selected for provisional app icon use on 2026-10-25; final branding undecided",
+  "E1Status": "Current user-selected master and resized Android resources are recorded in ../current/manifest.json; original study bytes preserved here.",
   "files": [
     {
       "file": "E1-chromatic-sphere-white-horizon.png",

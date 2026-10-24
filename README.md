@@ -8,13 +8,15 @@ In the unseen Aether, hear the distant.
 
 漫频 Aether 专注声音纯粹性与视觉美学。中立索引，无广告、排行榜、信息流或算法推荐；通过搜索、分类、收藏与主动随机调频探索电台。
 
-## 当前状态 · 2026-10-24
+## 当前状态 · 2026-10-25
 
 用户已确定 **两个页面足够**：现代主页面与纯沉浸页。本轮视觉状态已冻结为 [two-page-baseline](design/snapshots/2026-10-24-two-page-baseline/README.md)，包含可独立运行的源码、3408×2272 参考图、控件局部、浏览器检查记录与 SHA-256 清单，并按用户要求同步仓库备份。早期复古第三页只保留历史参考，不再建设。
 
-下一阶段进入 **Kotlin Android 应用构建**，由单独任务使用 **GPT‑6.1 Sol / Extra High** 执行；以冻结稿逐轮截图对照、叠加和差异检查，包含手势、动画及连续线性动画。实现与验收要求见 [Android 交接书](docs/ANDROID-HANDOFF.md) 和 [动效规格](docs/MOTION-SPEC.md)。图标最新为[I2 细线／玻璃液体色域](branding/icons/2026-10-25-upper-well-open-frame/README.md)：保留上方漏斗与下方留空，去掉硬交界和蜡笔颗粒感，采用折射色带与有机拉伸的细线框架。此前的[H1／H2](branding/icons/2026-10-25-curved-throat/README.md)、[共享球面 E2-v2 与 F1／F2](branding/icons/2026-10-24-globe-structure/README.md)、[双球与原 E2](branding/icons/2026-10-24-spectral-globes/README.md)、[界面月相 D1–D3](branding/icons/2026-10-24-interface-dna/README.md)、[18个几何方向](branding/icons/2026-10-24-wave-atlas/README.md)、[棋格／频谱带配色](branding/icons/2026-10-24-spectral-refinement/README.md)和[虹彩 CD 黑底对照](branding/icons/2026-10-24-cd-black-comparison/README.md)保留为探索历史；G 组平面旋涡解释已由用户纠正。整枚图标尚未定稿。
+**Kotlin Android 应用构建**由单独任务使用 **GPT‑6.1 Sol / Extra High** 执行；以冻结稿逐轮截图对照、叠加和差异检查，包含手势、动画及连续线性动画。实现与验收要求见 [Android 交接书](docs/ANDROID-HANDOFF.md) 和 [动效规格](docs/MOTION-SPEC.md)。
 
-**当前仓库是可运行的视觉原型，尚无 Android 工程、安装包或真实音频接入。** 四组电台布局样本中的节目、曲目、码率、时钟与仪表均明确标记 MOCK；连接保持 `not-connected`。浏览器检查不代表 Android 或全球电台可播性验收。
+用户已选择 **[E1 双球构图作为临时图标](branding/icons/current/README.md)**：黑底、灰噪圆窗、中央彩球与底部白球，保存本次上传原图及 Android 派生尺寸。最终图标未定稿；用户认为生成图的 AI 感过强，暂停继续生成，后续以人工控制的平面几何与细线构成重新考虑。此前研究及来源见[品牌记录](branding/README.md)。
+
+**已归档的设计基线是可运行的浏览器视觉原型；Android 工程由独立任务推进，实际构建与验收状态由该任务记录。** 视觉原型四组电台布局样本中的节目、曲目、码率、时钟与仪表均明确标记 MOCK；连接保持 `not-connected`。浏览器检查不代表 Android 或全球电台可播性验收。
 
 ## 两页设计
 
@@ -81,4 +83,4 @@ Kotlin 已由用户确定；Compose、Media3 与目录接入的具体实现需�
 
 ## English
 
-Aether is a radio app shaped around visual craft and personal control. The **modern and immersive views** are the frozen two-page baseline. The earlier retro third page is historical only. This repository currently contains browser prototypes and deterministic MOCK data, not a tested Android player. The next task is a Kotlin Android implementation with screenshot comparison and motion verification against the archived design.
+Aether is a radio app shaped around visual craft and personal control. The **modern and immersive views** are the frozen two-page browser baseline with deterministic MOCK data. The earlier retro third page is historical only. A separate task owns Kotlin Android implementation and its screenshot and motion verification. The E1 two-sphere artwork is the user-selected provisional icon; final branding remains undecided, with further generation paused in favor of considering authored geometric design.
