@@ -1,0 +1,30 @@
+# APK distribution and lasting updates
+
+The permanent APK identity is `io.github.dpan538.aether`. Debug evidence uses the separate `.debug` suffix. The initial distribution channel is an explicitly labelled **preview**. A normal release build is not debuggable; this is independent of its preview label. Store publication is outside this delivery.
+
+The first APK is installed once. Subsequent versions are checked inside the modern screen's Settings → Check updates panel, downloaded privately, verified, and handed to the Android system installer. This preserves the installed app and its local preferences. Android still asks the user to approve installation.
+
+The app reads the latest 30 non-draft Aether GitHub Releases, including preview releases, and selects the highest **integer versionCode** above the installed build. Every eligible release must have the signed APK and `aether-update.json`. It does not compare version strings or treat a missing release as success. No repository token is shipped.
+
+Completed APKs live under the app's private `files/updates/`, keyed by version and SHA-256. Checking, retrying installation, cancelling the system installer, or restarting the app reuses that complete file after verifying it again. Incomplete downloads retain bytes and request an HTTPS Range resume; a server that ignores Range requires a restart. A corrupted cached file is removed and can be downloaded again. Installed/obsolete pending packages are cleaned up.
+
+Before opening the installer, the client checks exact file size, SHA-256, the cryptographic APK signature with Android `apksig`, package identity, version code/name, non-debuggable status, and the currently installed signing certificate. Download redirects must remain on the explicit GitHub HTTPS host allowlist. SHA-256 is integrity evidence; the installed signer supplies the trust boundary.
+
+## Build and publish
+
+`scripts/init-signing.py` creates **Aether's own preview distribution key** once in ignored `.tooling/signing/`. It does not use another app's certificate. Keep that directory and an offline backup permanently. Losing or replacing the private key breaks same-signer updates. Keys and passwords are never committed, uploaded with releases, or included in the APK. A source checkout without this local configuration produces an unsigned release; it must not be distributed.
+
+```sh
+# With a full JDK and Android SDK available, from android/:
+python3 scripts/init-signing.py
+./gradlew :app:assembleRelease :app:testDebugUnitTest :app:lintRelease
+python3 scripts/prepare-release.py
+```
+
+For later builds, increment `-PaetherVersionCode=N` and set `-PaetherVersionName=X.Y.Z-preview.N`. Preserve the same application ID and signing key. The `verification` build type uses the permanent app identity and the preview signer but remains debuggable; it is a local upgrade fixture, never a distributable release.
+
+Publish the inspected APK, `aether-update.json`, and `SHA256SUMS.txt` together in an Aether GitHub Release. The generated manifest comes from the exact signed APK. Keep prepared artifacts immutable; do not rebuild and silently replace an already published version. GitHub's connector has no release-asset upload operation, so release preparation/upload uses the authenticated `gh` CLI without exposing its credential.
+
+The user requested learning from Annota's update experience. Its distribution and continuous-update acceptance documents were read for channel selection, same-signer upgrades, retained pending packages, and installer permission handling. Aether's implementation, signing identity and app data remain independent; no Annota code, assets or private signing material were imported.
+
+Platform references: [GitHub Releases API](https://docs.github.com/en/rest/releases/releases), [Android signing](https://developer.android.com/studio/publish/app-signing), [package installation](https://developer.android.com/reference/android/content/pm/PackageInstaller).

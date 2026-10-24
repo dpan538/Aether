@@ -1,0 +1,4 @@
+# Preserve verbatim upstream license text, including its original spacing.
+app/src/main/assets/notices/* -whitespace
+third-party/*-OFL.txt -whitespace
+gradlew.bat text eol=crlf

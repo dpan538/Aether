@@ -1,0 +1,8 @@
+.tooling/
+.gradle/
+.kotlin/
+**/build/
+local.properties
+verification/local/
+__pycache__/
+*.pyc

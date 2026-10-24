@@ -1,0 +1,130 @@
+package com.aether.radio
+
+import android.app.Activity
+import android.app.Instrumentation
+import android.content.Intent
+import android.os.Bundle
+import android.os.SystemClock
+import android.view.MotionEvent
+import android.view.inputmethod.EditorInfo
+import android.widget.EditText
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.concurrent.atomic.AtomicReference
+
+/** Separate test APK. Exercises real native touch/IME paths and observes release state. */
+class NativeEvidence:Instrumentation() {
+    private var arguments=Bundle()
+    private lateinit var activity:MainActivity
+    private val securityChecks=JSONArray()
+    override fun onCreate(arguments:Bundle?){super.onCreate(arguments);this.arguments=arguments?:Bundle();start()}
+    private fun <T> main(block:()->T):T{val value=AtomicReference<T>();runOnMainSync{value.set(block())};return value.get()}
+    private fun waitFor(seconds:Int=45,predicate:()->Boolean){val end=SystemClock.uptimeMillis()+seconds*1000;while(SystemClock.uptimeMillis()<end){if(main(predicate))return;Thread.sleep(150)};error(snapshot().toString())}
+    private fun tap(action:String,fractionX:Float=.5f){
+        val point=main {
+            val surface=activity.surface
+            val nodes=if(action.startsWith("update:"))surface.painter.updatePanel.nodes()else surface.painter.scene(if(activity.session.page==1)"immersive" else surface.painter.name(activity.session.light)).flattened()
+            val r=nodes.first{it.action==action||it.id==action}.r
+            val scale=minOf(surface.width/1704f,surface.height/1136f)
+            val location=IntArray(2);surface.getLocationOnScreen(location)
+            (location[0]+(surface.width-1704*scale)/2+(r.left+r.width()*fractionX)*scale) to (location[1]+(surface.height-1136*scale)/2+r.centerY()*scale)
+        }
+        val now=SystemClock.uptimeMillis()
+        sendPointerSync(MotionEvent.obtain(now,now,MotionEvent.ACTION_DOWN,point.first,point.second,0))
+        sendPointerSync(MotionEvent.obtain(now,now+90,MotionEvent.ACTION_UP,point.first,point.second,0))
+        Thread.sleep(250)
+    }
+    private fun updater()=MainActivity::class.java.getDeclaredField("updater").apply{isAccessible=true}.get(activity) as? Updates
+    private fun snapshot():JSONObject=main {
+        val s=activity.session;val info=targetContext.packageManager.getPackageInfo(targetContext.packageName,0)
+        JSONObject().put("package",targetContext.packageName).put("versionCode",info.longVersionCode).put("versionName",info.versionName).put("reference",s.reference).put("query",s.query).put("filteredCount",s.filtered().size).put("station",s.station?.name).put("selectedId",s.station?.id).put("favorites",JSONArray(s.favorites)).put("volume",s.volume).put("tempo",s.tempo).put("language",s.language).put("spectrumEnabled",s.spectrumEnabled).put("spectrumSamples",s.spectrumFrame?.samples?:0).put("updatePhase",s.updateUi.phase.name).put("cached",s.updateUi.cached).put("downloadRequests",updater()?.downloadRequests?:0).put("reusedPackages",updater()?.reusedPackages?:0)
+    }
+    override fun onStart(){
+        val result=Bundle()
+        try {
+            val launch=Intent(targetContext,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            if(arguments.getString("reference")=="true")launch.putExtra("mode","reference")
+            if(arguments.getString("operation")=="seed")launch.putExtra("mode","live").putExtra("stream","https://ice6.somafm.com/groovesalad-128-aac").putExtra("query","SomaFM")
+            arguments.putLong("launchStart",SystemClock.elapsedRealtime())
+            activity=startActivitySync(launch) as MainActivity
+            waitFor{activity.surface.assetsReady&&activity.surface.width>0&&!activity.surface.refreshing};Thread.sleep(700)
+            when(arguments.getString("operation","state")){
+                "ime"->{
+                    tap("station-search")
+                    main {
+                        val field=activity.currentFocus as EditText
+                        val connection=field.onCreateInputConnection(EditorInfo())!!
+                        check(connection.commitText("no-such-aether-station",1))
+                    }
+                    waitFor{activity.session.query=="no-such-aether-station"&&activity.session.filtered().isEmpty()}
+                }
+                "download"->{
+                    tap("device-settings");tap("check-updates")
+                    waitFor{activity.session.updateUi.phase in listOf(UpdatePhase.AVAILABLE,UpdatePhase.READY)}
+                    if(main{activity.session.updateUi.phase==UpdatePhase.AVAILABLE})tap("update:download")
+                    waitFor(180){activity.session.updateUi.phase==UpdatePhase.READY}
+                    val before=main{updater()!!.downloadRequests}
+                    tap("update:back");tap("check-updates")
+                    waitFor{activity.session.updateUi.phase==UpdatePhase.READY}
+                    check(main{updater()!!.downloadRequests}==before){"Repeated check downloaded the same APK again"}
+                }
+                "processor"->{
+                    val processor=SpectrumProcessor({false},{})
+                    processor.configure(androidx.media3.common.audio.AudioProcessor.AudioFormat(44100,2,androidx.media3.common.C.ENCODING_PCM_16BIT));processor.flush()
+                    processor.queueInput(androidx.media3.common.audio.AudioProcessor.EMPTY_BUFFER)
+                    processor.queueInput(java.nio.ByteBuffer.allocateDirect(0))
+                    val bytes=ByteArray(4096){(it%127).toByte()}
+                    val input=java.nio.ByteBuffer.allocateDirect(bytes.size).put(bytes).apply{flip()}
+                    processor.queueInput(input)
+                    val actual=ByteArray(bytes.size);processor.output.get(actual);check(actual.contentEquals(bytes))
+                    processor.queueInput(androidx.media3.common.audio.AudioProcessor.EMPTY_BUFFER)
+                    processor.queueEndOfStream();check(processor.isEnded);processor.reset()
+                    securityChecks.put(JSONObject().put("check","PCM pass-through and empty/end-of-stream buffers").put("passed",true))
+                }
+                "soak"->{
+                    val data=ExperienceSuite(this,activity,arguments).run()
+                    result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return
+                }
+                "security"->{
+                    val updater=main{updater()!!}
+                    val apk=java.io.File(arguments.getString("apk")?:error("APK path required"))
+                    val info=targetContext.packageManager.getPackageArchiveInfo(apk.path,android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES)!!
+                    val cert=Updates.digest(info.signingInfo!!.apkContentsSigners.single().toByteArray())
+                    val good=UpdatePackage(info.longVersionCode,info.versionName!!,Updates.sha(apk),cert,apk.length(),"https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.1/Aether-0.1.0-preview.1.apk","")
+                    val verify=Updates::class.java.getDeclaredMethod("verify",UpdatePackage::class.java,java.io.File::class.java).apply{isAccessible=true}
+                    val validate=Updates::class.java.getDeclaredMethod("validate",UpdatePackage::class.java).apply{isAccessible=true}
+                    fun accept(label:String,run:()->Unit){run();securityChecks.put(JSONObject().put("check",label).put("passed",true))}
+                    fun reject(label:String,run:()->Unit){check(runCatching(run).isFailure){"Unsafe update accepted: $label"};securityChecks.put(JSONObject().put("check",label).put("passed",true))}
+                    accept("valid same-signer release"){verify.invoke(updater,good,apk)}
+                    reject("wrong signer"){verify.invoke(updater,good.copy(certificate="0".repeat(64)),apk)}
+                    reject("wrong version"){verify.invoke(updater,good.copy(versionName="forged"),apk)}
+                    reject("downgrade"){verify.invoke(updater,good.copy(versionCode=1),apk)}
+                    reject("truncated size"){verify.invoke(updater,good.copy(bytes=apk.length()-1),apk)}
+                    reject("wrong hash"){verify.invoke(updater,good.copy(sha256="0".repeat(64)),apk)}
+                    for(url in listOf("http://github.com/dpan538/Aether/releases/download/x/a.apk","https://github.com/other/repo/releases/download/x/a.apk","https://github.com.evil.test/dpan538/Aether/releases/download/x/a.apk","https://user@github.com/dpan538/Aether/releases/download/x/a.apk"))reject("untrusted URL $url"){validate.invoke(updater,good.copy(url=url))}
+                    val changed=java.io.File(targetContext.cacheDir,"tampered.apk")
+                    try{
+                        apk.copyTo(changed,true)
+                        java.io.RandomAccessFile(changed,"rw").use{it.seek(100);val b=it.read();it.seek(100);it.write(b xor 1)}
+                        reject("tampered bytes with matching advertised hash"){verify.invoke(updater,good.copy(sha256=Updates.sha(changed)),changed)}
+                    }finally{changed.delete()}
+                }
+                "seed"->{
+                    waitFor{activity.session.playing}
+                    if(main{activity.session.station?.id !in activity.session.favorites})tap("favorite-toggle")
+                    tap("segmented-volume",17f/30);tap("tempo",.4f)
+                    tap("device-settings");tap("menu:ui-language");tap("option:1");tap("device-settings")
+                    waitFor{activity.session.volume==17&&activity.session.tempo==90&&activity.session.language=="zh"}
+                }
+            }
+            Thread.sleep(450)
+            val operation=arguments.getString("operation","state").replace(Regex("[^A-Za-z0-9-]"),"").take(32)
+            val folder=targetContext.getExternalFilesDir("evidence")!!.apply{mkdirs()}
+            uiAutomation.takeScreenshot()?.let{image->java.io.File(folder,"$operation.png").outputStream().use{image.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)};image.recycle()}
+            val data=snapshot();data.put("passed",true);if(securityChecks.length()>0)data.put("securityChecks",securityChecks)
+            val cache=java.io.File(targetContext.filesDir,"updates")
+            data.put("cachedFiles",JSONArray(cache.listFiles()?.filter{it.extension=="apk"}?.map{JSONObject().put("name",it.name).put("bytes",it.length()).put("modified",it.lastModified()).put("sha256",Updates.sha(it))}?:emptyList<JSONObject>()))
+            result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result)
+        }catch(error:Throwable){result.putString("aetherError",error.stackTraceToString());finish(Activity.RESULT_CANCELED,result)}
+    }
+}
