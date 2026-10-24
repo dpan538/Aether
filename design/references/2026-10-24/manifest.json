@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "recorded_on": "2026-10-24",
+  "source": "User-provided visual references in the Aether planning conversation.",
+  "usage": "Design references; these are not original Aether UI screens or shipping app assets.",
+  "original_author_and_url": "Not supplied.",
+  "references": [
+    {
+      "number": 1,
+      "file": "01-immersive-iridescent-detail.png",
+      "title": "图一：沉浸播放的虹彩与印刷细节",
+      "page": "immersive",
+      "width": 736,
+      "height": 736,
+      "bytes": 819269,
+      "sha256": "e56bacc300d4db940b0a244bd357b44964907806cae2d1fea36d45514ebaf35b"
+    },
+    {
+      "number": 2,
+      "file": "02-immersive-iridescent-composition.png",
+      "title": "图二：沉浸播放的同心圆与整体构图",
+      "page": "immersive",
+      "width": 736,
+      "height": 736,
+      "bytes": 720747,
+      "sha256": "9fc9eae2644dde2f49f4a1aa815861c1697dd3b44e309e4e43d0e08f847c2476"
+    },
+    {
+      "number": 3,
+      "file": "03-retro-radio-stack.png",
+      "title": "图三：复古调节的多层设备与按键",
+      "page": "retro",
+      "width": 672,
+      "height": 960,
+      "bytes": 359085,
+      "sha256": "91f8ac89d6fb1bc5a83b2b3579897c511ef3de0c69d6dfe86a747fcd75053954"
+    },
+    {
+      "number": 4,
+      "file": "04-modern-radio-console.png",
+      "title": "图四：现代主页面的下部控制台与蓝色显示屏",
+      "page": "modern",
+      "width": 1200,
+      "height": 900,
+      "bytes": 190508,
+      "sha256": "3693ded399711b03c9fa8a55908d5c1da4a89b91d105ded8d6ea694cc22d5c69"
+    }
+  ]
+}

@@ -16,9 +16,19 @@ In the unseen Aether, hear the distant.
 
 **2026-10-24：正式进入产品规划与设计阶段。**
 
-当前仓库保存品牌文案、功能需求、体验规划与决策记录。功能清单表达产品目标；目前尚无可运行应用、视觉稿、播放实测或发布版本。
+当前仓库保存品牌文案、功能需求、三页视觉方向、参考原图、页面元素草案与决策记录。功能清单表达产品目标；目前尚无可运行应用、原创 UI 稿、播放实测或发布版本。
 
-先确定功能与信息含义，再讨论交互和 UI。首个产品聚焦网络电台；本地音乐播放和外部音乐 App 的美化套件属于后续独立产品。
+**Aether 是以视觉驱动、视觉体验特化的项目。** 功能围绕选台与收听，以及三页各自的视觉体验取舍。首个产品聚焦网络电台；本地音乐播放和外部音乐 App 的美化套件属于后续独立产品。
+
+## 三个页面与三套 UI
+
+| 页面 | 已确定的方向 | 角色 |
+| --- | --- | --- |
+| 第一页：纯沉浸播放 | 图一／图二的虹彩同心圆、深色背景与印刷质感 | 以观赏和聆听为主 |
+| 第二页：复古调节 | 图三的成组音响设备、多按键与旋钮层次 | 提供复古操作体验 |
+| 第三页：现代主页面 | 下部参考图四，上方增加与其蓝色显示屏同款的可筛选电台屏幕 | 主要入口，清晰选台，并承载设置 |
+
+三页方向与现代页的主页面身份已确定，具体控件映射和页面切换方式仍在讨论。四张用户参考原图已[归档](design/references/README.md)；当前继续[页面元素规划](docs/PAGE-ELEMENTS.md)。
 
 ## 产品方向
 
@@ -35,6 +45,8 @@ In the unseen Aether, hear the distant.
 | 文档 | 内容 |
 | --- | --- |
 | [品牌文案](branding/README.md) | 已确定的中英文名称、标语与完整介绍 |
+| [视觉方向](design/README.md) | 视觉体验特化原则、三个页面与四张参考图的对应关系 |
+| [页面元素](docs/PAGE-ELEMENTS.md) | 各页必须表达的内容、控件候选和待定项 |
 | [产品范围](docs/PRODUCT-SCOPE.md) | 用户已提出的功能、条件信息、候选能力与范围边界 |
 | [体验规划](docs/EXPERIENCE-PLAN.md) | 搜索、浏览、收听、收藏与随机探索的行为草案 |
 | [决策记录](docs/DECISIONS.md) | 已确定事项、待讨论问题与阶段推进顺序 |
@@ -47,10 +59,11 @@ Aether/
 ├── README.md
 ├── AGENTS.md
 ├── branding/       # 已确定的品牌内容
+├── design/         # 三页视觉方向与参考原图
 └── docs/           # 产品与体验规划、决策记录
 ```
 
-技术路线候选为 Android、Kotlin、Jetpack Compose 与 Media3，电台目录候选为 Radio Browser。技术选型不代表工程已经创建，亦不预先确定页面数量、布局或视觉风格。
+技术路线候选为 Android、Kotlin、Jetpack Compose 与 Media3，电台目录候选为 Radio Browser。技术选型不代表工程已经创建；它服务于已确定的三页视觉方向，具体实现方式尚未决定。
 
 代码与品牌资产的许可方式待确定。
 
@@ -60,4 +73,4 @@ Aether/
 
 A radio app shaped around pure listening, visual craft and personal control. Discover stations through direct search, countries and regions, languages, genres, favorites and deliberate random tuning, without an algorithmic recommendation feed.
 
-The project entered product planning and design on **24 October 2026**. This repository currently contains brand copy, requirements and experience proposals. It does not yet contain a playable app or a release.
+The project entered product planning and design on **24 October 2026**. Aether specializes in visual listening experiences through three distinct interfaces: immersive playback, retro controls, and a modern main page for station selection and settings. Four user-provided references are archived alongside the page-element proposals. There is no playable app or release yet.
