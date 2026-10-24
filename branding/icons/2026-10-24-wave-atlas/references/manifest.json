@@ -1,0 +1,167 @@
+{
+  "source": "16 user-supplied style references, 2026-10-24",
+  "usage": "Conceptual/style references only, not shipping Aether assets; text in images is source material, not instructions",
+  "author_and_license": "Not supplied",
+  "references": [
+    {
+      "id": "R01",
+      "file": "R01-phase-checker.png",
+      "pixels": [
+        834,
+        882
+      ],
+      "bytes": 1009605,
+      "sha256": "e2c4c4353de27aa49dada4e7db2fd66ffc2472d5242634ae2fd7325c0d59f3c7"
+    },
+    {
+      "id": "R02",
+      "file": "R02-eccentric-vortex.png",
+      "pixels": [
+        1000,
+        1000
+      ],
+      "bytes": 1419301,
+      "sha256": "d4f9c4909979d0699453ea0a35faf0d7fa1abe9365f77647cdf4896eb490dc32"
+    },
+    {
+      "id": "R03",
+      "file": "R03-radial-lines.png",
+      "pixels": [
+        894,
+        920
+      ],
+      "bytes": 826792,
+      "sha256": "48d58bfae817f41e172bd397415cb7f86b57cbf1b40d3d83ca039895e8ee675c"
+    },
+    {
+      "id": "R04",
+      "file": "R04-radial-aperture.png",
+      "pixels": [
+        1200,
+        1200
+      ],
+      "bytes": 917039,
+      "sha256": "ec2ff0ef007ff23b2ab05ba762dc52a845cd016afb8ee0e4fcdff05098a09161"
+    },
+    {
+      "id": "R05",
+      "file": "R05-radial-spectrum.png",
+      "pixels": [
+        400,
+        400
+      ],
+      "bytes": 55859,
+      "sha256": "da1fa16f9e87ef44931d814fbadfdc15ef905fa48abd66e300ed92c5ec099860"
+    },
+    {
+      "id": "R06",
+      "file": "R06-disc-color-block.png",
+      "pixels": [
+        500,
+        701
+      ],
+      "bytes": 387366,
+      "sha256": "35634903bed10aa77f2ed8087908f4912718dc2cf0f3746559fa07eca0dead81"
+    },
+    {
+      "id": "R07",
+      "file": "R07-celestial-grid.png",
+      "pixels": [
+        600,
+        570
+      ],
+      "bytes": 592469,
+      "sha256": "b6ab132f294b332845695281e7c74bda0b6a51ab08e45e6b9ba4817d357dc584"
+    },
+    {
+      "id": "R08",
+      "file": "R08-particle-globe.png",
+      "pixels": [
+        468,
+        402
+      ],
+      "bytes": 294654,
+      "sha256": "2217f989578720de0b786e9d3a5dbbda39e616026ae8a24afbec4d6e3e8366ba"
+    },
+    {
+      "id": "R09",
+      "file": "R09-orbital-bands.png",
+      "pixels": [
+        600,
+        600
+      ],
+      "bytes": 101660,
+      "sha256": "6b71146586f6be73d903f055b431de57c32020e48f08235aa9fbe1dfa9629a8f"
+    },
+    {
+      "id": "R10",
+      "file": "R10-spectral-grain.png",
+      "pixels": [
+        600,
+        600
+      ],
+      "bytes": 157413,
+      "sha256": "c9fc2513657ea8600812b4d4f9e24995091c39ffc6b8fe1ee93d18ee362ebee1"
+    },
+    {
+      "id": "R11",
+      "file": "R11-particle-polyhedron.png",
+      "pixels": [
+        237,
+        233
+      ],
+      "bytes": 53303,
+      "sha256": "b01bf5c5f9339c0ddb32aadd54980aeca015a9b48d8c7c3a2acbbedf4e9ebd35"
+    },
+    {
+      "id": "R12",
+      "file": "R12-chromatic-field.png",
+      "pixels": [
+        580,
+        580
+      ],
+      "bytes": 436522,
+      "sha256": "a06beee5601f8b209953eb7806497f8951739a097ae3dc6c0ad836ff373d9a50"
+    },
+    {
+      "id": "R13",
+      "file": "R13-wireframe-torus.png",
+      "pixels": [
+        1080,
+        1080
+      ],
+      "bytes": 1040631,
+      "sha256": "df39082f9860e11e861ebee3a16788342099805e111f705a990ea6493a14a1bb"
+    },
+    {
+      "id": "R14",
+      "file": "R14-noisy-medium.png",
+      "pixels": [
+        1200,
+        1200
+      ],
+      "bytes": 1308812,
+      "sha256": "65172d8cf31e6cc49c014bb8c37c8b296d9128de8e11e4abb21dfb94b64ccef9"
+    },
+    {
+      "id": "R15",
+      "file": "R15-blue-field-contours.png",
+      "pixels": [
+        736,
+        981
+      ],
+      "bytes": 732114,
+      "sha256": "89f6c2e863904a9e0fc5068b5124ff7fb6dd16beada861c4fc93b2215526f96d"
+    },
+    {
+      "id": "R16",
+      "file": "R16-blue-medium.png",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "bytes": 617292,
+      "sha256": "4612fa722e371256e0042d207c67a6930c2a80c355b848938224f04f1ce1680b"
+    }
+  ]
+}

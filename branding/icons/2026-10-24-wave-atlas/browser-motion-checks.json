@@ -1,0 +1,30 @@
+[
+  {
+    "id": "03",
+    "phase": "LINEAR TIME / PHASE 12.699"
+  },
+  {
+    "id": "06",
+    "start": "LINEAR TIME / PHASE 0.100",
+    "stopped": "STATIC / PHASE 0.133"
+  },
+  {
+    "id": "09",
+    "start": "LINEAR TIME / PHASE 0.108",
+    "stopped": "STATIC / PHASE 0.175"
+  },
+  {
+    "id": "15",
+    "start": "LINEAR TIME / PHASE 0.042",
+    "stopped": "STATIC / PHASE 0.083"
+  },
+  {
+    "id": "18",
+    "stopped": "STATIC / PHASE 13.499"
+  },
+  {
+    "id": "17",
+    "start": "LINEAR TIME / PHASE 0.108",
+    "stopped": "STATIC / PHASE 0.142"
+  }
+]
