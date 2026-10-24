@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-25",
+  "mode": "Built-in imagegen edit",
+  "calls": 2,
+  "status": "Current funnel/throat composition studies; final icon not selected",
+  "postProcessing": "None; original bytes copied into workspace",
+  "files": [
+    {
+      "file": "H1-globe-with-inward-well.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 2363646,
+      "sha256": "9a8aa9315279bbf61bf2188faed6eff886b893a64dae2c178be360b762f3712a"
+    },
+    {
+      "file": "H2-continuous-spectral-throat.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 2146152,
+      "sha256": "2481dfdc0a46a4e0f24892a21d1e2e9b87ac36a9cc2016d787f62cc338a87076"
+    },
+    {
+      "file": "references/funnel-reference.png",
+      "width": 639,
+      "height": 640,
+      "bytes": 402361,
+      "sha256": "3384e090c4033ddf4c543b4287c05664422521668275931e0b59b6494c19c126"
+    },
+    {
+      "file": "references/globe-target.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 2055031,
+      "sha256": "bf4cd7bfd287e8e1c7a740377dcbc7571b15c717f4ab61a492f2b8f54a576023"
+    },
+    {
+      "file": "references/throat-reference.png",
+      "width": 1200,
+      "height": 1166,
+      "bytes": 1392342,
+      "sha256": "c0d1709a3ce022cb99f4b761d9a853b13cb8e056f3a17ab187055d06315b5d0c"
+    }
+  ],
+  "validation": {
+    "PNGIntegrity": "passed",
+    "mathematicalSurfaceValidation": false,
+    "localLinks": 19
+  }
+}

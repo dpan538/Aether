@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-25",
+  "mode": "Built-in imagegen edit",
+  "calls": 2,
+  "status": "Rejected interpretation: flat swirl, history only",
+  "postProcessing": "None; original bytes copied into workspace",
+  "files": [
+    {
+      "file": "G1-restrained-intake.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 2058315,
+      "sha256": "158ae9ed4c0b78bb499ec6a9bfcd1efddc95a3f3098b024aa0119a65ef19c800"
+    },
+    {
+      "file": "G2-stronger-inward-vortex.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 2096098,
+      "sha256": "2a6bb9669b933421abda09ed6385ac6fe33dd2510cb35c6f9b6f2c97e2e3d65b"
+    },
+    {
+      "file": "references/globe-target.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 2055031,
+      "sha256": "bf4cd7bfd287e8e1c7a740377dcbc7571b15c717f4ab61a492f2b8f54a576023"
+    },
+    {
+      "file": "references/intake-detail.png",
+      "width": 394,
+      "height": 376,
+      "bytes": 326355,
+      "sha256": "4dc56ed60f9b980e0fec3a4c1c2be63ac56dee300876bc8d7ad94fb45cbaab31"
+    }
+  ],
+  "validation": {
+    "PNGIntegrity": "passed",
+    "mathematicalSurfaceValidation": false,
+    "localLinks": 4
+  }
+}
