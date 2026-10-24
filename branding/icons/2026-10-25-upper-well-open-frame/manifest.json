@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-25",
+  "mode": "Built-in imagegen edit",
+  "calls": 1,
+  "status": "Upper funnel accepted; whole revised icon not approved",
+  "edit": "Preserve upper well, remove lower tube, enlarge upper pigment region and use a shallow arc boundary",
+  "postProcessing": "None; original output bytes preserved",
+  "validation": "Visual review confirms no hanging lower throat, open lower spherical frame and curved dividing edge. PNG integrity/dimensions checked.",
+  "files": [
+    {
+      "file": "I1-upper-well-arc-frame.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 2257171,
+      "sha256": "c7f2a44f7cd9cb235702b004a5b06b5def48b79161e7f86ae776035c941cc1a6"
+    },
+    {
+      "file": "references/H1-edit-target.png",
+      "width": 1254,
+      "height": 1254,
+      "bytes": 2431466,
+      "sha256": "15cd685e341aaed03ff6bbe2cb684d3525d7f66380a259a26ffe29d71cca2a88"
+    }
+  ]
+}
