@@ -1,4 +1,4 @@
-> **验收撤回 · 2026-10-25**：用户实机截图和既有真实播放截图确认文字裁切、排版、频谱及交互缺陷。下方300轮记录是历史状态检查，不能作为视觉或可用性交付通过依据。0.1.0-preview.1 存在已知严重问题，本轮以 preview.2 修复记录为准；旧证据保留以说明测试缺口。
+> **preview.2 修复验证**：文字、首次四键和真实频谱已修复；最终APK完成300次使用检查，另保留1次宿主模拟器退出中断。preview.1验收已撤回，历史记录保留。详见[当前报告](verification/REPORT.md)。
 
 # 漫频 Aether · Kotlin Android
 
@@ -76,3 +76,6 @@ The only product target is Xiaomi Pad 9 Pro Max at 3408×2272 landscape (3:2), u
 ## Current verification
 
 [preview.2 repair report](verification/REPORT.md) records the typography root cause, all four initial Station keys, independent real PCM spectra, touch handling, shared page state and actual verification limits. The previous preview.1 300-round result is withdrawn as visual/usability acceptance; its [historical report](verification/HISTORICAL-PREVIEW1.md) and original records remain available.
+
+
+The final public same-signer2→3 update was downloaded once, reused after restart/permission denial/installer cancellation, and installed through Android system confirmation. Selection/favorites, volume17, Tempo90 and Chinese persisted; post-upgrade playback supplied real PCM again. The [portable evidence bundle](https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.2/Aether-preview.2-repair-evidence.zip) includes301 original attempts /300 completed cycles, six charts, screenshots and design comparisons.

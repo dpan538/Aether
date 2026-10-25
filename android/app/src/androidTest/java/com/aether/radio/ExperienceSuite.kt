@@ -58,10 +58,12 @@ class ExperienceSuite(private val test:Instrumentation,private val activity:Main
         check(!activity.session.reference){"Experience acceptance must use real release data"}
         val startRound=arguments.getString("startRound","1").toInt();val count=arguments.getString("rounds","10").toInt()
         ui{activity.session.query="SomaFM";activity.session.changed()};waitFor(45){activity.session.catalog.size>=4&&activity.session.catalog.all{it.name.contains("SomaFM",true)}}
+        val scenarioStart=arguments.getString("scenarioStart")?.toIntOrNull()?:startRound
         val batch=JSONArray();val player=ui{System.identityHashCode(audio()!!.player)}
         for(offset in 0 until count){
-            val number=startRound+offset;val scenario=(number-1)%12
+            val number=startRound+offset;val scenario=(scenarioStart+offset-1)%12
             val row=JSONObject().put("round",number).put("scenario",listOf("frontlight","volume-mute","tempo-pitch","settings-language","real-directory-filter","favorites","shared-page-session","lock-protection","power-retained-ink","real-playback","four-station-presets","decoded-spectrum")[scenario]).put("launchKind",if(offset==0)"cold" else "warm").put("startedAtEpochMs",System.currentTimeMillis())
+            if(scenarioStart!=startRound)row.put("retryOf",scenarioStart+offset)
             var begin=if(offset==0)arguments.getLong("launchStart",SystemClock.elapsedRealtime())else SystemClock.elapsedRealtime()
             try {
                 if(offset>0){

@@ -54,4 +54,4 @@ while len(rows)<a.rounds:
     (batch/'gfxinfo.txt').write_bytes(run('shell','dumpsys','gfxinfo',pkg,'framestats'))
     print(json.dumps({'completed':len(rows),'passed':sum(r.get('passed',False) for r in rows),'failed':sum(not r.get('passed',False) for r in rows),'lastBatchSeconds':round(time.monotonic()-t,1)}),flush=True)
 assert len(rows)==a.rounds
-print('Completed',len(rows),'actual rounds; passed',sum(r.get('passed',False) for r in rows),flush=True)
+print('Recorded',len(rows),'attempts; completed native cycles',sum('before' in r and 'after' in r for r in rows),'; passed',sum(r.get('passed',False) for r in rows),flush=True)

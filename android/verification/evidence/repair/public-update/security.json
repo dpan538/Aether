@@ -1,0 +1,78 @@
+{
+  "iconClass": "android.graphics.drawable.BitmapDrawable",
+  "package": "io.github.dpan538.aether",
+  "versionCode": 2,
+  "versionName": "0.1.0-preview.1",
+  "reference": false,
+  "query": "",
+  "filteredCount": 89,
+  "station": "SomaFM - Deep Space One (128 kb/s AAC)",
+  "selectedId": "0042e94c-55d6-4ff4-a3a7-46136e703424",
+  "favorites": [
+    "0042e94c-55d6-4ff4-a3a7-46136e703424"
+  ],
+  "volume": 17,
+  "tempo": 90,
+  "language": "zh",
+  "spectrumEnabled": false,
+  "spectrumSamples": 0,
+  "updatePhase": "READY",
+  "cached": true,
+  "downloadRequests": 0,
+  "reusedPackages": 1,
+  "passed": true,
+  "securityChecks": [
+    {
+      "check": "valid same-signer release",
+      "passed": true
+    },
+    {
+      "check": "wrong signer",
+      "passed": true
+    },
+    {
+      "check": "wrong version",
+      "passed": true
+    },
+    {
+      "check": "downgrade",
+      "passed": true
+    },
+    {
+      "check": "truncated size",
+      "passed": true
+    },
+    {
+      "check": "wrong hash",
+      "passed": true
+    },
+    {
+      "check": "untrusted URL http://github.com/dpan538/Aether/releases/download/x/a.apk",
+      "passed": true
+    },
+    {
+      "check": "untrusted URL https://github.com/other/repo/releases/download/x/a.apk",
+      "passed": true
+    },
+    {
+      "check": "untrusted URL https://github.com.evil.test/dpan538/Aether/releases/download/x/a.apk",
+      "passed": true
+    },
+    {
+      "check": "untrusted URL https://user@github.com/dpan538/Aether/releases/download/x/a.apk",
+      "passed": true
+    },
+    {
+      "check": "tampered bytes with matching advertised hash",
+      "passed": true
+    }
+  ],
+  "cachedFiles": [
+    {
+      "name": "3-12eb8b35a0787b6c.apk",
+      "bytes": 35459020,
+      "modified": 1792901369684,
+      "sha256": "12eb8b35a0787b6cd8aef70d1b6de7bb63f4024549c907f2c6f8adf2d3648d11"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "attempt": 261,
+  "completedBeforeInterruption": 260,
+  "observation": "The host emulator process disappeared and adb reported emulator-5582 not found. The host log ends in OpenGL color-buffer/context errors. No completed native usage row exists for this attempt.",
+  "rootCause": "Not established; do not infer an application-only crash from this host-process exit.",
+  "recovery": "Restart only the owned Aether emulator, preserve APK/data and verify same SHA256; resume remaining cycles and run a separately labelled replacement for the interrupted scenario.",
+  "replacementAttempt": 301,
+  "replacementScenarioStart": 261,
+  "reportedAtUtc": "2026-10-25T03:50:47.140031+00:00"
+}

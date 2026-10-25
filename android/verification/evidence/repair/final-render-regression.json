@@ -1,0 +1,36 @@
+{
+  "iconClass": "android.graphics.drawable.BitmapDrawable",
+  "package": "io.github.dpan538.aether",
+  "versionCode": 3,
+  "versionName": "0.1.0-preview.2",
+  "reference": false,
+  "query": "",
+  "filteredCount": 89,
+  "station": "SomaFM - Deep Space One (128 kb/s AAC)",
+  "selectedId": "0042e94c-55d6-4ff4-a3a7-46136e703424",
+  "favorites": [],
+  "volume": 20,
+  "tempo": 100,
+  "language": "en",
+  "spectrumEnabled": true,
+  "spectrumSamples": 0,
+  "updatePhase": "IDLE",
+  "cached": false,
+  "downloadRequests": 0,
+  "reusedPackages": 0,
+  "passed": true,
+  "securityChecks": [
+    {
+      "check": "Full 3408x2272 render independent of CENTER / scale / skew / tracking",
+      "changedPixels": 0,
+      "passed": true
+    },
+    {
+      "check": "Full 3408x2272 render independent of RIGHT / scale / skew / tracking",
+      "changedPixels": 0,
+      "passed": true
+    }
+  ],
+  "cachedFiles": [],
+  "testedApkSha256": "12eb8b35a0787b6cd8aef70d1b6de7bb63f4024549c907f2c6f8adf2d3648d11"
+}

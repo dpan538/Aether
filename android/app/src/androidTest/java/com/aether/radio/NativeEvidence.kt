@@ -166,6 +166,8 @@ class NativeEvidence:Instrumentation() {
                     }finally{changed.delete()}
                 }
                 "seed"->{
+                    waitFor{activity.session.station?.stream?.startsWith("https://")==true}
+                    if(!main{activity.session.playing})tap("play-toggle")
                     waitFor{activity.session.playing}
                     if(main{activity.session.station?.id !in activity.session.favorites})tap("favorite-toggle")
                     tap("segmented-volume",17f/30);tap("tempo",.4f)

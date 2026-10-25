@@ -1,0 +1,159 @@
+{
+  "completedNativeCycles": 300,
+  "incompleteAttempts": 1,
+  "rounds": 301,
+  "passed": 300,
+  "failed": 1,
+  "cold": {
+    "count": 31,
+    "median": 8155.0,
+    "p95": 8742.5,
+    "max": 9360
+  },
+  "warm": {
+    "count": 269,
+    "median": 263.0,
+    "p95": 1679.8,
+    "max": 3190
+  },
+  "pssMiB": {
+    "count": 300,
+    "median": 382.03857421875,
+    "p95": 389.572265625,
+    "max": 393.216796875
+  },
+  "scenarios": {
+    "frontlight": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 4590.0,
+        "p95": 4798.799999999999,
+        "max": 4854
+      }
+    },
+    "volume-mute": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 5140.0,
+        "p95": 6375.199999999996,
+        "max": 6860
+      }
+    },
+    "tempo-pitch": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 4503.0,
+        "p95": 4630.8,
+        "max": 4677
+      }
+    },
+    "settings-language": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 9143.0,
+        "p95": 9426.4,
+        "max": 9591
+      }
+    },
+    "real-directory-filter": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 3551.0,
+        "p95": 4831.4,
+        "max": 4925
+      }
+    },
+    "favorites": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 5034.0,
+        "p95": 5204.599999999999,
+        "max": 5275
+      }
+    },
+    "shared-page-session": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 4723.0,
+        "p95": 4794.8,
+        "max": 4995
+      }
+    },
+    "lock-protection": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 9066.0,
+        "p95": 11892.4,
+        "max": 11944
+      }
+    },
+    "power-retained-ink": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 6621.0,
+        "p95": 6882.4,
+        "max": 6982
+      }
+    },
+    "real-playback": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 5167.0,
+        "p95": 6647.4,
+        "max": 6697
+      }
+    },
+    "four-station-presets": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 12319.0,
+        "p95": 13673.6,
+        "max": 13753
+      }
+    },
+    "decoded-spectrum": {
+      "rounds": 25,
+      "passed": 25,
+      "actionsMs": {
+        "count": 25,
+        "median": 12331.0,
+        "p95": 14901.8,
+        "max": 17932
+      }
+    },
+    "launch-or-harness-failure": {
+      "rounds": 1,
+      "passed": 0,
+      "actionsMs": {
+        "count": 0,
+        "median": null,
+        "p95": null,
+        "max": null
+      }
+    }
+  },
+  "crashEvents": 0,
+  "anrEvents": 0
+}

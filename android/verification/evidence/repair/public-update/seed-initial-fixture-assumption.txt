@@ -1,0 +1,7 @@
+INSTRUMENTATION_RESULT: aetherError=java.lang.IllegalStateException: {"iconClass":"android.graphics.drawable.BitmapDrawable","package":"io.github.dpan538.aether","versionCode":2,"versionName":"0.1.0-preview.1","reference":false,"query":"SomaFM","filteredCount":95,"station":"SomaFM - Deep Space One (128 kb\/s AAC)","selectedId":"0042e94c-55d6-4ff4-a3a7-46136e703424","favorites":[],"volume":20,"tempo":100,"language":"en","spectrumEnabled":false,"spectrumSamples":0,"updatePhase":"IDLE","cached":false,"downloadRequests":0,"reusedPackages":0}
+	at com.aether.radio.NativeEvidence.waitFor(NativeEvidence.kt:22)
+	at com.aether.radio.NativeEvidence.waitFor$default(NativeEvidence.kt:22)
+	at com.aether.radio.NativeEvidence.onStart(NativeEvidence.kt:169)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2597)
+
+INSTRUMENTATION_CODE: 0

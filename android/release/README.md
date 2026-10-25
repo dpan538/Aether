@@ -30,3 +30,6 @@ The user requested learning from Annota's update experience. Its distribution an
 Platform references: [GitHub Releases API](https://docs.github.com/en/rest/releases/releases), [Android signing](https://developer.android.com/studio/publish/app-signing), [package installation](https://developer.android.com/reference/android/content/pm/PackageInstaller).
 
 Initial inspected preview: [v0.1.0-preview.1](https://github.com/dpan538/Aether/releases/tag/v0.1.0-preview.1), integer versionCode 2. Its APK SHA-256 is `9f81bbd8977a9a8bf2d354497652c3e75fee95b0a3ef2d3f483e1650d1670810`. Keep this published artifact immutable; local earlier candidates are not releases.
+
+
+Current repair preview: [v0.1.0-preview.2](https://github.com/dpan538/Aether/releases/tag/v0.1.0-preview.2), versionCode3, APK SHA-256 `12eb8b35a0787b6cd8aef70d1b6de7bb63f4024549c907f2c6f8adf2d3648d11`. Preview.1 acceptance is withdrawn; its assets remain immutable. The public2→3 flow downloaded once, reused identical bytes after restart/denial/cancellation, then installed through Android system confirmation. Station/favorites, volume17, Tempo90 and Chinese persisted. See [current verification](../verification/REPORT.md).
