@@ -27,14 +27,14 @@ class SpectrumDrawing(private val face:Typeface) {
         label.textAlign=Paint.Align.RIGHT;c.drawText("Hz",785f,424f,label)
         c.restore()
     }
-    fun plot(c:Canvas,r:RectF,frame:SpectrumFrame?,enabled:Boolean,caption:String){
+    fun plot(c:Canvas,r:RectF,frame:SpectrumFrame?,enabled:Boolean,caption:String,cn:Boolean=false){
         c.save();c.clipRect(r);c.translate(r.left,r.top)
         val w=r.width();val h=r.height();val top=28f;val bottom=h-23f;val graphHeight=(bottom-top).coerceAtLeast(1f)
         val grid=Paint(Paint.ANTI_ALIAS_FLAG).apply{strokeWidth=.45f;color=0x4243545d}
         for(i in 0..80){val x=i*w/80;c.drawLine(x,top,x,bottom,grid)}
         for(i in 0..28){val y=top+i*graphHeight/28;c.drawLine(0f,y,w,y,grid)}
         grid.color=0xff485963.toInt();grid.strokeWidth=.8f;c.drawRect(0f,top,w,bottom,Paint(grid).apply{style=Paint.Style.STROKE})
-        val label=text(9f,0xff35454e.toInt());c.drawText("PCM SPECTRUM · dBFS",1f,11f,label)
+        val label=text(9f,0xff35454e.toInt());c.drawText(if(cn)"PCM 频谱 · dBFS"else"PCM SPECTRUM · dBFS",1f,11f,label)
         label.textAlign=Paint.Align.RIGHT;c.drawText(caption,w-1f,11f,label)
         val values=listOf("31","62","125","250","500","1K","2K","4K","8K","16K")
         label.textAlign=Paint.Align.CENTER

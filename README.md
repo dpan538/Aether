@@ -42,3 +42,11 @@
 **漫频** — a native listening experience for Xiaomi Pad 9 Pro Max, combining tactile radio controls, local music and an immersive record view.
 
 Aether is the repository and application identifier. The product name is **漫频**.
+
+## 适配与贡献
+
+欢迎为其他安卓平板贡献适配。请先阅读[公开设计与适配参考](ADAPTATION.md)，从当前 `main` 新建分支，完成目标设备验证后提交 PR；主适配目标保持为小米 Pad 9 Pro Max。具体流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+## 许可证
+
+项目源代码和面向贡献者的技术文档采用 [MIT 许可证](LICENSE)。图标、界面视觉素材、专辑封面与 mock 图采用独立的[视觉素材许可证](VISUAL-LICENSE.md)：仅限为本项目适配、测试和提交 PR 使用，其他复用需 Dai Pan（潘岱）书面许可。音乐录音与专辑文字不属于 MIT 授权范围；第三方字体和依赖保留其[原有许可证](android/third-party/README.md)。

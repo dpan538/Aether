@@ -10,8 +10,8 @@ android {
         applicationId = "io.github.dpan538.aether"
         minSdk = 31
         targetSdk = 36
-        versionCode = providers.gradleProperty("aetherVersionCode").orElse("6").get().toInt()
-        versionName = providers.gradleProperty("aetherVersionName").orElse("0.1.0-preview.5").get()
+        versionCode = providers.gradleProperty("aetherVersionCode").orElse("7").get().toInt()
+        versionName = providers.gradleProperty("aetherVersionName").orElse("0.1.0-preview.6").get()
         testInstrumentationRunner = "com.aether.radio.NativeEvidence"
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
@@ -28,12 +28,17 @@ android {
         getByName("release") {isMinifyEnabled=false;if(signingProperties.isNotEmpty())signingConfig=signingConfigs.getByName("aetherPreview")}
         create("verification") {initWith(getByName("release"));isDebuggable=true;matchingFallbacks+=listOf("debug")}
     }
+    sourceSets.getByName("verification") {
+        java.srcDir("src/debug/java")
+        manifest.srcFile("src/debug/AndroidManifest.xml")
+    }
 }
 kotlin {compilerOptions {jvmTarget.set(JvmTarget.JVM_17)}}
 dependencies {
     implementation("androidx.core:core:1.17.0")
     implementation("com.caverock:androidsvg-aar:1.4")
     implementation("androidx.media3:media3-exoplayer:1.8.0")
+    implementation("androidx.media3:media3-session:1.8.0")
     implementation("androidx.media3:media3-exoplayer-hls:1.8.0")
     implementation("com.android.tools.build:apksig:8.13.2")
     testImplementation("junit:junit:4.13.2")

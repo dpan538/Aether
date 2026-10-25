@@ -20,13 +20,21 @@ class UpdatePanel(private val painter:ScenePainter,private val state:Session) {
         c.save();c.clipRect(r)
         p.color=if(lit)0xffe6e7df.toInt() else 0xffc2c8b8.toInt();c.drawRoundRect(r,5f,5f,p)
         p.color=0xff465b4b.toInt();p.typeface=painter.font(false,700);p.textSize=15f
-        c.drawText(if(zh)"漫频 Aether · 仓库更新" else "AETHER · REPOSITORY UPDATES",r.left+16,r.top+25,p)
+        c.drawText(if(zh)"漫频 · 仓库更新" else "漫频 · REPOSITORY UPDATES",r.left+16,r.top+25,p)
         p.strokeWidth=1f;c.drawLine(r.left+16,r.top+38,r.right-16,r.top+38,p)
         p.textSize=23f
         val title=if(zh)when(ui.phase){UpdatePhase.CHECKING->"正在检查仓库版本";UpdatePhase.DOWNLOADING->"正在下载更新";UpdatePhase.VERIFYING->"正在校验安装包与签名";UpdatePhase.AVAILABLE->"发现新版本";UpdatePhase.READY->"已验证 · 可安装";UpdatePhase.CURRENT->if(ui.message.startsWith("No APK"))"仓库尚无 APK 版本" else "暂无更高版本";UpdatePhase.ERROR->"更新暂不可用";else->"应用内更新"}else ui.message.ifBlank{"In-app updates"}
         text(c,title,r.left+16,r.top+74,r.width()-32,2,27f)
         p.textSize=14f;p.typeface=painter.font(false,400)
-        val detail=ui.detail.ifBlank{if(zh)"首次安装后，后续版本可在这里下载并覆盖更新。" else "Future APK versions are downloaded and installed here."}
+        val detail=if(zh)when{
+            ui.message.startsWith("Installation permission")->"尚未获得系统安装权限。已校验文件仍保留，可再次尝试安装。"
+            ui.message.startsWith("Installer could")->"未能打开系统安装器。已校验文件仍保留。"
+            ui.detail.startsWith("Check failed")->"暂时无法连接仓库；已保留的安装包仍可安装。"
+            ui.message=="Download paused"->"下载已暂停，已有数据会保留。再次下载时，服务器支持时会从断点继续。"
+            ui.phase==UpdatePhase.ERROR->{val reason=ui.detail.lowercase();when{reason.contains("signer")||reason.contains("signature")->"签名校验未通过，已停止安装。请重新检查仓库版本。";reason.contains("digest")||reason.contains("sha256")->"文件完整性校验未通过，请重新下载。";reason.contains("package")->"安装包验证未通过，已停止安装。";else->"无法完成更新请求。请检查网络后重试。"}}
+            ui.detail.isNotBlank()->ui.detail
+            else->"后续版本可在这里下载并覆盖更新，收藏与设置保留。"
+        }else ui.detail.ifBlank{"Future APK versions are downloaded and installed here."}
         text(c,detail,r.left+16,r.top+132,r.width()-32,3,20f)
         if(ui.phase==UpdatePhase.DOWNLOADING){
             p.color=0xff8f9d8c.toInt();c.drawRect(r.left+16,r.top+192,r.right-16,r.top+199,p)

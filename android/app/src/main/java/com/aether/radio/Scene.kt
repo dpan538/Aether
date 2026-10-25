@@ -113,6 +113,7 @@ class ScenePainter(val context:Context,val state:Session) {
         if(n.cls=="filter-menu"&&!menuOverlay)return
         if(n.cls.contains("pause-glyph")&&!state.playing)return
         val id=n.id.ifBlank{n.action.ifBlank{parentId}}
+        if(!state.reference&&(n.cls=="record__inscription"||n.json.optString("disc")=="record"||n.id in listOf("station-name","station-subtitle","station-position")||n.cls=="station-selector__registration"))return
         val drawingStation=station ?: if(n.cls.split(' ').contains("favorite-station"))state.catalog.getOrNull(n.action.substringAfter(':').toIntOrNull()?:-1) else null
         if(n.cls=="dial-index"||n.cls=="volume-ticks")return
         if(n.json.optString("tag")=="I"&&n.cls.isBlank()&&parentId=="tuning-mode")return
@@ -168,7 +169,18 @@ class ScenePainter(val context:Context,val state:Session) {
             for(i in 0 until texts.length()){
                 val t=texts.getJSONObject(i);val original=t.getString("text")
                 var text=boundText(node,id,original,i,drawingStation,slot)
+                val inScreen=state.page==1||node.r.top in 244f..369f&&node.r.left in 437f..732f||node.r.top in 405f..521f&&node.r.left in 449f..722f||node.r.top in 83f..435f&&node.r.left>=806f||node.r.top in 629f..830f&&node.r.left in 145f..790f||node.r.top in 629f..720f&&node.r.left in 858f..1420f||node.r.top in 970f..1032f&&node.r.left in 260f..701f
+                if(!state.reference&&inScreen)text=UiWords.screen(text,state.language=="zh")
                 var target=t
+                if(!state.reference&&node.cls=="volume-legend"){
+                    target=JSONObject(t.toString()).put("size",13.5).put("spacing",1.4)
+                    target.put("x",node.r.centerX()-textPaint(target).measureText(text)/2)
+                }
+                if(!state.reference&&id=="scope-count"){
+                    target=JSONObject(t.toString())
+                    val center=scene(name(lit)).find("scope-count")!!.r.centerX()
+                    target.put("x",center-textPaint(target).measureText(text)/2)
+                }
                 if(id=="now-title"||id=="now-station")text=fit(text,t,node.r.width())
                 if(!state.reference&&id in listOf("station-name","station-subtitle","station-position","station-time")){
                     val maximum=if(id=="station-time")140f else 242f
@@ -289,6 +301,8 @@ class ScenePainter(val context:Context,val state:Session) {
         p.color=0xff454d52.toInt();c.drawCircle(cx,cy,radius*.72f,p)
     }
     private fun boundText(n:SceneNode,id:String,original:String,line:Int,station:Station?,slot:Int):String {
+        if(!state.reference&&original.contains("AETHER"))return if(original.startsWith("AETHER /"))if(state.language=="zh")"漫频 / ${if(state.view=="settings")"设置"else"电台目录"}"else original.replace("AETHER","漫频")else original.replace("AETHER","漫频")
+        if(!state.reference&&state.isLocal&&state.page==1&&n.r.top>600&&original.startsWith("LOCAL TIME"))return if(state.language=="zh")"时长"else"DURATION"
         val retained=if(!state.powered)state.retainedInk else null
         val s=station?:retained?.station?:state.station
         val metadata=if(retained!=null)retained.metadata else state.metadata
@@ -297,10 +311,11 @@ class ScenePainter(val context:Context,val state:Session) {
         val playing=retained?.playing?:state.playing
         val serial=state.displayOrdinal?.toString()?.padStart(3,'0')?:"—"
         val time=s?.localTime?.substringBefore(' ')?:"—"
-        val mock=if(state.reference)"MOCK" else "LIVE"
+        val mock=if(state.language=="zh")if(state.reference)"演示"else"实时"else if(state.reference)"MOCK"else"LIVE"
         val cn=state.language=="zh"
         val local=if(station==null)state.localTrack else null
         if(local!=null){
+            if(original=="STATIONS")return if(cn)"首曲目"else"TRACKS"
             if(original=="PRESET")return if(cn)"曲目" else "TRACK"
             if(original=="NET")return "FILE"
             when(id){
@@ -315,19 +330,20 @@ class ScenePainter(val context:Context,val state:Session) {
                 "now-playing"->return local.artist.ifBlank{local.album}.ifBlank{"—"}
                 "stream-profile"->return local.album.ifBlank{"LOCAL AUDIO"}
                 "disc-edition"->return "TRACK ${(state.localIndex+1).toString().padStart(2,'0')} · LOCAL AUDIO"
-                "selected-readout"->return "LOCAL / ${local.title}"
+                "selected-readout"->return "${if(cn)"本地音乐"else"LOCAL"} / ${local.title}"
             }
-            if(n.cls.contains("playing-kicker"))return "LOCAL · ${connection.name}"
-            if(n.cls=="signal-note__live")return "LOCAL · ${connection.name}"
+            if(n.cls.contains("playing-kicker"))return "${if(cn)"本地"else"LOCAL"} · ${UiWords.connection(connection,cn)}"
+            if(n.cls=="signal-note__live")return "${if(cn)"本地"else"LOCAL"} · ${UiWords.connection(connection,cn)}"
         }
         if(!state.reference&&original.contains("WIFI"))return state.deviceReadings?.network?:"NETWORK · —"
         val control=n.json.optString("control")
         if(control.isNotBlank()&&n.json.optString("tag")=="SPAN") {
             val key=control.removeSuffix("-filter");val value=state.filterValue(key)
-            return if(key=="ui-language")if(state.language=="zh")"中文" else "English" else if(value.isNotBlank())value.uppercase().replace("UK","UNITED KINGDOM") else when(key){"region"->if(cn)"全部地区" else "ALL REGIONS";"genre"->if(cn)"全部类型" else "ALL GENRES";else->if(cn)"全部语言" else "ALL LANGUAGES"}
+            return UiWords.option(key,value,cn)
         }
         val translation=n.json.optString("i18n")
-        if(translation=="favoriteStations"&&!state.reference)return if(cn)"电台预设" else "Station presets"
+        if(translation=="favoriteStations"&&!state.reference)return "Station presets"
+        if(!state.reference&&translation in listOf("automaticSearch","directory","favorites","random"))return original
         if(!state.reference&&original.startsWith("LOCAL TIME"))return if(original.contains("MOCK"))"DEVICE TIME · LIVE" else "DEVICE TIME"
         if(!state.reference&&original.contains("10 BAND"))return "10 BAND / PCM"
         if(cn&&translation.isNotBlank())return translations[translation]?:original
@@ -335,39 +351,39 @@ class ScenePainter(val context:Context,val state:Session) {
             "preset-number","station-serial"->serial
             "preset-badge"->if(s==null)"—" else "1"
             "now-title"->if(state.reference)s?.programme?.replace('\n',' ')?:"—" else metadata?:s?.name?:if(cn)"选择电台" else "Choose a station"
-            "now-station"->if(state.reference||metadata!=null)s?.name?:"—" else listOf(s?.region,s?.language).filterNot{it.isNullOrBlank()}.joinToString(" / ").ifBlank{"—"}
+            "now-station"->if(state.reference||metadata!=null)s?.name?:"—" else listOf(s?.region?.let{UiWords.value("region",it,cn)},s?.language?.let{UiWords.value("language",it,cn)}).filterNot{it.isNullOrBlank()}.joinToString(" / ").ifBlank{"—"}
             "station-name"->s?.name?:"—"
             "local-time","station-time"->if(id=="station-time")if(state.reference)s?.localTime?:"—" else "${state.deviceReadings?.time?:"—"} ${state.deviceReadings?.zone.orEmpty()}" else time
             "clock-location"->if(state.reference)"${s?.city} · ${s?.region}" else state.deviceReadings?.zone?:"—"
-            "selected-readout"->"SELECTED $serial / ${s?.name?:"—"}"
-            "result-counter"->if(state.view=="settings")"03 ${if(cn)"设置" else "OPTIONS"} · $mock" else "${state.filtered().size.toString().padStart(2,'0')} ${if(cn)"条目" else "ENTRIES"} · ${if(state.directoryIssue!=null)"CACHE" else mock}"
-            "screen-title"->if(state.view=="settings")"AETHER / SYSTEM" else "AETHER / STATION DIRECTORY"
+            "selected-readout"->"${if(cn)"已选"else"SELECTED"} $serial / ${s?.name?:"—"}"
+            "result-counter"->if(state.view=="settings")"03 ${if(cn)"设置" else "OPTIONS"} · $mock" else "${state.filtered().size.toString().padStart(2,'0')} ${if(cn)"条目" else "ENTRIES"} · ${if(state.directoryIssue!=null)if(cn)"缓存"else"CACHE" else mock}"
+            "screen-title"->if(state.view=="settings")"漫频 / SYSTEM" else "漫频 / STATION DIRECTORY"
             "clear-filters"->if(cn)"重置 ↗" else "RESET ↗"
             "list-title"->if(state.view=="favorites")if(cn)"我的频率" else "YOUR FREQUENCIES" else if(cn)"全球频率" else "GLOBAL FREQUENCIES"
             "station-search"->state.query.ifBlank{if(state.reference)if(cn)"电台名称、城市或呼号" else "Station name, city or callsign" else if(cn)"搜索电台名称" else "Search station names"}
-            "tuning-mode-readout"->"TUNE / ${listOf("STATION","REGION","GENRE","LANGUAGE")[state.mode]}"
+            "tuning-mode-readout"->if(cn)"调谐 / ${listOf("电台","地区","类型","语言")[state.mode]}"else "TUNE / ${listOf("STATION","REGION","GENRE","LANGUAGE")[state.mode]}"
             "volume-readout"->"${state.volume.toString().padStart(2,'0')} / 30"
-            "stream-format","stream-quality"->if(state.reference)s?.quality?:"—" else format?:"—"
-            "stream-connection"->if(state.reference)if(cn)"未连接 · MOCK" else "NOT CONNECTED · MOCK" else connection.name.replace('_',' ')
-            "stream-profile"->listOf(s?.language?.uppercase(),s?.genre?.uppercase()).filterNot{it.isNullOrBlank()}.joinToString(" / ").ifBlank{"—"}
-            "stream-output"->if(state.volume==0)"OUTPUT / MUTE" else "VOL / ${state.volume.toString().padStart(2,'0')} · 30"
+            "stream-format","stream-quality"->if(state.reference)s?.quality?:"—" else (if(cn)format?.replace("Stereo","立体声")?.replace("Mono","单声道")else format)?:"—"
+            "stream-connection"->if(state.reference)if(cn)"未连接 · MOCK" else "NOT CONNECTED · MOCK" else UiWords.connection(connection,cn)
+            "stream-profile"->listOf(s?.language?.let{UiWords.value("language",it,cn)},s?.genre?.let{UiWords.value("genre",it,cn)}).filterNot{it.isNullOrBlank()}.joinToString(" / ").ifBlank{"—"}
+            "stream-output"->if(state.volume==0)if(cn)"输出 / 静音"else"OUTPUT / MUTE"else "${if(cn)"音量"else"VOL"} / ${state.volume.toString().padStart(2,'0')} · 30"
             "favorite-count"->" · ${state.presetPool().size}"
-            "scope-filters"->listOf(state.region,state.genre.uppercase(),state.stationLanguage.uppercase(),if(state.query.isBlank())"" else "“${state.query}”").filter{it.isNotBlank()}.joinToString(" / ").ifBlank{if(cn)"全球 / 全部电台" else "GLOBAL / ALL FREQUENCIES"}
-            "scope-count"->if(n.id=="scope-count")state.filtered().size.toString().padStart(2,'0') else if(cn)"电台" else "STATIONS"
+            "scope-filters"->if(state.isLocal)"${if(cn)"本地音乐"else"LOCAL MUSIC"} / ${state.localTrack?.album?.ifBlank{if(cn)"设备文件"else"Device files"}}"else listOf(state.region,state.genre.uppercase(),state.stationLanguage.uppercase(),if(state.query.isBlank())"" else "“${state.query}”").filter{it.isNotBlank()}.joinToString(" / ").ifBlank{if(cn)"全球 / 全部电台" else "GLOBAL / ALL FREQUENCIES"}
+            "scope-count"->if(n.id=="scope-count")(if(state.isLocal)state.localQueue.size else state.filtered().size).toString().padStart(2,'0') else if(state.isLocal)if(cn)"曲目"else"TRACKS"else if(cn)"电台"else"STATIONS"
             "tempo-value"->"${state.tempo}%"
             "station-subtitle"->s?.let{listOf(it.city,it.region).filter{t->t.isNotBlank()}.joinToString(" / ") }?.ifBlank{"—"}?:"—"
             "station-position"->"${state.displayOrdinal?.toString()?.padStart(2,'0')?:"—"} / ${state.tuningPool().size.toString().padStart(2,'0')}"
             "programme"->if(state.reference)s?.programme?.split('\n')?.getOrNull(line)?:"" else twoLines(metadata?:s?.name?:if(cn)"选择电台" else "Choose a station",n.json.getJSONArray("text").getJSONObject(0),n.r.width()).getOrNull(line)?:""
-            "programme-description"->if(state.reference)s?.description?:"—" else listOf(s?.region,s?.language).filterNot{it.isNullOrBlank()}.joinToString(" / ").ifBlank{"—"}
+            "programme-description"->if(state.reference)s?.description?:"—" else listOf(s?.region?.let{UiWords.value("region",it,cn)},s?.language?.let{UiWords.value("language",it,cn)}).filterNot{it.isNullOrBlank()}.joinToString(" / ").ifBlank{"—"}
             "now-playing"->if(state.reference)s?.track?:"—" else s?.genre?.ifBlank{"—"}?:"—"
             "disc-edition"->"PHASE ${(state.selected+1).toString().padStart(2,'0')} · FREQUENCY"
             else->when {
                 n.cls.contains("preset-title")->s?.name?:original
-                n.cls.contains("playing-kicker")->if(state.reference)if(playing)"NOW PLAYING · MOCK" else "PAUSED · MOCK" else connection.name
-                n.cls=="calendar"&&!state.reference->when(line){0->state.deviceReadings?.weekday?:"DEVICE TIME";1->state.deviceReadings?.date?:"—";else->state.deviceReadings?.year?:""}
-                n.cls=="signal-note__live"&&!state.reference->connection.name
+                n.cls.contains("playing-kicker")->if(state.reference)if(playing)"NOW PLAYING · MOCK" else "PAUSED · MOCK" else UiWords.connection(connection,cn)
+                n.cls=="calendar"&&!state.reference->when(line){0->(if(cn)state.deviceReadings?.weekdayZh else state.deviceReadings?.weekday)?:"—";1->(if(cn)state.deviceReadings?.dateZh else state.deviceReadings?.date)?:"—";else->state.deviceReadings?.year?:""}
+                n.cls=="signal-note__live"&&!state.reference->UiWords.connection(connection,cn)
                 n.cls.contains("station-mark")&&station!=null->station.mark
-                n.cls.contains("station-genre")&&station!=null->station.genre.uppercase()
+                n.cls.contains("station-genre")&&station!=null->UiWords.option("genre",station.genre,cn)
                 n.cls=="station-number"&&station!=null->(state.catalog.indexOf(station)+1).toString().padStart(2,'0')
                 n.json.optString("tag")=="STRONG"&&parentClass(n)=="station-identity"&&station!=null->station.name
                 else->if(state.reference)original else original.replace("MOCK","—")
@@ -398,11 +414,18 @@ class ScenePainter(val context:Context,val state:Session) {
         if(n.cls=="station-flag"){
             resetPaint();p.isAntiAlias=true;p.style=if(s.id==state.station?.id)Paint.Style.FILL else Paint.Style.STROKE;p.strokeWidth=.8f;p.color=0xff657e67.toInt();c.drawOval(n.r,p);return
         }
+        if(!state.reference&&n.cls=="station-mark"){
+            resetPaint();p.isAntiAlias=true;p.style=Paint.Style.STROKE;p.strokeWidth=.8f;p.color=0x667d8978;c.drawRect(n.r,p)
+            val t=JSONObject(n.json.getJSONArray("text").getJSONObject(0).toString()).put("spacing",0)
+            val label=fit(s.mark,t,n.r.width()-8f);val paint=textPaint(t)
+            t.put("x",n.r.centerX()-paint.measureText(label)/2).put("y",n.r.centerY()-(paint.fontMetrics.ascent+paint.fontMetrics.descent)/2)
+            drawText(c,t,label,0f);return
+        }
         if(n.json.getJSONArray("text").length()>0&&(isIdentity||n.cls=="station-mark"||n.cls=="station-genre"||n.cls=="station-number")){
             drawSkin(c,n.json.optString("skin"),n.r)
             val a=n.json.getJSONArray("text")
             for(i in 0 until a.length()){
-                val t=a.getJSONObject(i);val text=when {n.cls=="station-mark"->s.mark;n.cls=="station-genre"->s.genre.uppercase();n.cls=="station-number"->(state.catalog.indexOf(s)+1).toString().padStart(2,'0');n.json.optString("tag")=="STRONG"->s.name;else->listOf(s.city,s.region).filter{it.isNotBlank()}.joinToString(" / ").ifBlank{"—"}}
+                val t=a.getJSONObject(i);val text=when {n.cls=="station-mark"->s.mark;n.cls=="station-genre"->UiWords.value("genre",s.genre,state.language=="zh");n.cls=="station-number"->(state.catalog.indexOf(s)+1).toString().padStart(2,'0');n.json.optString("tag")=="STRONG"->s.name;else->listOf(s.city,UiWords.value("region",s.region,state.language=="zh")).filter{it.isNotBlank()}.joinToString(" / ").ifBlank{"—"}}
                 c.save();c.clipRect(n.r);val fitted=if(n.cls=="station-number")text else fit(text,t,n.r.width());drawText(c,t,fitted,if(text==t.optString("text"))t.f("w") else if(n.cls=="station-number")n.r.width() else 0f);c.restore()
             }
         }else if(n.children.isEmpty())drawNode(c,n,lit,station=s)
@@ -413,6 +436,16 @@ class ScenePainter(val context:Context,val state:Session) {
         if(id in listOf("device-power","device-lock","device-light","device-settings")){
             val enabled=when(id){"device-power"->!state.locked;"device-lock","device-light"->state.powered;else->state.enabled}
             source=source.replaceFirst(Regex("opacity=\"[^\"]*\""),"opacity=\"${if(enabled)1 else .48}\"")
+        }
+        if(!state.reference&&id=="tuner-scale"){
+            source=source.replace(Regex("<path d=\"M85 1V25m0 7v48\"[^>]*/>"),"")
+            for(i in 0..3){
+                val x=80+i*130
+                val selected=state.powered&&!state.isLocal&&state.presetPool().getOrNull(state.presetStart+i)?.id==state.station?.id
+                val lamp="<defs><radialGradient id=\"preset-lamp-$i\" cx=\"35%\" cy=\"25%\" r=\"80%\"><stop stop-color=\"${if(selected)"#d5ffdc"else"#a7ada9"}\"/><stop offset=\"1\" stop-color=\"${if(selected)"#40c86e"else"#727a74"}\"/></radialGradient></defs>"+
+                    (if(selected)"<ellipse cx=\"${x+5}\" cy=\"20\" rx=\"11\" ry=\"12\" fill=\"#77e9a1\" opacity=\".18\"/>"else"")+"<path d=\"m$x 13h10v10l-5 4-5-4Z\" fill=\"url(#preset-lamp-$i)\" stroke=\"#66776c\" stroke-width=\".8\"/>"
+                source=source.replace(Regex("<path d=\"m$x 13h10v10l-5 4-5-4Z\"[^>]*/>"),lamp)
+            }
         }
         if(id=="digital-clock")return clock(if(state.reference)state.station?.localTime?.substringBefore(' ') else state.deviceReadings?.time,if(lit)"#353932" else "#34483a")
         if(!state.reference&&n.cls=="gauge"){
@@ -456,22 +489,25 @@ class ScenePainter(val context:Context,val state:Session) {
         b.append("<g fill=\"$ink\" font-family=\"monospace\" font-size=\"23\"><text x=\"12\" y=\"66\">10</text><text x=\"24\" y=\"207\">0</text><text x=\"12\" y=\"347\">10</text><text x=\"763\" y=\"66\">10</text><text x=\"763\" y=\"207\">5</text><text x=\"763\" y=\"347\">0</text><text x=\"7\" y=\"392\">[Fq.]</text><text x=\"746\" y=\"392\">[Hz]</text></g></svg>")
         return b.toString()
     }
-    private fun spectrumCaption():String=when{
-        !state.powered->"POWER OFF"
-        !state.spectrumEnabled->"MONITOR OFF"
-        state.connection==Connection.ERROR->"STREAM ERROR"
-        state.connection==Connection.BUFFERING||state.connection==Connection.CONNECTING->"BUFFERING"
-        state.playing&&state.spectrumFrame!=null->"DECODED AUDIO"
-        state.spectrumFrame!=null->"PAUSED"
-        else->"PLAY TO MONITOR"
+    private fun spectrumCaption():String{
+        val cn=state.language=="zh"
+        return when{
+        !state.powered->if(cn)"电源关闭"else"POWER OFF"
+        !state.spectrumEnabled->if(cn)"频谱关闭"else"MONITOR OFF"
+        state.connection==Connection.ERROR->if(cn)"音源不可用"else"STREAM ERROR"
+        state.connection==Connection.BUFFERING||state.connection==Connection.CONNECTING->if(cn)"正在缓冲"else"BUFFERING"
+        state.playing&&state.spectrumFrame!=null->if(cn)"实际音频"else"DECODED AUDIO"
+        state.spectrumFrame!=null->if(cn)"已暂停"else"PAUSED"
+        else->if(cn)"播放后显示频谱"else"PLAY TO MONITOR"
+        }
     }
-    fun drawLiveSpectrum(c:Canvas,lit:Boolean){
+    fun drawLiveSpectrum(c:Canvas,lit:Boolean,frame:SpectrumFrame?=state.spectrumFrame){
         val r=scene(name(lit)).find("spectrum")?.r?:return
-        spectrumDrawing.bars(c,r,state.spectrumFrame,lit,state.spectrumEnabled,spectrumCaption())
+        spectrumDrawing.bars(c,r,frame,lit,state.spectrumEnabled,spectrumCaption())
     }
     fun drawImmersiveSpectrum(c:Canvas){
         val node=scene("immersive").flattened().firstOrNull{it.json.optString("svg").contains("0 0 600 190")}?:return
-        spectrumDrawing.plot(c,node.r,state.spectrumFrame,state.spectrumEnabled,spectrumCaption())
+        spectrumDrawing.plot(c,node.r,state.spectrumFrame,state.spectrumEnabled,spectrumCaption(),state.language=="zh")
     }
     private fun drawPresets(c:Canvas,n:SceneNode,lit:Boolean){
         val root=scene("modern-${if(lit)"lit" else "ink"}")
@@ -520,7 +556,7 @@ class ScenePainter(val context:Context,val state:Session) {
             drawSkin(c,source.json.optString("skin"),r)
             val t=JSONObject(optionTemplate.json.getJSONArray("text").getJSONObject(0).toString())
             t.put("y",t.f("y")+i*height);t.put("color",if(selected)if(lit)"#f5f0db" else "#d0d2c5" else if(lit)"#353932" else "#34483a")
-            val label=if(key=="ui-language")if(value=="zh")"中文" else "English" else if(value.isBlank())when(key){"region"->"ALL REGIONS";"genre"->"ALL GENRES";else->"ALL LANGUAGES"} else value.uppercase().replace("UK","UNITED KINGDOM")
+            val label=UiWords.option(key,value,state.language=="zh")
             drawText(c,t,label,if(label==optionTemplate.json.getJSONArray("text").getJSONObject(0).optString("text"))t.f("w") else 0f)
             if(selected){resetPaint();p.isAntiAlias=true;p.style=Paint.Style.STROKE;p.strokeWidth=1.7f;p.color=if(lit)0xfff5f0db.toInt() else 0xffd0d2c5.toInt();val x=r.right-14;val y=r.centerY();val path=Path();path.moveTo(x-4,y);path.lineTo(x-1,y+3);path.lineTo(x+5,y-3);c.drawPath(path,p)}
         }
@@ -530,7 +566,7 @@ class ScenePainter(val context:Context,val state:Session) {
         resetPaint();p.isAntiAlias=true;p.typeface=font(false,400);p.textSize=13.6f;p.color=if(lit)0xff353932.toInt() else 0xff34483a.toInt()
         var y=n.r.top+231f
         if(state.updateMessage){c.drawText(if(state.language=="zh")"更新服务暂不可用。" else "Update service is currently unavailable.",n.r.left+36,y,p);y+=26}
-        if(state.about){p.typeface=font(false,700);c.drawText("漫频 Aether",n.r.left+36,y,p);p.typeface=font(false,400);c.drawText("不设边界，漫游频率。",n.r.left+36,y+23,p);c.drawText("No boundaries. Just frequencies.",n.r.left+36,y+44,p);p.textSize=11.9f;c.drawText(if(state.reference)"Design preview · 0.0.0" else "Android preview · ${BuildConfig.VERSION_NAME}",n.r.left+36,y+65,p)}
+        if(state.about){p.typeface=font(false,700);c.drawText("漫频",n.r.left+36,y,p);p.typeface=font(false,400);c.drawText("不设边界，漫游频率。",n.r.left+36,y+23,p);c.drawText("No boundaries. Just frequencies.",n.r.left+36,y+44,p);p.textSize=11.9f;c.drawText(if(state.reference)"Design preview · 0.0.0" else "Android preview · ${BuildConfig.VERSION_NAME}",n.r.left+36,y+65,p)}
     }
     fun close(){closed=true;preparation.shutdownNow();bitmaps.evictAll();pictures.evictAll();mainDisc?.recycle();smallDisc?.recycle()}
     companion object {

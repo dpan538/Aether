@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicReference
 class AlbumSuite(private val test:Instrumentation,private val activity:MainActivity) {
     private val checks=JSONArray()
     private val s get()=activity.session
-    private fun <T> main(block:()->T):T{val out=AtomicReference<T>();test.runOnMainSync{out.set(block())};return out.get()}
+    private fun <T> main(block:()->T):T{val out=AtomicReference<Result<T>>();test.runOnMainSync{out.set(runCatching{block()})};return out.get().getOrThrow()}
     private fun waitFor(seconds:Int=30,block:()->Boolean){val until=SystemClock.uptimeMillis()+seconds*1000;while(SystemClock.uptimeMillis()<until){if(main(block))return;Thread.sleep(100)};error("Timed out: ${s.activeId}, ${s.connection}, ${s.issue}")}
     private fun audio()=MainActivity::class.java.getDeclaredField("audio").apply{isAccessible=true}.get(activity) as AudioSession
     private fun dialog()=MainActivity::class.java.getDeclaredField("musicDialog").apply{isAccessible=true}.get(activity) as? MusicLibraryDialog
@@ -28,7 +28,11 @@ class AlbumSuite(private val test:Instrumentation,private val activity:MainActiv
         touch(xy.first,xy.second)
     }
     private fun tapSource(index:Int){
-        val v=main{val d=MainActivity::class.java.getDeclaredField("musicSourceDialog").apply{isAccessible=true}.get(activity) as android.app.AlertDialog;d.listView.getChildAt(index)}
+        val v=main{
+            val d=MainActivity::class.java.getDeclaredField("musicSourceDialog").apply{isAccessible=true}.get(activity) as MusicSourceDialog
+            fun views(v:View):List<View> = listOf(v)+(if(v is android.view.ViewGroup)(0 until v.childCount).flatMap{views(v.getChildAt(it))}else emptyList())
+            views(d.window!!.decorView).first{if(index==0)it.contentDescription?.toString()?.startsWith("Before the Rise")==true else (it as? TextView)?.text?.toString()?.contains("Import music from the device")==true}
+        }
         val xy=main{val location=IntArray(2);v.getLocationOnScreen(location);(location[0]+v.width*.5f) to (location[1]+v.height*.5f)}
         touch(xy.first,xy.second)
     }
@@ -49,9 +53,7 @@ class AlbumSuite(private val test:Instrumentation,private val activity:MainActiv
         return n.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK)
     }
     fun runImport():JSONObject {
-        main{s.page=1;s.language="en";s.changed()};Thread.sleep(350);tapScene("station-selector__registration");Thread.sleep(200);tapSource(1);Thread.sleep(200)
-        val existing=main{(MainActivity::class.java.getDeclaredField("importedTracks").apply{isAccessible=true}.get(activity) as List<*>).size}
-        tapSource(existing);Thread.sleep(1000);screenshot("picker")
+        main{s.page=1;s.language="en";s.changed()};Thread.sleep(350);tapScene("station-selector__registration");Thread.sleep(200);tapSource(1);Thread.sleep(1000);screenshot("picker")
         var clicked=false
         for(i in 0 until 12){
             if(clickSystemText("Aether-local-import")){clicked=true;break}

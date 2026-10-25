@@ -30,12 +30,18 @@ class Session(val reference: Boolean) {
     var isLocal=false
     val localTrack get()=if(isLocal)localQueue.getOrNull(localIndex) else null
     val activeId get()=if(isLocal)localTrack?.id else station?.id
+    @Volatile var uiVisible=false
+    var playbackPositionMs=0L
+    var positionSampleTime=0L
+    var seekable=false
+    val displayPositionMs get()=(playbackPositionMs+if(playing&&positionSampleTime>0)((playbackClockMs()-positionSampleTime)*tempo/100f).toLong()else 0L).coerceAtLeast(0).let{if(isLocal)it.coerceAtMost(localDurationMs)else it}
     var localPositionMs=0L
     var localDurationMs=0L
     var onLocalSelect:(List<LocalTrack>,Int)->Unit={_,_->}
     var onLocalSeek:(Long)->Unit={}
     fun selectLocal(queue:List<LocalTrack>,index:Int){
         if(!enabled||index !in queue.indices)return
+        playbackPositionMs=0;positionSampleTime=playbackClockMs();seekable=false
         localQueue=queue.toList();localIndex=index;isLocal=true;localPositionMs=0;localDurationMs=queue[index].durationMs
         metadata=null;decodedFormat=null;issue=null;spectrumFrame=null;connection=Connection.CONNECTING;playIntent=true
         onLocalSelect(localQueue,index);changed()
@@ -79,6 +85,8 @@ class Session(val reference: Boolean) {
     var deviceReadings:DeviceReadings?=null
     var onSpectrum:()->Unit={}
     var onTempo:(Int)->Unit={}
+    var settingsPage="menu"
+    var musicError=""
     var about = false
     var updateMessage = false
     var updateOpen=false
@@ -96,7 +104,9 @@ class Session(val reference: Boolean) {
     var onFavorites: () -> Unit = {}
     var onPower:(Boolean)->Unit={}
     val enabled get() = powered && !locked
-    fun changed() = onChange()
+    private val observers=linkedSetOf<()->Unit>()
+    fun observe(observer:()->Unit):()->Unit{observers.add(observer);return {observers.remove(observer)}}
+    fun changed(){onChange();observers.toList().forEach{it()}}
     private val browseView get()=if(view=="settings")lastBrowseView else view
     fun filtered(): List<Station> = (if(browseView=="favorites")favorites.mapNotNull{lookup(it)} else catalog).filter {
         (query.isBlank() || normal(it.name+it.city+it.region).contains(normal(query))) &&
@@ -104,7 +114,7 @@ class Session(val reference: Boolean) {
         (stationLanguage.isBlank() || it.language==stationLanguage) && (browseView!="favorites" || it.id in favorites)
     }
     fun showView(value:String){
-        if(value=="settings"){if(view!="settings")lastBrowseView=view;view="settings"}
+        if(value=="settings"){if(view!="settings"){lastBrowseView=view;settingsPage="menu"};view="settings"}
         else{view=value;lastBrowseView=value;listOffset=0}
         menu=null;changed()
     }
@@ -114,6 +124,7 @@ class Session(val reference: Boolean) {
         action in listOf("device-lock","device-light")->powered
         !enabled->false
         action=="empty-preset"->false
+        action=="playback-progress"->isLocal&&seekable
         action.startsWith("preset:")->presetPool().getOrNull(action.substringAfter(':').toIntOrNull()?:-1)!=null
         action.startsWith("favorite-step:")->if(isLocal)localQueue.isNotEmpty() else favorites.any{lookup(it)!=null}
         action in listOf("previous","next")||action.startsWith("step:")->if(isLocal)localQueue.isNotEmpty() else tuningPool().isNotEmpty()
@@ -133,6 +144,7 @@ class Session(val reference: Boolean) {
         val chosen=lookup(id)?:return
         val index=catalog.indexOfFirst {it.id==id}
         if(index>=0)selected=index
+        playbackPositionMs=0;positionSampleTime=playbackClockMs();seekable=false
         isLocal=false;selectedStation=chosen;metadata=null;decodedFormat=null;issue=null;spectrumFrame=null
         if(!reference) {connection=Connection.CONNECTING;playIntent=true;onSelect(chosen)}
         changed()
@@ -188,3 +200,6 @@ class DetentGate(val threshold:Double,val interval:Long,val maxDelta:Double) {
     }
     fun reset(){travel=0.0;lastInput=Long.MIN_VALUE/2}
 }
+
+/** Monotonic clock shared by player samples and UI interpolation, including pure JVM state checks. */
+internal fun playbackClockMs()=System.nanoTime()/1_000_000

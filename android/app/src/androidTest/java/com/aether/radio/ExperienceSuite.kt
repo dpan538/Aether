@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicReference
 /** Actual launches, native pointer input and player observations; separate test APK only. */
 class ExperienceSuite(private val test:Instrumentation,private val activity:MainActivity,private val arguments:Bundle) {
     private val output=File(test.targetContext.getExternalFilesDir("evidence"),"experience").apply{mkdirs()}
-    private fun <T> ui(work:()->T):T{val value=AtomicReference<T>();test.runOnMainSync{value.set(work())};return value.get()}
+    private fun <T> ui(work:()->T):T{val value=AtomicReference<Result<T>>();test.runOnMainSync{value.set(runCatching(work))};return value.get().getOrThrow()}
     private fun waitFor(seconds:Int=25,predicate:()->Boolean){val end=SystemClock.elapsedRealtime()+seconds*1000;while(SystemClock.elapsedRealtime()<end){if(ui(predicate))return;Thread.sleep(80)};error("Timed out: "+snapshot())}
     private fun point(action:String,fraction:Float=.5f):Pair<Float,Float> = ui {
         val v=activity.surface;val s=activity.session
@@ -49,7 +49,7 @@ class ExperienceSuite(private val test:Instrumentation,private val activity:Main
             if(s.locked)s.locked=false
             if(!s.powered)activity.surface.power()
             s.page=0;s.view="directory";s.menu=null;s.updateOpen=false;s.motion=false;s.spectrumEnabled=true
-            if(s.playIntent)s.togglePlay()
+            s.playIntent=false;s.onPlay(false)
             s.region="";s.genre="";s.stationLanguage="";s.query="SomaFM";s.listOffset=0;s.changeVolume(20);s.changeTempo(100);activity.surface.setLight(false);s.changed()
         }
         ready()
@@ -81,7 +81,7 @@ class ExperienceSuite(private val test:Instrumentation,private val activity:Main
                     3->{tap("device-settings");waitFor{activity.session.view=="settings"};tap("menu:ui-language");tap("option:1");waitFor{activity.session.language=="zh"};tap("menu:ui-language");tap("option:0");waitFor{activity.session.language=="en"};tap("device-settings")}
                     4->{waitFor{activity.session.catalog.isNotEmpty()};val selected=ui{activity.session.station?.id};tap("menu:genre-filter");tap("option:1");waitFor{activity.session.menu==null&&activity.session.genre.isNotBlank()};check(ui{activity.session.filtered().isNotEmpty()&&activity.session.station?.id==selected});tap("clear-filters");waitFor{activity.session.genre.isEmpty()}}
                     5->{val favorites=ui{activity.session.favorites.toList()};check(ui{activity.session.station!=null});tap("favorite-toggle");tap("favorite-toggle");check(ui{activity.session.favorites.toSet()==favorites.toSet()});tap("view:favorites");waitFor{activity.session.view=="favorites"};tap("view:directory")}
-                    6->{val selected=ui{activity.session.station?.id};val volume=ui{activity.session.volume};swipe(1250f,800f);waitFor{activity.session.page==1};check(ui{activity.session.station?.id==selected&&activity.session.volume==volume});committedFrame();swipe(450f,750f);waitFor{activity.session.page==0}}
+                    6->{val selected=ui{activity.session.station?.id};val volume=ui{activity.session.volume};swipe(1250f,800f);waitFor{activity.session.page==1};check(ui{activity.session.station?.id==selected&&activity.session.volume==volume});committedFrame();swipe(1250f,1550f);waitFor{activity.session.page==0}}
                     7->{val volume=ui{activity.session.volume};tap("device-lock");waitFor{activity.session.locked};tap("segmented-volume",1f);check(ui{activity.session.volume==volume});tap("device-light");waitFor{activity.session.light};tap("device-lock");waitFor{!activity.session.locked}}
                     8->{val selected=ui{activity.session.station?.id};tap("device-power");waitFor{!activity.session.powered};waitFor{!activity.surface.refreshing};tap("segmented-volume",1f);check(ui{activity.session.station?.id==selected&&activity.session.volume==20&&!activity.session.powered});tap("device-power");waitFor{activity.session.powered&&!activity.surface.refreshing}}
                     9->{ui{activity.session.select(activity.session.presetPool().first().id)};waitFor(40){activity.session.playing};check(ui{audio()!!.player.isPlaying});Thread.sleep(500);tap("play-toggle");waitFor{!activity.session.playing};check(ui{audio()!!.player.audioFormat!=null})}
@@ -100,7 +100,7 @@ class ExperienceSuite(private val test:Instrumentation,private val activity:Main
                             bitmap.recycle();return pixels
                         }
                         val a=sample("modern-a",false);Thread.sleep(800);val b=sample("modern-b",false);val modern=a.indices.count{a[it]!=b[it]};check(modern>100){"Modern spectrum did not visibly move"}
-                        val id=ui{activity.session.station?.id};swipe(1250f,800f);waitFor{activity.session.page==1};val c=sample("immersive-a",true);Thread.sleep(800);val d=sample("immersive-b",true);val immersive=c.indices.count{c[it]!=d[it]};check(immersive>100){"Immersive spectrum did not visibly move"};check(ui{activity.session.station?.id==id&&audio()!!.player.isPlaying});row.put("visibleSpectrumChangedPixels",JSONObject().put("modern",modern).put("immersive",immersive));swipe(450f,750f);waitFor{activity.session.page==0}
+                        val id=ui{activity.session.station?.id};swipe(1250f,800f);waitFor{activity.session.page==1};val c=sample("immersive-a",true);Thread.sleep(800);val d=sample("immersive-b",true);val immersive=c.indices.count{c[it]!=d[it]};check(immersive>100){"Immersive spectrum did not visibly move"};check(ui{activity.session.station?.id==id&&audio()!!.player.isPlaying});row.put("visibleSpectrumChangedPixels",JSONObject().put("modern",modern).put("immersive",immersive));swipe(1250f,1550f);waitFor{activity.session.page==0}
                     }
                 }
                 committedFrame();row.put("actionMs",SystemClock.elapsedRealtime()-actionStart)

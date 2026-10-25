@@ -19,7 +19,7 @@ class NativeEvidence:Instrumentation() {
     private val securityChecks=JSONArray()
     override fun onCreate(arguments:Bundle?){super.onCreate(arguments);this.arguments=arguments?:Bundle();start()}
     private fun <T> main(block:()->T):T{val value=AtomicReference<T>();runOnMainSync{value.set(block())};return value.get()}
-    private fun waitFor(seconds:Int=45,predicate:()->Boolean){val end=SystemClock.uptimeMillis()+seconds*1000;while(SystemClock.uptimeMillis()<end){if(main(predicate))return;Thread.sleep(150)};error(snapshot().toString())}
+    private fun waitFor(seconds:Int=45,predicate:()->Boolean){val end=SystemClock.uptimeMillis()+seconds*1000;while(SystemClock.uptimeMillis()<end){if(main{activity.uiReady&&predicate()})return;Thread.sleep(150)};error(snapshot().toString())}
     private fun tap(action:String,fractionX:Float=.5f){
         val point=main {
             val surface=activity.surface
@@ -42,6 +42,7 @@ class NativeEvidence:Instrumentation() {
     override fun onStart(){
         val result=Bundle()
         try {
+            android.os.ParcelFileDescriptor.AutoCloseInputStream(uiAutomation.executeShellCommand("cmd statusbar collapse")).use{it.readBytes()}
             val launch=Intent(targetContext,MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             if(arguments.getString("reference")=="true")launch.putExtra("mode","reference")
             if(arguments.getString("operation")=="seed")launch.putExtra("mode","live").putExtra("stream","https://ice6.somafm.com/groovesalad-128-aac").putExtra("query","SomaFM")
@@ -137,6 +138,17 @@ class NativeEvidence:Instrumentation() {
                     securityChecks.put(JSONObject().put("check","16-bit / float, anti-phase stereo, isolated channel frequencies, silence, 20 Hz ceiling and bit-exact pass-through").put("passed",true))
                     securityChecks.put(JSONObject().put("check","PCM pass-through and empty/end-of-stream buffers").put("passed",true))
                 }
+                "network-recovery"->{val data=NetworkRecoverySuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
+                "ink-motion"->{val data=InkMotionSuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
+                "library-management"->{val data=LibraryManagementSuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
+                "feedback-live"->{val data=ControlsSettingsSuite(this,activity).runFeedbackLive();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
+                "media-notification"->{val data=NotificationSuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
+                "controls-settings"->{val data=ControlsSettingsSuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
+                "station-audit"->{val data=StationAudit(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
+                "radio-background"->{val data=ImmersiveSuite(this,activity).runRadio();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
+                "embedded-artwork"->{val data=ImmersiveSuite(this,activity).runArtwork();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
+                "music-widget"->{val data=WidgetSuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
+                "immersive-background"->{val data=ImmersiveSuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
                 "icon"->{
                     main {
                         val icon=targetContext.packageManager.getApplicationIcon(targetContext.packageName)
