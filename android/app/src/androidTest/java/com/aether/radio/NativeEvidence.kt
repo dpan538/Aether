@@ -37,12 +37,12 @@ class NativeEvidence:Instrumentation() {
     private fun updater()=MainActivity::class.java.getDeclaredField("updater").apply{isAccessible=true}.get(activity) as? Updates
     private fun snapshot():JSONObject=main {
         val s=activity.session;val info=targetContext.packageManager.getPackageInfo(targetContext.packageName,0)
-        JSONObject().put("package",targetContext.packageName).put("versionCode",info.longVersionCode).put("versionName",info.versionName).put("reference",s.reference).put("query",s.query).put("filteredCount",s.filtered().size).put("station",s.station?.name).put("selectedId",s.station?.id).put("favorites",JSONArray(s.favorites)).put("volume",s.volume).put("tempo",s.tempo).put("language",s.language).put("spectrumEnabled",s.spectrumEnabled).put("spectrumSamples",s.spectrumFrame?.samples?:0).put("updatePhase",s.updateUi.phase.name).put("cached",s.updateUi.cached).put("downloadRequests",updater()?.downloadRequests?:0).put("reusedPackages",updater()?.reusedPackages?:0)
+        JSONObject().put("iconClass",targetContext.packageManager.getApplicationIcon(targetContext.packageName).javaClass.name).put("package",targetContext.packageName).put("versionCode",info.longVersionCode).put("versionName",info.versionName).put("reference",s.reference).put("query",s.query).put("filteredCount",s.filtered().size).put("station",s.station?.name).put("selectedId",s.station?.id).put("favorites",JSONArray(s.favorites)).put("volume",s.volume).put("tempo",s.tempo).put("language",s.language).put("spectrumEnabled",s.spectrumEnabled).put("spectrumSamples",s.spectrumFrame?.samples?:0).put("updatePhase",s.updateUi.phase.name).put("cached",s.updateUi.cached).put("downloadRequests",updater()?.downloadRequests?:0).put("reusedPackages",updater()?.reusedPackages?:0)
     }
     override fun onStart(){
         val result=Bundle()
         try {
-            val launch=Intent(targetContext,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val launch=Intent(targetContext,MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             if(arguments.getString("reference")=="true")launch.putExtra("mode","reference")
             if(arguments.getString("operation")=="seed")launch.putExtra("mode","live").putExtra("stream","https://ice6.somafm.com/groovesalad-128-aac").putExtra("query","SomaFM")
             arguments.putLong("launchStart",SystemClock.elapsedRealtime())
@@ -67,6 +67,11 @@ class NativeEvidence:Instrumentation() {
                     tap("update:back");tap("check-updates")
                     waitFor{activity.session.updateUi.phase==UpdatePhase.READY}
                     check(main{updater()!!.downloadRequests}==before){"Repeated check downloaded the same APK again"}
+                }
+                "current"->{
+                    tap("device-settings");tap("check-updates")
+                    waitFor{activity.session.updateUi.phase==UpdatePhase.CURRENT}
+                    check(main{activity.session.updateUi.message=="No newer version"})
                 }
                 "processor"->{
                     val processor=SpectrumProcessor({false},{})

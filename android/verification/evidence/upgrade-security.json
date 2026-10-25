@@ -1,0 +1,68 @@
+{
+  "package": "io.github.dpan538.aether",
+  "versionCode": 1,
+  "versionName": "0.0.0-update-fixture",
+  "reference": false,
+  "query": "",
+  "filteredCount": 89,
+  "station": "LOVE FM: All you need is Love",
+  "selectedId": "c685c086-b716-4edd-b313-d4a7baf1084c",
+  "favorites": [],
+  "volume": 20,
+  "tempo": 100,
+  "language": "en",
+  "spectrumEnabled": false,
+  "spectrumSamples": 0,
+  "updatePhase": "IDLE",
+  "cached": false,
+  "downloadRequests": 0,
+  "reusedPackages": 0,
+  "passed": true,
+  "securityChecks": [
+    {
+      "check": "valid same-signer release",
+      "passed": true
+    },
+    {
+      "check": "wrong signer",
+      "passed": true
+    },
+    {
+      "check": "wrong version",
+      "passed": true
+    },
+    {
+      "check": "downgrade",
+      "passed": true
+    },
+    {
+      "check": "truncated size",
+      "passed": true
+    },
+    {
+      "check": "wrong hash",
+      "passed": true
+    },
+    {
+      "check": "untrusted URL http://github.com/dpan538/Aether/releases/download/x/a.apk",
+      "passed": true
+    },
+    {
+      "check": "untrusted URL https://github.com/other/repo/releases/download/x/a.apk",
+      "passed": true
+    },
+    {
+      "check": "untrusted URL https://github.com.evil.test/dpan538/Aether/releases/download/x/a.apk",
+      "passed": true
+    },
+    {
+      "check": "untrusted URL https://user@github.com/dpan538/Aether/releases/download/x/a.apk",
+      "passed": true
+    },
+    {
+      "check": "tampered bytes with matching advertised hash",
+      "passed": true
+    }
+  ],
+  "cachedFiles": []
+}

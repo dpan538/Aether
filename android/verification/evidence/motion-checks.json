@@ -1,0 +1,13 @@
+{
+  "states": 17,
+  "frontlightSamples": {
+    "light-0000": 0,
+    "light-0525": 0.80619675,
+    "light-1050": 1
+  },
+  "staticLunarMaxChannelDifference": 0,
+  "selectorLoopSeamMae": 0.0002554278416347382,
+  "selectorLoopDurationSeconds": 166.667,
+  "reducedMotion": true,
+  "reducedMotionPhaseEnabled": false
+}

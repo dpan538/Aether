@@ -22,7 +22,7 @@ class ExperienceSuite(private val test:Instrumentation,private val activity:Main
         val nodes=v.painter.scene(if(s.page==1)"immersive" else v.painter.name(s.light)).flattened()
         val r=nodes.first{it.action==action||it.id==action}.r
         val scale=minOf(v.width/1704f,v.height/1136f);val at=IntArray(2);v.getLocationOnScreen(at)
-        (at[0]+(v.width-1704*scale)/2+(r.left+r.width()*fraction)*scale) to (at[1]+(v.height-1136*scale)/2+r.centerY()*scale)
+        (at[0]+(v.width-1704*scale)/2+(r.left+r.width()*fraction.coerceIn(.001f,.999f))*scale) to (at[1]+(v.height-1136*scale)/2+r.centerY()*scale)
     }
     private fun tap(action:String,fraction:Float=.5f){val p=point(action,fraction);val now=SystemClock.uptimeMillis();test.sendPointerSync(MotionEvent.obtain(now,now,0,p.first,p.second,0));test.sendPointerSync(MotionEvent.obtain(now,now+70,1,p.first,p.second,0));Thread.sleep(120)}
     private fun swipe(fromX:Float,toX:Float){
@@ -66,7 +66,7 @@ class ExperienceSuite(private val test:Instrumentation,private val activity:Main
                 if(offset>0){
                     ui{activity.moveTaskToBack(true)};waitFor{!activity.hasWindowFocus()};Thread.sleep(150)
                     begin=SystemClock.elapsedRealtime();row.put("startedAtEpochMs",System.currentTimeMillis())
-                    test.targetContext.startActivity(Intent(test.targetContext,MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                    test.targetContext.startActivity(Intent(test.targetContext,MainActivity::class.java).setAction(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
                 }
                 ready();row.put("openMs",SystemClock.elapsedRealtime()-begin);reset()
                 val actionStart=SystemClock.elapsedRealtime()

@@ -28,3 +28,5 @@ Publish the inspected APK, `aether-update.json`, and `SHA256SUMS.txt` together i
 The user requested learning from Annota's update experience. Its distribution and continuous-update acceptance documents were read for channel selection, same-signer upgrades, retained pending packages, and installer permission handling. Aether's implementation, signing identity and app data remain independent; no Annota code, assets or private signing material were imported.
 
 Platform references: [GitHub Releases API](https://docs.github.com/en/rest/releases/releases), [Android signing](https://developer.android.com/studio/publish/app-signing), [package installation](https://developer.android.com/reference/android/content/pm/PackageInstaller).
+
+Initial inspected preview: [v0.1.0-preview.1](https://github.com/dpan538/Aether/releases/tag/v0.1.0-preview.1), integer versionCode 2. Its APK SHA-256 is `9f81bbd8977a9a8bf2d354497652c3e75fee95b0a3ef2d3f483e1650d1670810`. Keep this published artifact immutable; local earlier candidates are not releases.

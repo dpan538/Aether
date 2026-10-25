@@ -2,7 +2,7 @@
 from pathlib import Path
 import argparse,hashlib,json,subprocess
 from xml.etree import ElementTree as ET
-p=argparse.ArgumentParser();p.add_argument('--prepared',default='verification/local/delivery-pcm-final');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--prepared',default='verification/local/delivery-pcm-final');p.add_argument('--release-commit');a=p.parse_args()
 root=Path(__file__).resolve().parents[1]
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 sources=[]
@@ -22,6 +22,7 @@ snapshot=json.loads((frozen/'manifest.json').read_text())
 for item in snapshot['files']:assert sha(frozen/item['file'])==item['sha256'],item['file']
 device=json.loads((root/'verification/local/final/modern-ink.json').read_text())
 manifest={
+ 'releaseSourceCommit':a.release_commit,
  'version':identity['versionName'],'versionCode':identity['versionCode'],'applicationId':identity['packageName'],
  'gitBaseCommit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),
  'sourceSha256':digest,'sourceDigestRecipe':'SHA256 of sorted relative-path + NUL + per-file SHA256 + newline; excludes verification, caches and build outputs',

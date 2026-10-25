@@ -1,0 +1,7 @@
+{
+  "status": "Preflight, excluded from the formal 300-round acceptance dataset",
+  "completedRounds": 17,
+  "passes": 15,
+  "failures": 2,
+  "finding": "Test harness used fractionX=1.0, which is the excluded right edge of RectF.contains. The 150% tap landed outside the slider. Pointer coordinates now clamp inside the hitbox. No production APK change. Formal acceptance restarted from round 1 with the same release bytes."
+}

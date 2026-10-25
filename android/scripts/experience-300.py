@@ -12,6 +12,12 @@ if not (out/'environment.json').exists():
     metadata['installedPackage']=run('shell','dumpsys','package',pkg).decode()
     metadata['device']=run('shell','getprop','ro.product.model').decode().strip()
     metadata['screen']=run('shell','wm','size').decode().strip()
+    metadata['density']=run('shell','wm','density').decode().strip()
+    metadata['renderer']='\n'.join(l for l in run('shell','dumpsys','SurfaceFlinger').decode().splitlines() if 'GLES:' in l)
+    apkPath=run('shell','pm','path',pkg).decode().strip().removeprefix('package:')
+    metadata['installedApkSha256']=run('shell','sha256sum',apkPath).decode().split()[0]
+    assert metadata['installedApkSha256']=='9f81bbd8977a9a8bf2d354497652c3e75fee95b0a3ef2d3f483e1650d1670810'
+    metadata['guestMemTotal']='\n'.join(l for l in run('shell','cat','/proc/meminfo').decode().splitlines() if l.startswith('MemTotal:'))
     (out/'environment.json').write_text(json.dumps(metadata,indent=2))
 while len(rows)<a.rounds:
     first=len(rows)+1;count=min(10,a.rounds-len(rows));batch=out/f'batch-{first}';batch.mkdir(exist_ok=True)

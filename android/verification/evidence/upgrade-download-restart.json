@@ -1,0 +1,31 @@
+{
+  "package": "io.github.dpan538.aether",
+  "versionCode": 1,
+  "versionName": "0.0.0-update-fixture",
+  "reference": false,
+  "query": "",
+  "filteredCount": 89,
+  "station": "Verification stream",
+  "selectedId": "verification:stream",
+  "favorites": [
+    "verification:stream"
+  ],
+  "volume": 17,
+  "tempo": 90,
+  "language": "zh",
+  "spectrumEnabled": false,
+  "spectrumSamples": 0,
+  "updatePhase": "READY",
+  "cached": true,
+  "downloadRequests": 0,
+  "reusedPackages": 3,
+  "passed": true,
+  "cachedFiles": [
+    {
+      "name": "2-9f81bbd8977a9a8b.apk",
+      "bytes": 35448256,
+      "modified": 1792857804812,
+      "sha256": "9f81bbd8977a9a8bf2d354497652c3e75fee95b0a3ef2d3f483e1650d1670810"
+    }
+  ]
+}

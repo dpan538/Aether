@@ -1,0 +1,127 @@
+{
+  "rounds": 300,
+  "passed": 300,
+  "failed": 0,
+  "cold": {
+    "count": 30,
+    "median": 4069.0,
+    "p95": 4171.9,
+    "max": 4213
+  },
+  "warm": {
+    "count": 270,
+    "median": 264.0,
+    "p95": 380.0,
+    "max": 548
+  },
+  "pssMiB": {
+    "count": 300,
+    "median": 347.48388671875,
+    "p95": 358.748876953125,
+    "max": 364.7705078125
+  },
+  "scenarios": {
+    "frontlight": {
+      "rounds": 30,
+      "passed": 30,
+      "actionsMs": {
+        "count": 30,
+        "median": 1334.5,
+        "p95": 1419.95,
+        "max": 1453
+      }
+    },
+    "volume-mute": {
+      "rounds": 30,
+      "passed": 30,
+      "actionsMs": {
+        "count": 30,
+        "median": 937.5,
+        "p95": 989.5,
+        "max": 1001
+      }
+    },
+    "tempo-pitch": {
+      "rounds": 30,
+      "passed": 30,
+      "actionsMs": {
+        "count": 30,
+        "median": 623.5,
+        "p95": 700.8999999999999,
+        "max": 718
+      }
+    },
+    "settings-language": {
+      "rounds": 30,
+      "passed": 30,
+      "actionsMs": {
+        "count": 30,
+        "median": 1080.5,
+        "p95": 1182.55,
+        "max": 1339
+      }
+    },
+    "real-directory-filter": {
+      "rounds": 30,
+      "passed": 30,
+      "actionsMs": {
+        "count": 30,
+        "median": 624.0,
+        "p95": 699.1,
+        "max": 700
+      }
+    },
+    "favorites": {
+      "rounds": 30,
+      "passed": 30,
+      "actionsMs": {
+        "count": 30,
+        "median": 753.5,
+        "p95": 821.55,
+        "max": 862
+      }
+    },
+    "shared-page-session": {
+      "rounds": 30,
+      "passed": 30,
+      "actionsMs": {
+        "count": 30,
+        "median": 2390.0,
+        "p95": 2503.5499999999997,
+        "max": 2555
+      }
+    },
+    "lock-protection": {
+      "rounds": 30,
+      "passed": 30,
+      "actionsMs": {
+        "count": 30,
+        "median": 881.5,
+        "p95": 966.0,
+        "max": 1005
+      }
+    },
+    "power-retained-ink": {
+      "rounds": 30,
+      "passed": 30,
+      "actionsMs": {
+        "count": 30,
+        "median": 4097.5,
+        "p95": 4176.0,
+        "max": 4211
+      }
+    },
+    "real-playback": {
+      "rounds": 30,
+      "passed": 30,
+      "actionsMs": {
+        "count": 30,
+        "median": 2000.0,
+        "p95": 2098.55,
+        "max": 2149
+      }
+    }
+  },
+  "crashEvents": 0,
+  "anrEvents": 0
+}
