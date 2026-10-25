@@ -29,7 +29,7 @@
 
 项目目前提供 Android 预览版，适配目标为小米 Pad 9 Pro Max 的 **3408 × 2272 横屏**。
 
-[前往下载预览版](https://github.com/dpan538/Aether/releases/latest)
+[前往下载预览版](https://github.com/dpan538/Aether/releases)
 
 安装后可在应用设置中检查仓库发布的更新。已完成校验的更新文件会保留并复用，覆盖升级保留本地设置。当前公开预览版与持续改进中的源码可能存在功能差异。
 
