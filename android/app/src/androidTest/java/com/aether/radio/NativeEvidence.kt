@@ -137,6 +137,21 @@ class NativeEvidence:Instrumentation() {
                     securityChecks.put(JSONObject().put("check","16-bit / float, anti-phase stereo, isolated channel frequencies, silence, 20 Hz ceiling and bit-exact pass-through").put("passed",true))
                     securityChecks.put(JSONObject().put("check","PCM pass-through and empty/end-of-stream buffers").put("passed",true))
                 }
+                "icon"->{
+                    main {
+                        val icon=targetContext.packageManager.getApplicationIcon(targetContext.packageName)
+                        check(icon is android.graphics.drawable.AdaptiveIconDrawable){"Launcher did not resolve adaptive resource"}
+                        val bitmap=android.graphics.Bitmap.createBitmap(512,512,android.graphics.Bitmap.Config.ARGB_8888)
+                        icon.setBounds(0,0,512,512);icon.draw(android.graphics.Canvas(bitmap))
+                        var left=512;var top=512;var right=0;var bottom=0
+                        for(y in 0 until 512)for(x in 0 until 512){val c=bitmap.getPixel(x,y);if(android.graphics.Color.alpha(c)>240&&kotlin.math.abs(android.graphics.Color.red(c)-11)+kotlin.math.abs(android.graphics.Color.green(c)-13)+kotlin.math.abs(android.graphics.Color.blue(c)-18)>35){left=minOf(left,x);top=minOf(top,y);right=maxOf(right,x);bottom=maxOf(bottom,y)}}
+                        check(kotlin.math.abs(left-(511-right))<=2&&kotlin.math.abs(top-(511-bottom))<=2){"Logo is off centre: $left,$top,$right,$bottom"}
+                        check(left>=20&&top>=20&&right<=491&&bottom<=491){"Outer artwork reaches mask edge"}
+                        val folder=targetContext.getExternalFilesDir("evidence")!!.apply{mkdirs()}
+                        java.io.File(folder,"launcher-drawable.png").outputStream().use{bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()
+                        securityChecks.put(JSONObject().put("check","Selected 99-ring adaptive icon resolves, native 512px art centred with full outer-ring margins").put("artBounds",JSONArray(listOf(left,top,right,bottom))).put("passed",true))
+                    }
+                }
                 "album-layout"->{val data=AlbumSuite(this,activity).runLayout();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
                 "album-import"->{val data=AlbumSuite(this,activity).runImport();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
                 "album-restore"->{val data=AlbumSuite(this,activity).runRestore();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}

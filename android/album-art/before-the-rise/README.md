@@ -26,7 +26,7 @@ Table durations round to the nearest second; native playback uses decoder durati
 
 ## Artwork and notes
 
-The cover is the existing [J3-01 project export](../../../branding/icons/2026-10-25-symmetric-gradient/exports/J3-01.png), used **byte-for-byte**, 3072×3072. SHA-256: `90c5ff75ebbee30b544f945d93cb854ac87e9ebf710c9c998de1a5348c3a8ae6`. The user rejected a newly drawn replacement; it is not shipped. The existing provisional launcher remains independent of this album cover.
+The cover is the existing [J3-01 project export](../../../branding/icons/2026-10-25-symmetric-gradient/exports/J3-01.png), used **byte-for-byte**, 3072×3072. SHA-256: `90c5ff75ebbee30b544f945d93cb854ac87e9ebf710c9c998de1a5348c3a8ae6`. The user rejected a newly drawn replacement; it is not shipped. The approved 99-ring Canvas launcher remains independent of this album cover.
 
 [Notes](notes.json) adapt the supplied Chinese and English concepts to these 11 recordings. Complete track descriptions, filenames, durations, codec details and source hashes are in the [bundled manifest](../../app/src/main/assets/albums/before-the-rise/manifest.json). Source MP3 bytes are unchanged: no re-encoding, added ID3 tags, removed watermarks or invented artist metadata. Album presentation comes from the manifest.
 

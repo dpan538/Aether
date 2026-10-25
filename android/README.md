@@ -2,9 +2,9 @@
 
 # 漫频 Aether · Kotlin Android
 
-Native Android implementation of the immutable two-page design. The app uses Kotlin `View`/`Canvas`, native text and SVG paths, individual material skins, and the original lunar GLES shader. It contains no WebView and no whole-interface screenshot drawable. The launcher uses the user-selected temporary E1 raster from `branding/icons/current/`, preserving its full square composition. The inspected APK selects the legacy PNG; Android Launcher adds its own normalization and surrounding shape. The adaptive XML in the source is not selected in this artifact, so adaptive-mask certification is not claimed. Its generated-raster provenance is retained; this is not final brand approval.
+Native Android implementation of the immutable two-page design. The app uses Kotlin `View`/`Canvas`, native text and SVG paths, individual material skins, and the original lunar GLES shader. It contains no WebView and no whole-interface screenshot drawable. The launcher uses the approved 99-ring Canvas Logo from `branding/icons/current/`: all legacy densities match the prepared brand assets, while the adaptive foreground uses the unmasked square derivative with proportional safe-zone placement. The installed permanent package resolves `AdaptiveIconDrawable`, and its native render/actual launcher were checked on the 3.4K emulator. The 60/33-ring trials are not selected. See [launcher verification](verification/ICON99-REPORT.md).
 
-The permanent APK application ID is `io.github.dpan538.aether`; debug evidence uses `io.github.dpan538.aether.debug`. The initial distribution channel is a preview. Aether has its own local preview signing identity for lasting in-place updates; no other app's signing material or store credentials are used. Download the [signed preview APK](https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.4/Aether-0.1.0-preview.4.apk). See [APK distribution](release/README.md).
+The permanent APK application ID is `io.github.dpan538.aether`; debug evidence uses `io.github.dpan538.aether.debug`. The initial distribution channel is a preview. Aether has its own local preview signing identity for lasting in-place updates; no other app's signing material or store credentials are used. Download the [signed preview APK](https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.5/Aether-0.1.0-preview.5.apk). See [APK distribution](release/README.md).
 
 ## Build
 
@@ -80,6 +80,8 @@ The only product target is Xiaomi Pad 9 Pro Max at 3408×2272 landscape (3:2), u
 `scripts/capture.py` saves raw device PNGs and state. `scripts/compare.py` makes 50% overlays, raw absolute differences, explicitly labeled 4× difference previews and region pairs, without registration or changing any baseline. `scripts/ui-regression.py` drives real touch/key events. See [verification report](verification/REPORT.md) for the actual tested build, metrics, evidence and remaining differences. Compilation alone is not visual acceptance, and this delivery does not claim 100% pixel equality or physical-tablet validation.
 
 ## Current verification
+
+The approved launcher identity is delivered in preview.5 / code6; see [99-ring acceptance](verification/ICON99-REPORT.md). This resource-only update leaves the album/player implementation unchanged.
 
 The local-album extension is preview.4 / versionCode5 with adaptive 34–64sp titles. Four native layout/control checks passed on this release; the unchanged playback baseline passed 26 native cases plus 18 unit tests on preview.3. See [album acceptance](verification/ALBUM-REPORT.md). The 300-cycle results below describe the preceding repair baseline.
 

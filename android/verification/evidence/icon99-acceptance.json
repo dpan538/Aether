@@ -1,0 +1,112 @@
+{
+  "versionName": "0.1.0-preview.5",
+  "versionCode": 6,
+  "passed": true,
+  "canonical": "Approved 99-ring; 60/33 trials not used",
+  "environment": {
+    "api": 36,
+    "resolution": [
+      3408,
+      2272
+    ],
+    "device": "ARM64 emulator, not physical Xiaomi"
+  },
+  "native": {
+    "iconClass": "android.graphics.drawable.AdaptiveIconDrawable",
+    "package": "io.github.dpan538.aether",
+    "versionCode": 6,
+    "versionName": "0.1.0-preview.5",
+    "reference": false,
+    "query": "",
+    "filteredCount": 89,
+    "station": "SomaFM verification",
+    "selectedId": "verification:radio",
+    "favorites": [
+      "0042e94c-55d6-4ff4-a3a7-46136e703424"
+    ],
+    "volume": 17,
+    "tempo": 100,
+    "language": "zh",
+    "spectrumEnabled": true,
+    "spectrumSamples": 0,
+    "updatePhase": "IDLE",
+    "cached": false,
+    "downloadRequests": 0,
+    "reusedPackages": 0,
+    "passed": true,
+    "securityChecks": [
+      {
+        "check": "Selected 99-ring adaptive icon resolves, native 512px art centred with full outer-ring margins",
+        "artBounds": [
+          42,
+          42,
+          469,
+          469
+        ],
+        "passed": true
+      }
+    ],
+    "cachedFiles": []
+  },
+  "assetIntegrity": {
+    "canonicalVariant": "99-ring",
+    "sourceSelection": "branding/icons/current/selection.json",
+    "foregroundSource": "Unmasked square master derivative, byte-for-byte; one system mask",
+    "adaptiveInsetFraction": 0.169,
+    "files": [
+      {
+        "source": "branding/icons/current/android-legacy/mipmap-mdpi/ic_launcher.png",
+        "target": "app/src/main/res/mipmap-mdpi/ic_launcher.png",
+        "sha256": "0ee4635d635cbf11e4029ee945f83489f40e901658c0cf3cd6915da0f9849bf8"
+      },
+      {
+        "source": "branding/icons/current/android-legacy/mipmap-hdpi/ic_launcher.png",
+        "target": "app/src/main/res/mipmap-hdpi/ic_launcher.png",
+        "sha256": "5aa16badf54c0102c298d3ecd30873b1a1b4e0d58338e9f302fdd5412072cdcb"
+      },
+      {
+        "source": "branding/icons/current/android-legacy/mipmap-xxxhdpi/ic_launcher.png",
+        "target": "app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+        "sha256": "c8818e252474bc4d1c5052d8cbdb140819a7e25e8884a1015cd6827fee6b2623"
+      },
+      {
+        "source": "branding/icons/current/android-legacy/mipmap-xxhdpi/ic_launcher.png",
+        "target": "app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+        "sha256": "92cbaf54fb18f5e5d9374d778e8432bd50d2f3c98befe66fde1564bf01fd6283"
+      },
+      {
+        "source": "branding/icons/current/android-legacy/mipmap-xhdpi/ic_launcher.png",
+        "target": "app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+        "sha256": "197e8b77e32b2121fc2a069aaa6e1a190b42dddf2620b2038c39316c1711f064"
+      },
+      {
+        "source": "branding/icons/current/preview-square-512.png",
+        "target": "app/src/main/res/drawable-nodpi/icon_canvas_99.png",
+        "sha256": "ebd2dd09d0a56e1603573c6cc07136449af6c3e86c65f42664e96128c9284c18"
+      }
+    ]
+  },
+  "oldE1ResourcesAbsent": true,
+  "adaptiveGeometry": {
+    "layerDp": 108,
+    "insetFraction": 0.169,
+    "artDiameterDp": 65.77632,
+    "safeDiameterDp": 66,
+    "unmaskedInput": true
+  },
+  "apk": {
+    "apk": "Aether-0.1.0-preview.5.apk",
+    "bytes": 80688760,
+    "manifest": {
+      "schemaVersion": 1,
+      "packageName": "io.github.dpan538.aether",
+      "versionCode": 6,
+      "versionName": "0.1.0-preview.5",
+      "apk": "Aether-0.1.0-preview.5.apk",
+      "sha256": "06b87d05263f0dc56f6094387d95acd91af8ae7a83fed0bf3f107580789e4724",
+      "certificateSha256": "934601abcd99dd1cfbd7466f6096fd2c27a6e6ae2e75681d5233a4fd6e1a15b9"
+    },
+    "debuggable": false,
+    "signatureVerified": true
+  }
+}
