@@ -38,3 +38,20 @@ __pycache__/
 /tmp/
 /verification/local/
 *.log
+
+# Private local design, development and verification archive
+/docs
+/design
+/branding
+/android/verification
+/android/album-art
+/android/release
+/AGENTS.md
+/android/README.md
+/package.json
+/scripts
+/.private/
+/feedback-service/
+/.vercel/
+/android/IMPLEMENTATION-SCOPE.md
+/android/scripts

@@ -1,2 +1,0 @@
-  mCurrentFocus=Window{63a1e06 u0 Taskbar Overlay}
-  mFocusedApp=ActivityRecord{56331374 u0 io.github.dpan538.aether/com.aether.radio.MainActivity t188}

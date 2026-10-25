@@ -1,9 +1,0 @@
-{
-  "status": "Software-renderer environment investigation; excluded from the final host-GPU 300-round dataset",
-  "completedRounds": 36,
-  "passed": 35,
-  "failed": 1,
-  "renderer": "SwiftShader / Skia OpenGL",
-  "guestRamMiB": 6144,
-  "finding": "The emulator exhibited global command stalls (including adb pidof timeout), a 119901ms cold readiness wait, and one foreground-wait timeout. The frame sampler also timed out. The same APK is being tested in a fresh dataset with host GPU and 4096 MiB guest RAM. This is an environment change, not an application-code fix or a controlled causal A/B test."
-}

@@ -1,8 +1,0 @@
-{
-  "round": 261,
-  "launchKind": "cold",
-  "scenario": "launch-or-harness-failure",
-  "passed": false,
-  "error": "Command '['${PROJECT_ROOT}/android/.tooling/sdk/platform-tools/adb', '-s', 'emulator-5582', 'shell', 'am', 'instrument', '-w', '-e', 'operation', 'soak', '-e', 'startRound', '261', '-e', 'rounds', '10', 'io.github.dpan538.aether.test/com.aether.radio.NativeEvidence']' returned non-zero exit status 255.",
-  "totalMs": 7781
-}

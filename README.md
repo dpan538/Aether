@@ -1,88 +1,44 @@
-# 漫频 Aether
-
-<img src="branding/icons/current/preview-512.png" width="128" height="128" alt="Aether 99-ring logo">
+# 漫频
 
 **不设边界，漫游频率。**
-*No boundaries. Just frequencies.*
 
-In the unseen Aether, hear the distant.
-（在无形的风波里，听见远方。）
+漫频是一款专为 **小米 Pad 9 Pro Max** 横屏打造的原生音乐与电台应用。它把收音机的实体触感、清晰的声音信息与唱片的视觉体验收进同一块屏幕。
 
-漫频 Aether 专注声音纯粹性与视觉美学。中立索引，无广告、排行榜、信息流或算法推荐；通过搜索、分类、收藏与主动随机调频探索电台。
+## 两种聆听方式
 
-## 当前状态 · 2026-10-25
+**设备主页**以银灰控制台、墨水屏和实体旋钮组织电台搜索、筛选、预设、播放与音量。让操作有位置，让信息有层次。
 
-用户已确定 **两个页面足够**：现代主页面与纯沉浸页。本轮视觉状态已冻结为 [two-page-baseline](design/snapshots/2026-10-24-two-page-baseline/README.md)，包含可独立运行的源码、3408×2272 参考图、控件局部、浏览器检查记录与 SHA-256 清单，并按用户要求同步仓库备份。早期复古第三页只保留历史参考，不再建设。
+![漫频设备主页设计示意](media/modern-mock.png)
 
-**Kotlin Android 应用构建**由单独任务使用 **GPT‑6.1 Sol / Extra High** 执行；以冻结稿逐轮截图对照、叠加和差异检查，包含手势、动画及连续线性动画。实现与验收要求见 [Android 交接书](docs/ANDROID-HANDOFF.md) 和 [动效规格](docs/MOTION-SPEC.md)。
+**沉浸播放**保留唱片、声音与必要的信息，以更安静的画面陪伴长时间聆听。
 
-用户已明确选定 **[99 环 Canvas Logo／图标](branding/icons/current/README.md)**：深蓝黑底、完全同心的白色圆环、暖白／金黄／淡绿光核，外半径 46%、线宽 1.30（512 基准）、圆角方形。正式 SVG／3072px PNG、无遮罩方形母版和 Android 密度资源已更新，旧 E1 临时图标原样归档。另保留[99／60／33 小屏对照](branding/icons/2026-10-25-canvas-logo/ring-comparison.html)：33 环被认为过粗，60 环是最新试稿，尚未覆盖正式 99 环母版。此前其他图形研究及来源见[品牌记录](branding/README.md)。Android 窗口负责接入正式图标并验证实际 Launcher 显示。
+![漫频沉浸播放设计示意](media/immersive-mock.png)
 
-**已归档的设计基线是可运行的浏览器视觉原型；Android 工程由独立任务推进，实际构建与验收状态由该任务记录。** 视觉原型四组电台布局样本中的节目、曲目、码率、时钟与仪表均明确标记 MOCK；连接保持 `not-connected`。浏览器检查不代表 Android 或全球电台可播性验收。
+*以上为界面设计示意图，图中节目与仪表信息用于展示视觉效果。*
 
-## 两页设计
+## 声音与音乐
 
-| 页面 | 视觉与操作 |
-| --- | --- |
-| 现代主页面 · 默认入口 | 银灰设备、默认墨水屏、四枚实体键与双旋钮、目录与统一设置、四枚实体预设、哑光拉丝播放键、Tempo 实体滑块、0–30 音量旋钮 |
-| 纯沉浸页 | 月相艺术 CD、石墨蓝灰切台组件、暖灰白信息面板；上下滑动及两枚三角切台；没有菜单、设置或播放按钮 |
+- 通过真实电台目录搜索、按地区／类型／语言筛选、收藏与主动随机探索。
+- 原生音频播放，支持 50%–150% 速度调整并保持音高，频谱来自实际解码的音频。
+- 支持本地音乐与设备文件导入，附带 Dai Pan（潘岱）的器乐专辑 **Before the Rise**。
+- 无广告、推荐信息流、热度榜单或算法个性化。
 
-两页共用同一电台、播放状态和连接，左右滑动切换。设置位于现代页大屏内，仅有语言、更新检查和 About。小旋钮四维调谐、Tempo 数值及 Equalizer 的功能映射仍为样机提案，不能据此外推真实变速、DSP 或回听能力。
+电台目录来自 [Radio Browser](https://www.radio-browser.info/)。电台的可用性由各自的音源、地区和网络条件决定；应用只播放 HTTPS 音源。
 
-现代页默认墨水态：
+## 下载与更新
 
-![现代主页面：默认墨水与哑光拉丝金属](design/snapshots/2026-10-24-two-page-baseline/renders/modern-ink.png)
+项目目前提供 Android 预览版，适配目标为小米 Pad 9 Pro Max 的 **3408 × 2272 横屏**。
 
-点亮态：上屏暖白、下屏冰蓝、仪表绿色，前光约 1.05 秒渐亮。
+[前往下载预览版](https://github.com/dpan538/Aether/releases/latest)
 
-![现代主页面：协调照明](design/snapshots/2026-10-24-two-page-baseline/renders/modern-lit.png)
+安装后可在应用设置中检查仓库发布的更新。已完成校验的更新文件会保留并复用，覆盖升级保留本地设置。当前公开预览版与持续改进中的源码可能存在功能差异。
 
-沉浸页保留已接受的原创月相构图：
+## 隐私
 
-![沉浸页：月相 CD 与印刷信息板](design/snapshots/2026-10-24-two-page-baseline/renders/immersive.png)
+聆听不需要账户。电台请求直接连接公共目录与音源；设备音乐通过 Android 文件选择器授权读取。没有麦克风采集、广告跟踪或第三方遥测。
 
-## 本地运行与复原
+## About
 
-需要 Node.js 22+，无需安装依赖。
+**漫频** — a native listening experience for Xiaomi Pad 9 Pro Max, combining tactile radio controls, local music and an immersive record view.
 
-```sh
-npm run dev
-```
-
-- 现代页：`http://127.0.0.1:4176/preview.html?page=modern`
-- 沉浸页：`http://127.0.0.1:4176/preview.html?page=immersive`
-- 语法检查：`npm run check`
-- 校验冻结包：`node scripts/verify-snapshot.mjs`
-
-参考画幅为 3408×2272（3:2），逻辑坐标为 1704×1136。预览按比例缩放。冻结包可在自己的 `source/` 内启动，详见[快照说明](design/snapshots/2026-10-24-two-page-baseline/README.md)。不同浏览器标签是独立示例会话；同一宿主中的两页共享状态。
-
-## 设计与开发文档
-
-| 文档 | 内容 |
-| --- | --- |
-| [冻结包与状态清单](design/snapshots/2026-10-24-two-page-baseline/README.md) | 原始尺寸图片、复现步骤、源文件和哈希 |
-| [Android 交接书](docs/ANDROID-HANDOFF.md) | Kotlin 构建范围、不可偏离的细节、视觉迭代与交付证据 |
-| [动效规格](docs/MOTION-SPEC.md) | 点亮、刷新、机械行程、阻尼、连续动画和减弱动态 |
-| [现代页规格](docs/MODERN-UI.md) / [沉浸页规格](docs/IMMERSIVE-UI.md) | 具体几何、材质、交互及模拟边界 |
-| [视觉方向](design/README.md) / [页面元素](docs/PAGE-ELEMENTS.md) | 当前两页的设计职责 |
-| [产品范围](docs/PRODUCT-SCOPE.md) / [体验规划](docs/EXPERIENCE-PLAN.md) | 已提出需求、已实现样机行为与待定问题 |
-| [决策记录](docs/DECISIONS.md) | 历史三页方向及最新两页冻结决定 |
-| [品牌文案](branding/README.md) / [协作规则](AGENTS.md) | 正式品牌文字与工程约束 |
-| [十四张参考原图](design/references/README.md) | 原字节归档；不是应用发布素材 |
-
-```text
-branding/                 # 品牌；图标工作在此独立开展
-design/modern/            # 现代原型 HTML/CSS/SVG/JS
-design/immersive/         # 沉浸原型与圆盘着色器
-design/shared/            # 两页共用示例会话
-design/snapshots/         # 不可覆盖的源码、渲染与校验基线
-design/references/        # 用户授权归档的外部参考原图
-docs/                     # 产品、设计、动画与 Android 交接
-scripts/                  # 本机预览与快照校验
-```
-
-Kotlin 已由用户确定；Compose、Media3 与目录接入的具体实现需在 Android 任务中核对官方资料并验证。尚无签名、商店上架或许可决定。代码和品牌资产的许可方式待确定。
-
-## English
-
-Aether is a radio app shaped around visual craft and personal control. The **modern and immersive views** are the frozen two-page browser baseline with deterministic MOCK data. The earlier retro third page is historical only. A separate task owns Kotlin Android implementation and its screenshot and motion verification. The user-selected identity is now the authored 99-ring Canvas logo, with exactly centered geometry and a 46% outer radius. E1 is archived. A separate 60-ring small-screen trial is available; native launcher integration is verified by the Android task.
+Aether is the repository and application identifier. The product name is **漫频**.
