@@ -1,21 +1,75 @@
 {
   "date": "2026-10-25",
-  "userFormulaCircleCount": 120,
-  "geometryAndAlphaMatchUserFormula": true,
-  "originalPalettePreserved": true,
-  "fixedOffsetAndStrokeKeptFor48Sample": true,
-  "nativeSVGNoEmbeddedRaster": true,
-  "masterSize": [
-    3072,
-    3072
+  "selectedLogo": {
+    "count": 99,
+    "outerRadiusFraction": 0.46,
+    "width": 1.3,
+    "centerWhite": "#FFF5EE"
+  },
+  "smallScreen60": "latest trial; 33 judged too thick",
+  "profiles": [
+    {
+      "count": 99,
+      "width": 1.3,
+      "centerPixel": [
+        255,
+        245,
+        238
+      ],
+      "fourInkMargins": [
+        119,
+        119,
+        119,
+        119
+      ],
+      "twoAxisPixelDifferences": 0
+    },
+    {
+      "count": 60,
+      "width": 2.0,
+      "centerPixel": [
+        255,
+        245,
+        238
+      ],
+      "fourInkMargins": [
+        117,
+        117,
+        117,
+        117
+      ],
+      "twoAxisPixelDifferences": 0
+    },
+    {
+      "count": 33,
+      "width": 3.6,
+      "centerPixel": [
+        255,
+        245,
+        238
+      ],
+      "fourInkMargins": [
+        112,
+        112,
+        112,
+        112
+      ],
+      "twoAxisPixelDifferences": 0
+    }
   ],
-  "centerRGB": [
-    253,
-    232,
-    224
+  "currentAndApprovedSourceHashesMatch": true,
+  "oldE1OriginalAndAllDerivativesPreserved": true,
+  "smallSizeComparisons": [
+    48,
+    96,
+    192
   ],
-  "roundedPresentationTransparentCorners": true,
-  "manifestHashesVerified": true,
-  "androidCompilationOrNativePixelVerificationPerformed": false,
-  "currentE1Changed": false
+  "androidLauncherIntegration": "delegated to Android task, not verified here",
+  "smallComparisonResampling": "3072px masters downsampled with Lanczos3; mirrored quadrants retain exact two-axis symmetry",
+  "comparisonImageSizes": [
+    48,
+    96,
+    192,
+    352
+  ]
 }

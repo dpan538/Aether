@@ -1,5 +1,7 @@
 # 漫频 Aether
 
+<img src="branding/icons/current/preview-512.png" width="128" height="128" alt="Aether 99-ring logo">
+
 **不设边界，漫游频率。**
 *No boundaries. Just frequencies.*
 
@@ -14,7 +16,7 @@ In the unseen Aether, hear the distant.
 
 **Kotlin Android 应用构建**由单独任务使用 **GPT‑6.1 Sol / Extra High** 执行；以冻结稿逐轮截图对照、叠加和差异检查，包含手势、动画及连续线性动画。实现与验收要求见 [Android 交接书](docs/ANDROID-HANDOFF.md) 和 [动效规格](docs/MOTION-SPEC.md)。
 
-用户已选择 **[E1 双球构图作为临时图标](branding/icons/current/README.md)**：黑底、灰噪圆窗、中央彩球与底部白球，保存本次上传原图及 Android 派生尺寸。最终图标未定稿；用户认为生成图的 AI 感过强，暂停 imagegen。最新按用户提供的 Compose 函数制作 [Canvas Logo 参数预览](branding/icons/2026-10-25-canvas-logo/README.md)：深色底、暖色光核、120 条细白圆环，附 Kotlin 源码与小尺寸对照。此前[圆角图标修订](branding/icons/2026-10-25-axial-icon/README.md)、[黑底色带与白色声波](branding/icons/2026-10-25-spectrum-wave/README.md)、[三组十五张对称渐变研究](branding/icons/2026-10-25-symmetric-gradient/README.md)与[四组十二张黑白／双色研究](branding/icons/2026-10-25-fine-studies/README.md)保留。研究不替换 E1；来源与修订见[品牌记录](branding/README.md)。
+用户已明确选定 **[99 环 Canvas Logo／图标](branding/icons/current/README.md)**：深蓝黑底、完全同心的白色圆环、暖白／金黄／淡绿光核，外半径 46%、线宽 1.30（512 基准）、圆角方形。正式 SVG／3072px PNG、无遮罩方形母版和 Android 密度资源已更新，旧 E1 临时图标原样归档。另保留[99／60／33 小屏对照](branding/icons/2026-10-25-canvas-logo/ring-comparison.html)：33 环被认为过粗，60 环是最新试稿，尚未覆盖正式 99 环母版。此前其他图形研究及来源见[品牌记录](branding/README.md)。Android 窗口负责接入正式图标并验证实际 Launcher 显示。
 
 **已归档的设计基线是可运行的浏览器视觉原型；Android 工程由独立任务推进，实际构建与验收状态由该任务记录。** 视觉原型四组电台布局样本中的节目、曲目、码率、时钟与仪表均明确标记 MOCK；连接保持 `not-connected`。浏览器检查不代表 Android 或全球电台可播性验收。
 
@@ -83,4 +85,4 @@ Kotlin 已由用户确定；Compose、Media3 与目录接入的具体实现需�
 
 ## English
 
-Aether is a radio app shaped around visual craft and personal control. The **modern and immersive views** are the frozen two-page browser baseline with deterministic MOCK data. The earlier retro third page is historical only. A separate task owns Kotlin Android implementation and its screenshot and motion verification. The E1 two-sphere artwork is the user-selected provisional icon; final branding remains undecided, with further generation paused in favor of considering authored geometric design.
+Aether is a radio app shaped around visual craft and personal control. The **modern and immersive views** are the frozen two-page browser baseline with deterministic MOCK data. The earlier retro third page is historical only. A separate task owns Kotlin Android implementation and its screenshot and motion verification. The user-selected identity is now the authored 99-ring Canvas logo, with exactly centered geometry and a 46% outer radius. E1 is archived. A separate 60-ring small-screen trial is available; native launcher integration is verified by the Android task.
