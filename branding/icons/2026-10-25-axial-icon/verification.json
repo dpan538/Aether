@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-25",
+  "cornerRadiusFraction": 0.1953125,
+  "greenWhiteOnlyRounding": true,
+  "greenWhiteInteriorRGBUnchanged": true,
+  "greenWhiteSVGPathsAndColorsUnchanged": true,
+  "userGreenReferenceMatchesJ301": true,
+  "flowComparison": [
+    {
+      "id": "previous",
+      "meanLightLuminance": 147.212,
+      "meanGreenLuminance": 106.078,
+      "starCoreRow": 742,
+      "pinkLowerRow": 269
+    },
+    {
+      "id": "revised",
+      "meanLightLuminance": 172.212,
+      "meanGreenLuminance": 127.81,
+      "starCoreRow": 680,
+      "pinkLowerRow": 345
+    }
+  ],
+  "measurement": "1024px comparison; luminance uses RGB coefficients .2126/.7152/.0722, light mask maxRGB>35; lower green G>1.07R and G>1.03B, y>430; star core row is max central mean luminance at rows560..899.",
+  "checks": [
+    {
+      "file": "preview.png",
+      "width": 1024,
+      "horizontalMirrorDifferentPixels": 0,
+      "transparentCorners": true
+    },
+    {
+      "file": "axial-icon-3072.png",
+      "width": 3072,
+      "horizontalMirrorDifferentPixels": 0,
+      "transparentCorners": true
+    },
+    {
+      "file": "green-white-rounded.png",
+      "width": 896,
+      "horizontalMirrorDifferentPixels": 0,
+      "transparentCorners": true
+    },
+    {
+      "file": "green-white-rounded-3072.png",
+      "width": 3072,
+      "horizontalMirrorDifferentPixels": 0,
+      "transparentCorners": true
+    }
+  ],
+  "allManifestHashesVerified": true,
+  "currentE1Changed": false
+}

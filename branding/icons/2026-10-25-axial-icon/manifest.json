@@ -1,0 +1,84 @@
+{
+  "date": "2026-10-25",
+  "geometry": {
+    "viewBox": 1024,
+    "cornerRadius": 200,
+    "ringDrop": 136,
+    "starLift": 56
+  },
+  "colors": {
+    "green": "#8de5b1",
+    "gold": "#ffe5a6",
+    "pink": "#ffe1ed",
+    "lavender": "#d9ccff"
+  },
+  "source": "../2026-10-25-fine-studies/contours.json",
+  "sourceSha256": "eb5c5149063efa1099c36c24abb36663f6f15de7994ccaba7c2fc9de2cb90cfe",
+  "files": [
+    {
+      "file": "README.md",
+      "bytes": 1921,
+      "sha256": "dc33ec1ab0774bd58a07a7cbb685c1f3ffe0ec89b014b691875df6ae23c0e722"
+    },
+    {
+      "file": "geometry.mjs",
+      "bytes": 3344,
+      "sha256": "92eca3b8e2755c413374890b785c512a69e574ed5b3e8ee21739108713859f0a"
+    },
+    {
+      "file": "build.mjs",
+      "bytes": 5105,
+      "sha256": "96ca1f89feaaa38142ca4b9c75cee550d961655443c7f8101b169db36ae96214"
+    },
+    {
+      "file": "index.html",
+      "bytes": 1284,
+      "sha256": "92364fa865e34eb9834dd3c84cf5256bfad9f392eaf057378995c030a40582d5"
+    },
+    {
+      "file": "flow.html",
+      "bytes": 1281,
+      "sha256": "ec8edad8aadc87317a12e9e89e04925967d327fd983feb734b5b31f196063e5f"
+    },
+    {
+      "file": "axial-icon.svg",
+      "bytes": 3999058,
+      "sha256": "4bc9a622643868aa0b7680b07a1feba0b214f02fa5591a10ce8c959237637126"
+    },
+    {
+      "file": "preview.png",
+      "bytes": 382108,
+      "sha256": "a5eeaedafa9982d40f8d6a5dc0caa9f2d5a06a8728f918720a377eee58ffb7a9"
+    },
+    {
+      "file": "axial-icon-3072.png",
+      "bytes": 2363209,
+      "sha256": "697f7132306646d2c915f32d82a73cb03fb5177bda8180167dd5a52f80b580dc"
+    },
+    {
+      "file": "green-white-rounded.svg",
+      "bytes": 4010610,
+      "sha256": "91b01548acb411761ee3f0cb8fe560e7f272c55a68dc8e8fb7b3369028ead8a2"
+    },
+    {
+      "file": "green-white-rounded.png",
+      "bytes": 410579,
+      "sha256": "36a69a70a09d65a73f911c7d576e94db1b9d19266bd9cb2884073d66742c7d2d"
+    },
+    {
+      "file": "green-white-rounded-3072.png",
+      "bytes": 3762796,
+      "sha256": "da41abee2cc8f0200e71621a3cabdec671db14078081a0ca5320da369ec78771"
+    },
+    {
+      "file": "references/previous.png",
+      "bytes": 451135,
+      "sha256": "d2407b6944642b96db1c6054ec7685f63c0f2099899d30e8b40fb9f8e66be33a"
+    },
+    {
+      "file": "references/green-white-original.png",
+      "bytes": 450308,
+      "sha256": "ebd9aeef731de467ddf348fc856f0ad80aec5235759faeec8639b4a56dd902f9"
+    }
+  ]
+}
