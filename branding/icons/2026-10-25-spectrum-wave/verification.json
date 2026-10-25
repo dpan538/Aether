@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-25",
+  "size": [
+    3072,
+    3072
+  ],
+  "pureBlackOutsideBand": true,
+  "centeredBand": true,
+  "bandFullBleedBothEdges": true,
+  "whiteWavePaths": 3,
+  "pureWhitePixels": 42299,
+  "paletteSamplesVerified": 14,
+  "manifestHashesVerified": true,
+  "nativeVectorNoFiltersOrEmbeddedRaster": true,
+  "currentE1Unchanged": true
+}
