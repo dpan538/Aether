@@ -90,12 +90,21 @@ class AlbumSuite(private val test:Instrumentation,private val activity:MainActiv
                 check(v.text.toString()==sample&&v.textSize in 68f..128.1f)
                 check((0 until v.lineCount).all{v.layout.getEllipsisCount(it)==0})
             }
+            fun rect(v:View)=android.graphics.Rect().also{check(v.getGlobalVisibleRect(it))}
+            val artist=visibleTexts.first{it.text.toString()=="Dai Pan (潘岱)"}
+            val metadata=visibleTexts.first{it.text.toString().startsWith("11 首器乐作品")}
+            val phrase=visibleTexts.first{it.text.toString()=="由梦入真，由幻归寂。"}
+            val button=dialog()!!.findViewById<View>(MusicLibraryDialog.ALBUM_PLAY)
+            check(rect(artist).top-rect(title).bottom>=63)
+            check(rect(button).top-rect(metadata).bottom>=75)
+            check(rect(phrase).top-rect(button).bottom>=59)
+            check(rect(phrase).height()>=phrase.height-1){"Gray phrase is clipped"}
             val root=android.graphics.Rect();dialog()!!.window!!.decorView.getGlobalVisibleRect(root)
             for(id in listOf(MusicLibraryDialog.ALBUM_PLAY,MusicLibraryDialog.NOTES,MusicLibraryDialog.CLOSE)){
                 val v=dialog()!!.findViewById<View>(id);val r=android.graphics.Rect();check(v.getGlobalVisibleRect(r));check(r.height()>=v.height-1){"Clipped album action $id"}
             }
         }
-        record("Adaptive complete titles, booklet-only Chinese concept heading and enlarged gray phrase fit the 3.4K sheet")
+        record("Independent title/credit/action/phrase spacing, adaptive complete titles and booklet-only concept heading fit the 3.4K sheet")
         screenshot("layout")
         tapView(MusicLibraryDialog.ALBUM_PLAY);waitFor{s.playing&&s.spectrumFrame!=null};record("Enlarged album play action decodes real audio")
         tapView(MusicLibraryDialog.NOTES);Thread.sleep(350);screenshot("layout-notes");test.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);Thread.sleep(200);record("Enlarged notes action opens readable booklet")

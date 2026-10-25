@@ -6,13 +6,13 @@
     "passed": true,
     "checks": [
       {
-        "name": "Adaptive complete titles, booklet-only Chinese concept heading and enlarged gray phrase fit the 3.4K sheet",
+        "name": "Independent title/credit/action/phrase spacing, adaptive complete titles and booklet-only concept heading fit the 3.4K sheet",
         "passed": true,
         "track": "Before the First Light",
         "durationMs": -9223372036854775807,
         "samples": 0,
         "rms": 0,
-        "timeMs": 11467721
+        "timeMs": 11795792
       },
       {
         "name": "Enlarged album play action decodes real audio",
@@ -21,25 +21,25 @@
         "durationMs": 178990,
         "samples": 16384,
         "rms": 0.05961791,
-        "timeMs": 11469019
+        "timeMs": 11797085
       },
       {
         "name": "Enlarged notes action opens readable booklet",
         "passed": true,
         "track": "Before the First Light",
         "durationMs": 178990,
-        "samples": 94208,
-        "rms": 0.070204355,
-        "timeMs": 11470788
+        "samples": 98304,
+        "rms": 0.06738353,
+        "timeMs": 11798921
       },
       {
         "name": "Large close returns to immersive playback",
         "passed": true,
         "track": "Before the First Light",
         "durationMs": 178990,
-        "samples": 114688,
-        "rms": 0.063784584,
-        "timeMs": 11471252
+        "samples": 118784,
+        "rms": 0.061883073,
+        "timeMs": 11799385
       }
     ],
     "width": 3408,
@@ -47,14 +47,14 @@
   },
   "apk": {
     "apk": "Aether-0.1.0-preview.4.apk",
-    "bytes": 83476436,
+    "bytes": 83476464,
     "manifest": {
       "schemaVersion": 1,
       "packageName": "io.github.dpan538.aether",
       "versionCode": 5,
       "versionName": "0.1.0-preview.4",
       "apk": "Aether-0.1.0-preview.4.apk",
-      "sha256": "9b4101b09d0638dd93ea85ae1f1270ddd2ba992c335f017e09cd16221399755b",
+      "sha256": "93e30482a318d8c09185258eac179c360d2ec6514475e71fd569209635ef4686",
       "certificateSha256": "934601abcd99dd1cfbd7466f6096fd2c27a6e6ae2e75681d5233a4fd6e1a15b9"
     },
     "debuggable": false,
@@ -68,6 +68,11 @@
       64
     ],
     "chineseConceptTitle": "Booklet only",
-    "grayPhraseSp": 22
+    "grayPhraseSp": 22,
+    "sectionGapsDp": {
+      "titleToCredit": 32,
+      "creditToActions": 38,
+      "actionsToPhrase": 30
+    }
   }
 }

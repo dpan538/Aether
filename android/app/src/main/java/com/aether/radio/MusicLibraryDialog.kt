@@ -47,15 +47,17 @@ class MusicLibraryDialog(context:Context,private val state:Session,private val a
         left.add(image,-1,430)
         left.space(28)
         left.add(AlbumTitleView(context).apply{text=album.firstOrNull()?.album?:"Before the Rise";setTextColor(ink)})
-        left.space(7)
-        left.add(text("Dai Pan (潘岱)",23f,accent));left.space(8)
-        left.add(text(if(cn)"11 首器乐作品 · 30 分 39 秒 · 离线唱片" else "11 instrumentals · 30 min 39 sec · Offline album",14f,muted))
-        left.space(18)
+        left.space(32)
+        val credits=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
+        credits.add(text("Dai Pan (潘岱)",23f,accent));credits.space(14)
+        credits.add(text(if(cn)"11 首器乐作品 · 30 分 39 秒 · 离线唱片" else "11 instrumentals · 30 min 39 sec · Offline album",14f,muted))
+        left.add(credits)
+        left.space(38)
         albumPlay=button(if(cn)"▶  播放专辑" else "▶  Play album",ALBUM_PLAY,true){if(state.isLocal&&state.localQueue==album)state.togglePlay()else state.selectLocal(album,0);update()}
         val heroActions=LinearLayout(context).apply{gravity=Gravity.CENTER_VERTICAL}
         heroActions.add(albumPlay,190,60);heroActions.space(14)
         heroActions.add(button(if(cn)"专辑手记 ↗" else "Album notes ↗",NOTES){showNotes()},180,60)
-        left.add(heroActions);left.space(16)
+        left.add(heroActions);left.space(30)
         left.add(text(if(cn)"由梦入真，由幻归寂。" else "Through illusion, returning to the silence of dawn.",22f,muted).apply{typeface=Typeface.create("serif",Typeface.ITALIC)})
         val leftScroll=ScrollView(context).apply{isFillViewport=true;isVerticalScrollBarEnabled=false;addView(left)}
         body.add(leftScroll,430,-1);body.space(58)
