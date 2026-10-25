@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-25",
+  "method": "SVG reconstruction of user-provided Compose Canvas parameters; not Android-rendered evidence",
+  "logicalReferenceSize": 512,
+  "referenceDensity": 1,
+  "lineCount": 120,
+  "lineWidth": 1,
+  "centerYShift": 10,
+  "coreRadiusFraction": 0.2,
+  "outerRadiusFraction": 0.4,
+  "background": "#0B0D12",
+  "coreColors": [
+    "#FDE8E0",
+    "#F3C785",
+    "#91B879",
+    "transparent"
+  ],
+  "roundedPresentationRadiusFraction": 0.1953125,
+  "files": [
+    {
+      "file": "README.md",
+      "bytes": 1770,
+      "sha256": "0bcd8aeaa688959c56b77a973ba071ad13f0265e41bbfb34fcb077b4d8a28726"
+    },
+    {
+      "file": "AetherLogoCanvas.kt",
+      "bytes": 2531,
+      "sha256": "9f5c555c09bd10f8fb9de95507b94b57b0f050c0cd6b9445f039efdff39eea8d"
+    },
+    {
+      "file": "build.mjs",
+      "bytes": 5231,
+      "sha256": "27ca607a6cd2668f45b74cf8160928ab91ebff410e0a9bea1228ba3fd5f487ce"
+    },
+    {
+      "file": "index.html",
+      "bytes": 2071,
+      "sha256": "e806fce499833ebb386d9d8684c016c68f0d1fe8049e0c4ee0a2d8b20740a115"
+    },
+    {
+      "file": "canvas-original.svg",
+      "bytes": 16520,
+      "sha256": "16215236d2ed5e45610764ff44d3ae6c85542adf58f81873e45bd98aba6c03e5"
+    },
+    {
+      "file": "canvas-logo.svg",
+      "bytes": 16615,
+      "sha256": "48e8279cacbe504ec054d0746fdda0298a18976388b23d2721b9a8e458e08dad"
+    },
+    {
+      "file": "canvas-logo-3072.png",
+      "bytes": 3066022,
+      "sha256": "0c06813858ed2d449b8cd314d7e00480ea8b818545f8df4bf0704b6ed67cf60c"
+    },
+    {
+      "file": "preview.png",
+      "bytes": 576039,
+      "sha256": "519b585f13be2fb3ade452409c42e0af203752ce773f8286e21926601ee79e00"
+    },
+    {
+      "file": "small-code-48.svg",
+      "bytes": 16001,
+      "sha256": "b4a181b1808b0a9dabbccba2c3b004f949787da4b696437367ce56c93859872e"
+    },
+    {
+      "file": "small-code-48.png",
+      "bytes": 62938,
+      "sha256": "9e5ffa640b4712ca9a96602803de30f53276de54750a4f5d84c4bdc69c3d23e4"
+    },
+    {
+      "file": "scaled-icon-48.png",
+      "bytes": 2644,
+      "sha256": "eecb55913588a78d3a62707eedce049105f42c347cd18971711e8cc47f8b1613"
+    }
+  ]
+}

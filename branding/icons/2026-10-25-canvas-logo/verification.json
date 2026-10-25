@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-25",
+  "userFormulaCircleCount": 120,
+  "geometryAndAlphaMatchUserFormula": true,
+  "originalPalettePreserved": true,
+  "fixedOffsetAndStrokeKeptFor48Sample": true,
+  "nativeSVGNoEmbeddedRaster": true,
+  "masterSize": [
+    3072,
+    3072
+  ],
+  "centerRGB": [
+    253,
+    232,
+    224
+  ],
+  "roundedPresentationTransparentCorners": true,
+  "manifestHashesVerified": true,
+  "androidCompilationOrNativePixelVerificationPerformed": false,
+  "currentE1Changed": false
+}
