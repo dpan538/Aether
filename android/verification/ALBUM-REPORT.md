@@ -1,10 +1,10 @@
 # Adaptive album typography / preview.4
 
-The current delivery is **0.1.0-preview.4 / versionCode5**. Album titles now use natural balanced wrapping at **34–64sp**, with no album-specific forced newline. Names are sized against their actual available width/height; very long titles keep complete text and can scroll with the left column. The user rejected both the sparse corner block and the later 84sp title candidate.
+The current delivery is **0.1.0-preview.4 / versionCode5**. Album titles now use natural balanced wrapping at **34–64sp**, with no album-specific forced newline. Names are sized against their actual available width/height; very long titles keep complete text and can scroll with the left column. The Chinese concept heading is shown only in the booklet; the lower-left gray phrase is 22sp.
 
 The exact signed non-debuggable APK passed **4 native layout/control checks** at 3408×2272: complete short/long titles and unclipped actions, real playback, booklet opening, and close/return. Release build and lint passed with no errors (13 existing warnings). This typography revision leaves the 11 source recordings, cover, source handling and player unchanged. The **26 native / 18 unit** functional results below are the preceding code4 baseline; they are not fresh code5 runs.
 
-[Current layout acceptance](evidence/album/layout-acceptance.json). APK **83,476,432 bytes**, SHA-256 `bce86ca27fa10df077544e0316d695259b4a3e38180a53bfc9a0189fb141f1fb`. Same permanent package/signer. Physical Xiaomi hardware remains untested.
+[Current layout acceptance](evidence/album/layout-acceptance.json). APK **83,476,436 bytes**, SHA-256 `9b4101b09d0638dd93ea85ae1f1270ddd2ba992c335f017e09cd16221399755b`. Same permanent package/signer. Physical Xiaomi hardware remains untested.
 
 ---
 

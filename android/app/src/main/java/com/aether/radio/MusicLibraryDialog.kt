@@ -47,7 +47,7 @@ class MusicLibraryDialog(context:Context,private val state:Session,private val a
         left.add(image,-1,430)
         left.space(28)
         left.add(AlbumTitleView(context).apply{text=album.firstOrNull()?.album?:"Before the Rise";setTextColor(ink)})
-        left.add(text("幻昼 · 万象归寂录",26f).apply{letterSpacing=.04f});left.space(7)
+        left.space(7)
         left.add(text("Dai Pan (潘岱)",23f,accent));left.space(8)
         left.add(text(if(cn)"11 首器乐作品 · 30 分 39 秒 · 离线唱片" else "11 instrumentals · 30 min 39 sec · Offline album",14f,muted))
         left.space(18)
@@ -56,7 +56,7 @@ class MusicLibraryDialog(context:Context,private val state:Session,private val a
         heroActions.add(albumPlay,190,60);heroActions.space(14)
         heroActions.add(button(if(cn)"专辑手记 ↗" else "Album notes ↗",NOTES){showNotes()},180,60)
         left.add(heroActions);left.space(16)
-        left.add(text(if(cn)"由梦入真，由幻归寂。" else "Through illusion, returning to the silence of dawn.",16f,muted).apply{typeface=Typeface.create("serif",Typeface.ITALIC)})
+        left.add(text(if(cn)"由梦入真，由幻归寂。" else "Through illusion, returning to the silence of dawn.",22f,muted).apply{typeface=Typeface.create("serif",Typeface.ITALIC)})
         val leftScroll=ScrollView(context).apply{isFillViewport=true;isVerticalScrollBarEnabled=false;addView(left)}
         body.add(leftScroll,430,-1);body.space(58)
         val right=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
@@ -92,7 +92,9 @@ class MusicLibraryDialog(context:Context,private val state:Session,private val a
         content.add(text("Before the Rise",34f).apply{typeface=Typeface.create("serif",Typeface.NORMAL)});content.add(text("Dai Pan (潘岱)",18f,accent));content.space(18)
         val manifest=LocalMusic.manifest(context)
         content.add(text(if(cn)"幻昼·万象归寂录" else manifest.getString("conceptTitle"),24f));content.space(12)
-        content.add(text(manifest.optString(if(cn)"linerNotesZh" else "linerNotesEn",manifest.getString(if(cn)"conceptZh" else "conceptEn")),17f))
+        val notes=manifest.optString(if(cn)"linerNotesZh" else "linerNotesEn",manifest.getString(if(cn)"conceptZh" else "conceptEn"))
+        val heading=if(cn)"幻昼·万象归寂录" else manifest.getString("conceptTitle")
+        content.add(text(if(notes.startsWith(heading))notes.substringAfter("\n\n",notes)else notes,17f))
         album.forEachIndexed{i,t->content.space(24);content.add(text("${i+1}. ${t.title}",21f));content.add(text(t.instruments,14f,accent));content.space(6);content.add(text(t.description,17f))}
         content.space(24);content.add(text("使用 Google AI 辅助生成 / Created with Google AI assistance",13f,muted))
         val scroll=ScrollView(context).apply{addView(content)}
