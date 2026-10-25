@@ -27,6 +27,8 @@ class MainActivity:Activity() {
     private val deviceTick=object:Runnable{override fun run(){if(!session.reference&&session.powered){runCatching{DeviceReadings.read(this@MainActivity)}.getOrNull()?.let{if(it!=session.deviceReadings){session.deviceReadings=it;session.changed()}}};main.postDelayed(this,15000)}}
     private var pendingSearch:Runnable?=null
     private var pendingInput:Runnable?=null
+    private var directoryQuery:String?=null
+    private var directoryInterrupted=false
     private val preferences by lazy {getSharedPreferences("aether-live",MODE_PRIVATE)}
     private var savedPreferenceState=""
     private fun stationJson(s:Station)=JSONObject().put("id",s.id).put("name",s.name).put("region",s.region).put("language",s.language).put("genre",s.genre).put("stream",s.stream)
@@ -34,18 +36,19 @@ class MainActivity:Activity() {
     private fun savePreferences(){
         if(session.reference)return
         val station=session.station?.let{stationJson(it).toString()}.orEmpty()
-        val stamp=listOf(session.volume,session.unmutedVolume,session.tempo,session.language,station).joinToString("|")
+        val stamp=listOf(session.volume,session.unmutedVolume,session.tempo,session.language,session.spectrumEnabled,station).joinToString("|")
         if(stamp==savedPreferenceState)return;savedPreferenceState=stamp
-        preferences.edit().putInt("volume",session.volume).putInt("unmuted",session.unmutedVolume).putInt("tempo",session.tempo).putString("language",session.language).putString("last-station",station).apply()
+        preferences.edit().putInt("volume",session.volume).putInt("unmuted",session.unmutedVolume).putInt("tempo",session.tempo).putString("language",session.language).putString("last-station",station).putBoolean("spectrum-enabled",session.spectrumEnabled).apply()
     }
     override fun onCreate(savedInstanceState:Bundle?){
         super.onCreate(savedInstanceState)
         window.setDecorFitsSystemWindows(false)
         window.attributes=window.attributes.apply{layoutInDisplayCutoutMode=WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES}
         session=Session(BuildConfig.DEBUG&&intent.getStringExtra("mode")=="reference")
-        applyScenario(intent.getStringExtra("scenario")?:"modern-ink")
+        if(BuildConfig.DEBUG)applyScenario(intent.getStringExtra("scenario")?:"modern-ink")
         if(!session.reference){
             session.volume=preferences.getInt("volume",20).coerceIn(0,30);session.unmutedVolume=preferences.getInt("unmuted",20).coerceIn(1,30)
+            session.spectrumEnabled=preferences.getBoolean("spectrum-enabled",true)
             session.tempo=preferences.getInt("tempo",100).coerceIn(50,150);session.language=preferences.getString("language","en")?.takeIf{it in listOf("en","zh")}?:"en"
             runCatching{preferences.getString("last-station",null)?.takeIf{it.isNotBlank()}?.let{session.restoreStation(stationFromJson(JSONObject(it)))}}
             session.favorites.clear();runCatching{JSONArray(preferences.getString("favorites","[]")).let{a->for(i in 0 until a.length())session.favorites.add(a.getString(i))}}
@@ -55,7 +58,7 @@ class MainActivity:Activity() {
                 preferences.edit().putString("favorites",JSONArray(session.favorites).toString()).putString("favorite-stations",saved.toString()).apply()
             }
             repository=RadioRepository(this)
-            session.onPower={if(!it){repository?.cancel();updater?.cancel()}else updater?.let{u->session.updateUi=u.ui}}
+            session.onPower={if(!it){cancelDirectory();updater?.cancel()}else{if(directoryInterrupted||session.catalog.isEmpty())searchDirectory(session.query,false);updater?.let{u->session.updateUi=u.ui}}}
             session.catalog=repository!!.cached()
             audio=AudioSession(this,session)
             updater=Updates(applicationContext){status->if(session.powered){session.updateUi=status;session.changed()}}
@@ -68,7 +71,7 @@ class MainActivity:Activity() {
         surface.onFirstFrame={filesDir.resolve("frame-ready.txt").writeText(intent.getStringExtra("scenario")?:"modern-ink");reportState()}
         surface.onResourcesReady={surface.beginRefresh();sampleControls();reportState()}
         val redraw=session.onChange
-        session.onChange={redraw();savePreferences();if(!session.enabled){searchField?.clearFocus();searchField?.windowToken?.let{(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(it,0)}};reportState()}
+        session.onChange={redraw();savePreferences();if(!session.reference&&session.powered&&directoryQuery!=session.query)searchDirectory(session.query,true);if(!session.enabled){searchField?.clearFocus();searchField?.windowToken?.let{(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(it,0)}};reportState()}
         val layout=FrameLayout(this).apply{setBackgroundColor(Color.rgb(8,10,12))}
         layout.addView(surface,FrameLayout.LayoutParams(-1,-1))
         searchField=EditText(this).apply{
@@ -80,7 +83,7 @@ class MainActivity:Activity() {
                     if(!session.enabled)return
                     session.query=s.toString();session.listOffset=0
                     pendingInput?.let{main.removeCallbacks(it)}
-                    pendingInput=Runnable{session.changed();if(!session.reference)searchDirectory(session.query,true)}.also{main.postDelayed(it,90)}
+                    pendingInput=Runnable{session.changed()}.also{main.postDelayed(it,90)}
                 }
                 override fun afterTextChanged(s:Editable?){}
             })
@@ -122,7 +125,11 @@ class MainActivity:Activity() {
             session.savedStations[station.id]=station;session.select(station.id)
         }
     }
+    private fun cancelDirectory(){
+        pendingSearch?.let{main.removeCallbacks(it)};repository?.cancel();directoryInterrupted=true
+    }
     private fun searchDirectory(query:String,debounce:Boolean){
+        directoryQuery=query;directoryInterrupted=false
         pendingSearch?.let{main.removeCallbacks(it)}
         val work=Runnable{repository?.search(query){stations,error->
             val previous=session.station?.id
@@ -136,7 +143,7 @@ class MainActivity:Activity() {
         val d=resources.displayMetrics
         val payload=JSONObject().put("mode",if(session.reference)"reference" else "live").put("width",d.widthPixels).put("height",d.heightPixels).put("density",d.density).put("densityDpi",d.densityDpi).put("fontScale",resources.configuration.fontScale).put("api",android.os.Build.VERSION.SDK_INT).put("model",android.os.Build.MODEL).put("catalogCount",session.catalog.size).put("connection",session.connection.name).put("issue",session.issue)
             .put("viewWidth",surface.width).put("viewHeight",surface.height).put("directoryIssue",session.directoryIssue)
-            .put("committedRefresh",surface.committedRefresh).put("committedFrontlight",surface.committedFrontlight).put("committedPage",surface.committedPage)
+            .put("committedRefresh",surface.committedRefresh).put("committedFrontlight",surface.committedFrontlight).put("committedPage",surface.committedPage).put("contentRevision",surface.contentRevision).put("committedRevision",surface.committedRevision).put("committedView",surface.committedView).put("committedOffset",surface.committedOffset)
             .put("assetsReady",surface.assetsReady).put("preparationMillis",surface.preparationMillis)
             .put("hapticAvailable",surface.haptics.available).put("hapticAttempts",surface.haptics.attempts).put("hapticAccepted",surface.haptics.accepted).put("hapticSuppressed",surface.haptics.suppressed).put("hapticTicks",surface.haptics.ticks).put("hapticPresses",surface.haptics.presses).put("hapticStops",surface.haptics.stops).put("lastHaptic",surface.haptics.last)
             .put("selected",session.selected).put("station",session.station?.name).put("volume",session.volume).put("powered",session.powered).put("locked",session.locked).put("light",session.light).put("frontlight",surface.frontlight).put("page",session.page).put("view",session.view).put("menu",session.menu).put("tempo",session.tempo).put("favorites",JSONArray(session.favorites)).put("filteredCount",session.filtered().size).put("query",session.query).put("metadata",session.metadata).put("decodedFormat",session.decodedFormat)
@@ -145,13 +152,13 @@ class MainActivity:Activity() {
             .put("presentationPlaying",session.playing)
             .put("spectrumEnabled",session.spectrumEnabled).put("spectrumSamples",session.spectrumFrame?.samples?:0).put("spectrumRms",session.spectrumFrame?.rms?:0).put("spectrumLevels",JSONArray(session.spectrumFrame?.levels?.toList()?:emptyList<Float>()))
             .put("updateOpen",session.updateOpen).put("updatePhase",session.updateUi.phase.name).put("updateCached",session.updateUi.cached).put("updateRequests",updater?.downloadRequests?:0).put("updateReuse",updater?.reusedPackages?:0)
-            .put("selectedId",session.station?.id).put("mediaId",audio?.player?.currentMediaItem?.mediaId).put("visible",JSONArray(session.filtered().drop(session.listOffset).take(4).map{it.name})).put("artworkReady",surface.painter.mainDisc!=null&&surface.painter.smallDisc!=null&&(surface.testTime==null||!session.motion||kotlin.math.abs(surface.painter.smallDiscPhase-surface.painter.phase)<.0001f)).put("reducedMotion",surface.reducedMotion)
+            .put("presetIds",JSONArray(session.presetPool().drop(session.presetStart).take(4).map{it.id})).put("presetNames",JSONArray(session.presetPool().drop(session.presetStart).take(4).map{it.name})).put("presetStart",session.presetStart).put("selectedId",session.station?.id).put("mediaId",audio?.player?.currentMediaItem?.mediaId).put("visible",JSONArray(session.filtered().drop(session.listOffset).take(4).map{it.name})).put("artworkReady",surface.painter.mainDisc!=null&&surface.painter.smallDisc!=null&&(surface.testTime==null||!session.motion||kotlin.math.abs(surface.painter.smallDiscPhase-surface.painter.phase)<.0001f)).put("reducedMotion",surface.reducedMotion)
         surface.rootWindowInsets?.let{val i=it.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout());payload.put("insets",JSONArray(listOf(i.left,i.top,i.right,i.bottom)))}
         filesDir.resolve("runtime-state.json").writeText(payload.toString(2));android.util.Log.i("AetherState",payload.toString())
     }
     override fun onNewIntent(intent:Intent){super.onNewIntent(intent);if(BuildConfig.DEBUG&&(intent.hasExtra("scenario")||intent.hasExtra("mode"))){setIntent(intent);recreate()}}
     override fun onWindowFocusChanged(hasFocus:Boolean){super.onWindowFocusChanged(hasFocus);if(hasFocus)window.insetsController?.hide(WindowInsets.Type.systemBars())}
-    override fun onResume(){super.onResume();if(::surface.isInitialized)surface.resume();updater?.returnedToApp(this);main.post(deviceTick);if(BuildConfig.DEBUG)main.postDelayed(debugTick,1000)}
-    override fun onStop(){main.removeCallbacks(deviceTick);main.removeCallbacks(debugTick);if(::surface.isInitialized)surface.pause();audio?.pause();repository?.cancel();super.onStop()}
+    override fun onResume(){super.onResume();if(::surface.isInitialized)surface.resume();updater?.returnedToApp(this);if(!session.reference&&session.powered&&directoryInterrupted)searchDirectory(session.query,false);main.post(deviceTick);if(BuildConfig.DEBUG)main.postDelayed(debugTick,1000)}
+    override fun onStop(){main.removeCallbacks(deviceTick);main.removeCallbacks(debugTick);if(::surface.isInitialized)surface.pause();audio?.pause();cancelDirectory();super.onStop()}
     override fun onDestroy(){pendingInput?.let{main.removeCallbacks(it)};pendingSearch?.let{main.removeCallbacks(it)};surface.close();audio?.close();repository?.close();updater?.close();super.onDestroy()}
 }

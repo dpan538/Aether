@@ -25,6 +25,8 @@ def launch(mode='reference',scenario='modern-ink',extras=()):
     else:raise RuntimeError('first native frame did not finish')
     return wait(lambda s: s.get('assetsReady') and not s.get('refreshing',False) and not s.get('committedRefresh',True)) if not any(x=='refresh_time' for x in extras) else state()
 def capture(out,name):
-    out.mkdir(parents=True,exist_ok=True);time.sleep(.4)
+    out.mkdir(parents=True,exist_ok=True)
+    wait(lambda s:s.get('contentRevision')==s.get('committedRevision') and s.get('committedPage')==s.get('page') and s.get('committedView')==s.get('view') and abs(s.get('committedOffset',1))<.01 and not s.get('committedRefresh',True))
+    time.sleep(2)
     (out/(name+'.png')).write_bytes(run('exec-out','screencap','-p'))
     observed=state();(out/(name+'.json')).write_text(json.dumps(observed,indent=2,ensure_ascii=False));print('captured',name,flush=True);return observed

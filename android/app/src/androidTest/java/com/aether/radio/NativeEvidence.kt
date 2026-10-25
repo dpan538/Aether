@@ -68,6 +68,40 @@ class NativeEvidence:Instrumentation() {
                     waitFor{activity.session.updateUi.phase==UpdatePhase.READY}
                     check(main{updater()!!.downloadRequests}==before){"Repeated check downloaded the same APK again"}
                 }
+                "render-regression"->{
+                    main {
+                        val v=activity.surface;val painter=v.painter
+                        fun draw():android.graphics.Bitmap {
+                            val bitmap=android.graphics.Bitmap.createBitmap(3408,2272,android.graphics.Bitmap.Config.ARGB_8888)
+                            val canvas=android.graphics.Canvas(bitmap);canvas.scale(2f,2f);painter.draw(canvas,false,false);return bitmap
+                        }
+                        val field=ScenePainter::class.java.getDeclaredField("p").apply{isAccessible=true}
+                        val shared=field.get(painter) as android.graphics.Paint
+                        shared.textAlign=android.graphics.Paint.Align.LEFT;shared.textScaleX=1f
+                        val baseline=draw();val pixels=IntArray(3408*2272);baseline.getPixels(pixels,0,3408,0,0,3408,2272)
+                        for(alignment in listOf(android.graphics.Paint.Align.CENTER,android.graphics.Paint.Align.RIGHT)){
+                            shared.textAlign=alignment;shared.textScaleX=.35f;shared.textSkewX=.4f;shared.letterSpacing=.5f
+                            val next=draw();val actual=IntArray(pixels.size);next.getPixels(actual,0,3408,0,0,3408,2272)
+                            val differences=pixels.indices.count{pixels[it]!=actual[it]};check(differences==0){"Text paint leaked: $alignment changed $differences pixels"}
+                            securityChecks.put(JSONObject().put("check","Full 3408x2272 render independent of $alignment / scale / skew / tracking").put("changedPixels",differences).put("passed",true));next.recycle()
+                        }
+                        baseline.recycle()
+                    }
+                }
+                "paint"->{
+                    main {
+                        val paint=android.graphics.Paint()
+                        for(align in listOf(android.graphics.Paint.Align.CENTER,android.graphics.Paint.Align.RIGHT)){
+                            paint.textAlign=align;paint.reset()
+                            securityChecks.put(JSONObject().put("before",align.name).put("afterReset",paint.textAlign.name))
+                        }
+                        val v=activity.surface;val bitmap=android.graphics.Bitmap.createBitmap(3408,2272,android.graphics.Bitmap.Config.ARGB_8888)
+                        val canvas=android.graphics.Canvas(bitmap);canvas.scale(2f,2f)
+                        v.painter.draw(canvas,false,false)
+                        val folder=targetContext.getExternalFilesDir("evidence")!!.apply{mkdirs()}
+                        java.io.File(folder,"software-scene.png").outputStream().use{bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()
+                    }
+                }
                 "current"->{
                     tap("device-settings");tap("check-updates")
                     waitFor{activity.session.updateUi.phase==UpdatePhase.CURRENT}
@@ -84,6 +118,23 @@ class NativeEvidence:Instrumentation() {
                     val actual=ByteArray(bytes.size);processor.output.get(actual);check(actual.contentEquals(bytes))
                     processor.queueInput(androidx.media3.common.audio.AudioProcessor.EMPTY_BUFFER)
                     processor.queueEndOfStream();check(processor.isEnded);processor.reset()
+                    fun tone(floating:Boolean,opposite:Boolean,silent:Boolean=false):SpectrumFrame {
+                        val frames=mutableListOf<SpectrumFrame>();val p=SpectrumProcessor({true}){frames.add(it)}
+                        p.configure(androidx.media3.common.audio.AudioProcessor.AudioFormat(48000,2,if(floating)androidx.media3.common.C.ENCODING_PCM_FLOAT else androidx.media3.common.C.ENCODING_PCM_16BIT));p.flush()
+                        val buffer=java.nio.ByteBuffer.allocateDirect(48000*2*if(floating)4 else 2).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+                        for(i in 0 until 48000){val a=if(silent)0.0 else .5*kotlin.math.sin(2*Math.PI*1000*i/48000);val b=if(opposite)-a else if(silent)0.0 else .5*kotlin.math.sin(2*Math.PI*4000*i/48000);for(sample in listOf(a,b))if(floating)buffer.putFloat(sample.toFloat())else buffer.putShort((sample*32767).toInt().toShort())}
+                        buffer.flip();val original=ByteArray(buffer.remaining());buffer.duplicate().get(original);p.queueInput(buffer)
+                        val output=ByteArray(original.size);p.output.get(output);check(output.contentEquals(original)){"Analyzer altered audible PCM"}
+                        check(frames.size in 1..20);val frame=frames.last();check(frame.levels.all{it.isFinite()})
+                        if(silent){check(frame.rms==0f);check(frame.levels.max()<=-89f)}else{
+                            check(frame.rms>.3f);check(frame.leftLevels.indices.maxBy{frame.leftLevels[it]}==5)
+                            check(frame.rightLevels.indices.maxBy{frame.rightLevels[it]}==if(opposite)5 else 7)
+                            check(frame.levels[5]>-15f){"Opposite-phase stereo cancelled"}
+                        }
+                        p.reset();return frame
+                    }
+                    tone(false,true);tone(false,false);tone(true,true);tone(true,false);tone(false,false,true);tone(true,false,true)
+                    securityChecks.put(JSONObject().put("check","16-bit / float, anti-phase stereo, isolated channel frequencies, silence, 20 Hz ceiling and bit-exact pass-through").put("passed",true))
                     securityChecks.put(JSONObject().put("check","PCM pass-through and empty/end-of-stream buffers").put("passed",true))
                 }
                 "soak"->{

@@ -34,9 +34,19 @@ class ScenePainter(val context:Context,val state:Session) {
     private val bitmaps=object:LruCache<String,Bitmap>(288*1024*1024){override fun sizeOf(k:String,v:Bitmap)=v.allocationByteCount}
     private val pictures=object:LruCache<String,Picture>(200){}
     private val p=Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+    private fun resetPaint(){
+        p.reset();p.textAlign=Paint.Align.LEFT;p.textScaleX=1f;p.textSkewX=0f;p.letterSpacing=0f
+    }
+    private fun textPaint(t:JSONObject):TextPaint=TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG).apply{
+        textAlign=Paint.Align.LEFT;textScaleX=1f;textSkewX=0f
+        typeface=font(t.optBoolean("mono"),t.optInt("weight",400));textSize=t.f("size").coerceAtLeast(1f)
+        color=color(t.optString("color"));letterSpacing=t.f("spacing")/textSize
+        if(t.optBoolean("preset")&&presetFont!=null){val spec=presetFont!!.split(':');typeface=Typeface.create(Typeface.create(spec[0],Typeface.NORMAL),spec.getOrNull(1)?.toIntOrNull()?:700,false)}
+    }
     private val arimo=Typeface.createFromAsset(context.assets,"fonts/Arimo.ttf")
     private val cousine=Typeface.createFromAsset(context.assets,"fonts/Cousine.ttf")
     private val fonts=java.util.concurrent.ConcurrentHashMap<Pair<Boolean,Int>,Typeface>()
+    private val spectrumDrawing by lazy{SpectrumDrawing(font(true,400))}
     var mainDisc:Bitmap?=null;var smallDisc:Bitmap?=null
     var smallDiscPhase=Float.NaN
     var tuningAngle=-125f;var modeAngle=-60f;var volumeAngle=45f
@@ -53,8 +63,8 @@ class ScenePainter(val context:Context,val state:Session) {
         SVG.registerExternalFileResolver(object:SVGExternalFileResolver(){override fun resolveFont(fontFamily:String,fontWeight:Int,fontStyle:String):Typeface = font(fontFamily.contains("mono",true)||fontFamily.contains("Consolas")||fontFamily.contains("SFMono"),fontWeight)})
     }
     fun font(mono:Boolean,weight:Int)=fonts.getOrPut(mono to weight){
-        val actual=if(weight>=600)700 else 400
-        if(mono)Typeface.create(cousine,if(actual==700)Typeface.BOLD else Typeface.NORMAL)
+        val actual=weight.coerceIn(400,700)
+        if(mono)Typeface.create(cousine,if(actual>=600)Typeface.BOLD else Typeface.NORMAL)
         else Typeface.Builder(context.assets,"fonts/Arimo.ttf").setFontVariationSettings("'wght' $actual").setWeight(actual).build()
     }
     fun scene(name:String)=scenes.getOrPut(name){SceneNode(JSONObject(context.assets.open("scenes/$name.json").bufferedReader().readText()).getJSONObject("root"))}
@@ -116,7 +126,8 @@ class ScenePainter(val context:Context,val state:Session) {
         canvas.save()
         val powerColor=node.id=="device-power"&&state.powered
         if(powerColor){val material=Paint();material.colorFilter=ColorMatrixColorFilter(ColorMatrix(floatArrayOf(.84f,.16f,0f,0f,0f,.12f,.88f,0f,0f,0f,.06f,.12f,.82f,0f,0f,0f,0f,0f,1f,0f)));canvas.saveLayer(RectF(r).apply{inset(-12f,-12f)},material)}
-        val alpha=if(node.json.has("svg"))1f else node.json.f("alpha",1.0)
+        val availability=if(!state.reference&&state.powered&&node.action.isNotBlank()&&!state.canUse(node.action)) .42f else 1f
+        val alpha=(if(node.json.has("svg"))1f else node.json.f("alpha",1.0))*availability
         if(alpha<.999f)canvas.saveLayerAlpha(null,(alpha*255).toInt())
         val cap=node.cls in listOf("key-cap","transport-cap","equalizer-cap","preset-cap")
         val pausedCap=node.cls=="transport-cap"&&parentId=="play-toggle"&&!state.playing
@@ -133,14 +144,14 @@ class ScenePainter(val context:Context,val state:Session) {
             if(id=="play-toggle"&&!state.playing)canvas.translate(9.4f,0f)
             if(!state.reference&&id=="spectrum"){
                 if(!recordStatic)drawLiveSpectrum(canvas,lit)
-            }else {
+            }else if(state.reference||!node.json.optString("svg").contains("0 0 600 190")){
                 val source=svg(node,id,lit,drawingStation,slot)
                 drawSvg(canvas,source,r,node.json.f("rotation"))
             }
         } else if(node.json.has("disc")) {
             val print=node.json.optString("disc")=="record"
             (if(print)mainDisc else smallDisc)?.let{b->
-                p.reset();p.isAntiAlias=true;p.isFilterBitmap=true
+                resetPaint();p.isAntiAlias=true;p.isFilterBitmap=true
                 if(print){val shadow=Path().apply{fillType=Path.FillType.EVEN_ODD;addCircle(r.centerX(),r.centerY()+12.5f,r.width()/2,Path.Direction.CW);addCircle(r.centerX(),r.centerY()+12.5f,r.width()/16,Path.Direction.CW)};p.color=0x99000000.toInt();p.maskFilter=BlurMaskFilter(17f,BlurMaskFilter.Blur.NORMAL);canvas.drawPath(shadow,p);p.maskFilter=null;p.alpha=255}
                 if(!print)canvas.rotate(-90f,r.centerX(),r.centerY())
                 canvas.drawBitmap(b,null,r,p)
@@ -159,12 +170,15 @@ class ScenePainter(val context:Context,val state:Session) {
                 var text=boundText(node,id,original,i,drawingStation,slot)
                 var target=t
                 if(id=="now-title"||id=="now-station")text=fit(text,t,node.r.width())
-                if(id=="station-name"&&text!=original){
-                    val maximum=scene("immersive").flattened().first{it.cls=="station-selector__copy"}.r.width()
+                if(!state.reference&&id in listOf("station-name","station-subtitle","station-position","station-time")){
+                    val maximum=if(id=="station-time")140f else 242f
                     text=fit(text,t,maximum);target=JSONObject(t.toString())
-                    val measure=TextPaint().apply{typeface=font(t.optBoolean("mono"),t.optInt("weight",400));textSize=t.f("size")}
-                    target.put("x",node.r.right-measure.measureText(text)-t.f("spacing")*text.length)
-                }
+                    target.put("x",node.r.right-textPaint(t).measureText(text))
+                }else if(!state.reference&&original=="LOCAL TIME"){
+                    target=JSONObject(t.toString()).put("x",node.r.right-textPaint(t).measureText(text))
+                }else if(!state.reference&&id=="stream-quality")text=fit(text,t,330f)
+                else if(!state.reference&&id=="selected-readout")text=fit(text,t,510f)
+                else if(!state.reference&&id in listOf("stream-format","now-playing","programme-description","selected-readout","scope-filters"))text=fit(text,t,node.r.width())
                 val changed=text!=original
                 if(node.id=="preset-number")t.put("preset",true)
                 drawText(canvas,target,text,if(changed)0f else t.f("w"))
@@ -188,7 +202,7 @@ class ScenePainter(val context:Context,val state:Session) {
         val info=skinMeta.getJSONObject(key)
         val bmp=bitmaps.get(key)?:context.assets.open("skins/$key.png").use{BitmapFactory.decodeStream(it)}.also{bitmaps.put(key,it)}
         val pad=info.f("pad")
-        p.reset();p.isFilterBitmap=true;p.isAntiAlias=true
+        resetPaint();p.isFilterBitmap=true;p.isAntiAlias=true
         c.drawBitmap(bmp,null,RectF(r.left-pad,r.top-pad,r.left-pad+bmp.width/2f,r.top-pad+bmp.height/2f),p)
     }
     private fun drawPseudo(c:Canvas,o:JSONObject){
@@ -200,40 +214,34 @@ class ScenePainter(val context:Context,val state:Session) {
     }
     private fun drawLamp(c:Canvas,r:RectF,status:String){
         val colors=when(status){"connected"->intArrayOf(0xffb6f5c3.toInt(),0xff55b976.toInt());"warning"->intArrayOf(0xfffff2a4.toInt(),0xffd0b936.toInt());"off"->intArrayOf(0xff879083.toInt(),0xff879083.toInt());else->intArrayOf(0xffefbd7d.toInt(),0xffc07c36.toInt())}
-        p.reset();p.isAntiAlias=true;p.shader=RadialGradient(r.left+r.width()*.38f,r.top+r.height()*.3f,r.width()*.7f,colors,null,Shader.TileMode.CLAMP);c.drawOval(r,p)
+        resetPaint();p.isAntiAlias=true;p.shader=RadialGradient(r.left+r.width()*.38f,r.top+r.height()*.3f,r.width()*.7f,colors,null,Shader.TileMode.CLAMP);c.drawOval(r,p)
         p.shader=null;p.style=Paint.Style.STROKE;p.strokeWidth=.8f;p.color=0xff7a8579.toInt();c.drawOval(r,p)
     }
     private fun drawText(c:Canvas,t:JSONObject,text:String,width:Float=t.f("w")){
-        p.reset();p.isAntiAlias=true;p.isSubpixelText=true
-        p.typeface=font(t.optBoolean("mono"),t.optInt("weight",400));p.textSize=t.f("size");p.color=color(t.optString("color"))
-        if(t.optBoolean("preset")&&presetFont!=null){val spec=presetFont!!.split(':');p.typeface=Typeface.create(Typeface.create(spec[0],Typeface.NORMAL),spec.getOrNull(1)?.toIntOrNull()?:700,false)}
-        val actual=p.measureText(text)
-        val spacing=t.f("spacing")
-        val ink=p.color
-        fun ghosts(draw:()->Unit){
-            if(ghostMode>0){p.color=if(ghostMode==1)0x38142014 else 0x20142014;c.save();c.translate(if(ghostMode==1)1.3632f else .4544f,0f);draw();c.restore();if(ghostMode==1){p.color=0x1a142014;c.save();c.translate(-.6816f,.7952f);draw();c.restore()};p.color=ink}
-            draw()
+        // A complete shaped run preserves kerning, combining characters and surrogate pairs.
+        // This paint is never shared with spectrum, pointer, bitmap or button drawing.
+        val paint=textPaint(t)
+        val actual=paint.measureText(text)
+        if(state.reference&&width>0&&actual>0)paint.textScaleX=width/actual
+        val ink=paint.color
+        fun run(){c.drawText(text,t.f("x"),t.f("y"),paint)}
+        if(ghostMode>0){
+            paint.color=if(ghostMode==1)0x38142014 else 0x20142014
+            c.save();c.translate(if(ghostMode==1)1.3632f else .4544f,0f);run();c.restore()
+            if(ghostMode==1){paint.color=0x1a142014;c.save();c.translate(-.6816f,.7952f);run();c.restore()}
+            paint.color=ink
         }
-        if(abs(spacing)>.01f&&text.isNotEmpty()){
-            val advances=FloatArray(text.length+1){i->p.getRunAdvance(text,0,text.length,0,text.length,false,i)}
-            val scale=if(width>0&&actual>0)(width-spacing*text.length)/actual else 1f
-            p.textScaleX=scale
-            ghosts {for(i in text.indices)c.drawText(text,i,i+1,t.f("x")+advances[i]*scale+spacing*i,t.f("y"),p)}
-        }else{
-            if(width>0&&actual>0)p.textScaleX=width/actual
-            ghosts{c.drawText(text,t.f("x"),t.f("y"),p)}
-        }
+        run()
     }
-    private fun fit(text:String,t:JSONObject,width:Float):String {
-        val measure=TextPaint(Paint.ANTI_ALIAS_FLAG).apply{typeface=font(t.optBoolean("mono"),t.optInt("weight",400));textSize=t.f("size")}
-        return TextUtils.ellipsize(text,measure,(width-abs(t.f("spacing"))*text.length).coerceAtLeast(8f),TextUtils.TruncateAt.END).toString()
-    }
+    private fun fit(text:String,t:JSONObject,width:Float):String = TextUtils.ellipsize(text,textPaint(t),width.coerceAtLeast(8f),TextUtils.TruncateAt.END).toString()
     private fun twoLines(text:String,t:JSONObject,width:Float):List<String> {
-        val measure=TextPaint().apply{typeface=font(t.optBoolean("mono"),t.optInt("weight",400));textSize=t.f("size")}
-        if(measure.measureText(text)<=width)return listOf(text)
-        var cut=measure.breakText(text,true,width,null).coerceAtLeast(1)
-        val space=text.lastIndexOf(' ',cut);if(space>cut/2)cut=space
-        return listOf(text.take(cut).trim(),fit(text.drop(cut).trim(),t,width))
+        val paint=textPaint(t)
+        if(paint.measureText(text)<=width&&!text.contains('\n'))return listOf(text)
+        val layout=android.text.StaticLayout.Builder.obtain(text,0,text.length,paint,width.toInt().coerceAtLeast(1))
+            .setIncludePad(false).setTextDirection(android.text.TextDirectionHeuristics.FIRSTSTRONG_LTR).build()
+        if(layout.lineCount<2)return listOf(fit(text,t,width))
+        val split=layout.getLineStart(1)
+        return listOf(text.take(split).trimEnd(),fit(text.drop(split).trim(),t,width))
     }
     private fun picture(source:String,r:RectF):Picture {
         val key="${r.width()}x${r.height()}:$source"
@@ -248,7 +256,7 @@ class ScenePainter(val context:Context,val state:Session) {
         c.save();if(rotation!=0f)c.rotate(rotation,r.centerX(),r.centerY());c.drawPicture(ready,r);c.restore()
     }
     private fun drawPointer(c:Canvas,r:RectF,angle:Float,width:Float,height:Float,top:Float,color:Int){
-        c.save();c.rotate(angle,r.centerX(),r.centerY());p.reset();p.isAntiAlias=true;p.color=color
+        c.save();c.rotate(angle,r.centerX(),r.centerY());resetPaint();p.isAntiAlias=true;p.color=color
         c.drawRoundRect(r.centerX()-width/2,r.top+top,r.centerX()+width/2,r.top+top+height,1f,1f,p);c.restore()
     }
     fun drawPointers(c:Canvas){
@@ -260,13 +268,13 @@ class ScenePainter(val context:Context,val state:Session) {
     fun drawPressOverlay(c:Canvas,lit:Boolean,immersive:Boolean){
         val action=pressed?:return
         val root=scene(if(immersive)"immersive" else name(lit))
-        val node=if(action.startsWith("preset:"))root.find("favorite-stations")?.children?.getOrNull((action.substringAfter(':').toIntOrNull()?:0)-state.presetOffset) else root.flattened().find{it.id==action||it.action==action}
+        val node=if(action.startsWith("preset:"))root.find("favorite-stations")?.children?.getOrNull((action.substringAfter(':').toIntOrNull()?:0)-state.presetStart) else root.flattened().find{it.id==action||it.action==action}
         val r=node?.r?:return
         c.save();c.clipRect(RectF(r).apply{inset(-11f,-11f)});recordStatic=true
         try{drawNode(c,root,lit)}finally{recordStatic=false;c.restore()}
     }
     private fun drawTempo(c:Canvas,r:RectF){
-        p.reset();p.isAntiAlias=true;p.color=Color.rgb(8,18,24)
+        resetPaint();p.isAntiAlias=true;p.color=Color.rgb(8,18,24)
         c.drawRoundRect(r.left,r.centerY()-3.7f,r.right,r.centerY()+3.7f,3f,3f,p)
         p.color=Color.rgb(79,104,115);c.drawLine(r.left,r.centerY()+3.7f,r.right,r.centerY()+3.7f,p)
         val radius=21.58f;val cx=r.left+radius+(r.width()-radius*2)*(state.tempo-50)/100f;val cy=r.centerY()-1.4f
@@ -287,7 +295,7 @@ class ScenePainter(val context:Context,val state:Session) {
         val format=if(retained!=null)retained.format else state.decodedFormat
         val connection=retained?.connection?:state.connection
         val playing=retained?.playing?:state.playing
-        val serial=if(state.catalog.isEmpty())"—" else (state.selected+1).toString().padStart(3,'0')
+        val serial=state.displayOrdinal?.toString()?.padStart(3,'0')?:"—"
         val time=s?.localTime?.substringBefore(' ')?:"—"
         val mock=if(state.reference)"MOCK" else "LIVE"
         val cn=state.language=="zh"
@@ -298,13 +306,17 @@ class ScenePainter(val context:Context,val state:Session) {
             return if(key=="ui-language")if(state.language=="zh")"中文" else "English" else if(value.isNotBlank())value.uppercase().replace("UK","UNITED KINGDOM") else when(key){"region"->if(cn)"全部地区" else "ALL REGIONS";"genre"->if(cn)"全部类型" else "ALL GENRES";else->if(cn)"全部语言" else "ALL LANGUAGES"}
         }
         val translation=n.json.optString("i18n")
+        if(translation=="favoriteStations"&&!state.reference)return if(cn)"电台预设" else "Station presets"
+        if(!state.reference&&original=="LOCAL TIME")return "DEVICE TIME"
+        if(!state.reference&&original.contains("10 BAND"))return "10 BAND / PCM"
         if(cn&&translation.isNotBlank())return translations[translation]?:original
         return when(id){
             "preset-number","station-serial"->serial
-            "preset-badge"->if(s==null)"—" else (state.selected+1).toString()
-            "now-title"->if(state.reference)s?.programme?.replace('\n',' ')?:"—" else metadata?:"—"
-            "now-station","station-name"->s?.name?:"—"
-            "local-time","station-time"->if(id=="station-time")s?.localTime?:"—" else time
+            "preset-badge"->if(s==null)"—" else "1"
+            "now-title"->if(state.reference)s?.programme?.replace('\n',' ')?:"—" else metadata?:s?.name?:if(cn)"选择电台" else "Choose a station"
+            "now-station"->if(state.reference||metadata!=null)s?.name?:"—" else listOf(s?.region,s?.language).filterNot{it.isNullOrBlank()}.joinToString(" / ").ifBlank{"—"}
+            "station-name"->s?.name?:"—"
+            "local-time","station-time"->if(id=="station-time")if(state.reference)s?.localTime?:"—" else "${state.deviceReadings?.time?:"—"} ${state.deviceReadings?.zone.orEmpty()}" else time
             "clock-location"->if(state.reference)"${s?.city} · ${s?.region}" else "DEVICE · ${state.deviceReadings?.zone?:"—"}"
             "selected-readout"->"SELECTED $serial / ${s?.name?:"—"}"
             "result-counter"->if(state.view=="settings")"03 ${if(cn)"设置" else "OPTIONS"} · $mock" else "${state.filtered().size.toString().padStart(2,'0')} ${if(cn)"条目" else "ENTRIES"} · ${if(state.directoryIssue!=null)"CACHE" else mock}"
@@ -318,15 +330,15 @@ class ScenePainter(val context:Context,val state:Session) {
             "stream-connection"->if(state.reference)if(cn)"未连接 · MOCK" else "NOT CONNECTED · MOCK" else connection.name.replace('_',' ')
             "stream-profile"->listOf(s?.language?.uppercase(),s?.genre?.uppercase()).filterNot{it.isNullOrBlank()}.joinToString(" / ").ifBlank{"—"}
             "stream-output"->if(state.volume==0)"OUTPUT / MUTE" else "VOL / ${state.volume.toString().padStart(2,'0')} · 30"
-            "favorite-count"->" · ${state.favorites.size}"
+            "favorite-count"->" · ${state.presetPool().size}"
             "scope-filters"->listOf(state.region,state.genre.uppercase(),state.stationLanguage.uppercase(),if(state.query.isBlank())"" else "“${state.query}”").filter{it.isNotBlank()}.joinToString(" / ").ifBlank{if(cn)"全球 / 全部电台" else "GLOBAL / ALL FREQUENCIES"}
             "scope-count"->if(n.id=="scope-count")state.filtered().size.toString().padStart(2,'0') else if(cn)"电台" else "STATIONS"
             "tempo-value"->"${state.tempo}%"
             "station-subtitle"->s?.let{listOf(it.city,it.region).filter{t->t.isNotBlank()}.joinToString(" / ") }?.ifBlank{"—"}?:"—"
-            "station-position"->"${(state.selected+1).toString().padStart(2,'0')} / ${state.catalog.size.toString().padStart(2,'0')}"
-            "programme"->if(state.reference)s?.programme?.split('\n')?.getOrNull(line)?:"" else twoLines(metadata?:"—",n.json.getJSONArray("text").getJSONObject(0),n.r.width()).getOrNull(line)?:""
-            "programme-description"->if(state.reference)s?.description?:"—" else s?.genre?.ifBlank{"—"}?:"—"
-            "now-playing"->if(state.reference)s?.track?:"—" else "—"
+            "station-position"->"${state.displayOrdinal?.toString()?.padStart(2,'0')?:"—"} / ${state.tuningPool().size.toString().padStart(2,'0')}"
+            "programme"->if(state.reference)s?.programme?.split('\n')?.getOrNull(line)?:"" else twoLines(metadata?:s?.name?:if(cn)"选择电台" else "Choose a station",n.json.getJSONArray("text").getJSONObject(0),n.r.width()).getOrNull(line)?:""
+            "programme-description"->if(state.reference)s?.description?:"—" else listOf(s?.region,s?.language).filterNot{it.isNullOrBlank()}.joinToString(" / ").ifBlank{"—"}
+            "now-playing"->if(state.reference)s?.track?:"—" else s?.genre?.ifBlank{"—"}?:"—"
             "disc-edition"->"PHASE ${(state.selected+1).toString().padStart(2,'0')} · FREQUENCY"
             else->when {
                 n.cls.contains("preset-title")->s?.name?:original
@@ -345,7 +357,7 @@ class ScenePainter(val context:Context,val state:Session) {
     private fun drawStations(c:Canvas,n:SceneNode,lit:Boolean){
         val pool=state.filtered();val template=n.children
         if(pool.isEmpty()){
-            val r=n.r;p.reset();p.isAntiAlias=true;p.typeface=font(false,400);p.textSize=13f;p.color=0xff657467.toInt()
+            val r=n.r;resetPaint();p.isAntiAlias=true;p.typeface=font(false,400);p.textSize=13f;p.color=0xff657467.toInt()
             val msg=when{state.directoryIssue!=null->if(state.language=="zh")"目录暂不可用，请重试搜索。" else "Directory unavailable. Retry search.";state.view=="favorites"->if(state.language=="zh")"还没有收藏电台。" else "No favorite stations yet.";else->if(state.language=="zh")"没有匹配的电台，清除筛选后再试。" else "No matching stations. Reset filters to try again."}
             c.drawText(msg,r.left+6,r.centerY(),p);return
         }
@@ -353,17 +365,17 @@ class ScenePainter(val context:Context,val state:Session) {
         visible.forEachIndexed {i,s->
             val original=template.getOrNull(if(state.reference)state.catalog.indexOf(s) else i)?:template.firstOrNull()?:return@forEachIndexed
             val targetTop=n.r.top+i*height;val dy=targetTop+(height-original.r.height())/2-original.r.top
-            if(s.id==state.station?.id){p.reset();p.color=0x1c526650;c.drawRect(n.r.left,targetTop,n.r.right,targetTop+height,p);p.color=0xff4f6553.toInt();c.drawRect(n.r.left,targetTop+height*.22f,n.r.left+2,targetTop+height*.78f,p)}
+            if(s.id==state.station?.id){resetPaint();p.color=0x1c526650;c.drawRect(n.r.left,targetTop,n.r.right,targetTop+height,p);p.color=0xff4f6553.toInt();c.drawRect(n.r.left,targetTop+height*.22f,n.r.left+2,targetTop+height*.78f,p)}
             c.save();c.translate(0f,dy)
             for(child in original.children)drawRowPart(c,child,lit,s)
             c.restore()
-            p.reset();p.color=0x6694a093;p.strokeWidth=.8f;c.drawLine(n.r.left,targetTop+height,n.r.right,targetTop+height,p)
+            resetPaint();p.color=0x6694a093;p.strokeWidth=.8f;c.drawLine(n.r.left,targetTop+height,n.r.right,targetTop+height,p)
         }
     }
     private fun drawRowPart(c:Canvas,n:SceneNode,lit:Boolean,s:Station,identity:Boolean=false){
         val isIdentity=identity||n.cls=="station-identity"
         if(n.cls=="station-flag"){
-            p.reset();p.isAntiAlias=true;p.style=if(s.id==state.station?.id)Paint.Style.FILL else Paint.Style.STROKE;p.strokeWidth=.8f;p.color=0xff657e67.toInt();c.drawOval(n.r,p);return
+            resetPaint();p.isAntiAlias=true;p.style=if(s.id==state.station?.id)Paint.Style.FILL else Paint.Style.STROKE;p.strokeWidth=.8f;p.color=0xff657e67.toInt();c.drawOval(n.r,p);return
         }
         if(n.json.getJSONArray("text").length()>0&&(isIdentity||n.cls=="station-mark"||n.cls=="station-genre"||n.cls=="station-number")){
             drawSkin(c,n.json.optString("skin"),n.r)
@@ -423,26 +435,22 @@ class ScenePainter(val context:Context,val state:Session) {
         b.append("<g fill=\"$ink\" font-family=\"monospace\" font-size=\"23\"><text x=\"12\" y=\"66\">10</text><text x=\"24\" y=\"207\">0</text><text x=\"12\" y=\"347\">10</text><text x=\"763\" y=\"66\">10</text><text x=\"763\" y=\"207\">5</text><text x=\"763\" y=\"347\">0</text><text x=\"7\" y=\"392\">[Fq.]</text><text x=\"746\" y=\"392\">[Hz]</text></g></svg>")
         return b.toString()
     }
+    private fun spectrumCaption():String=when{
+        !state.powered->"POWER OFF"
+        !state.spectrumEnabled->"MONITOR OFF"
+        state.connection==Connection.ERROR->"STREAM ERROR"
+        state.connection==Connection.BUFFERING||state.connection==Connection.CONNECTING->"BUFFERING"
+        state.playing&&state.spectrumFrame!=null->"DECODED AUDIO"
+        state.spectrumFrame!=null->"PAUSED"
+        else->"PLAY TO MONITOR"
+    }
     fun drawLiveSpectrum(c:Canvas,lit:Boolean){
         val r=scene(name(lit)).find("spectrum")?.r?:return
-        c.save();c.clipRect(r);c.translate(r.left,r.top);c.scale(r.width()/800,r.height()/430)
-        val frame=state.spectrumFrame
-        p.reset();p.isAntiAlias=true;p.typeface=font(true,400);p.textSize=23f
-        val ink=if(lit)Color.rgb(165,238,192) else Color.rgb(80,98,79)
-        if(!state.spectrumEnabled||frame==null){p.color=ink;p.textAlign=Paint.Align.CENTER;c.drawText("—",400f,220f,p);c.restore();return}
-        val labels=listOf("31","62","125","250","500","1K","2K","4K","8K","16K")
-        for(i in 0..9){
-            val x=75f+i*65;val level=((frame.levels[i]+72)/72*24).roundToInt().coerceIn(0,24)
-            for(j in 0..23){
-                val on=j<level
-                p.color=if(on)if(lit)if(j<9)0xffc4ffd2.toInt() else if(j<14)0xff7affaa.toInt() else 0xff19eb6c.toInt() else 0xff50644f.toInt() else if(lit)0xff16462f.toInt() else 0xff8e9b84.toInt()
-                p.alpha=if(on)255 else 59;c.drawRoundRect(x,340-j*12.7f,x+38,348.8f-j*12.7f,.7f,.7f,p)
-            }
-            p.color=ink;p.textAlign=Paint.Align.CENTER;c.drawText(labels[i],x+19,392f,p)
-        }
-        p.color=ink;p.textSize=20f;p.textAlign=Paint.Align.LEFT;c.drawText("0",5f,63f,p);c.drawText("−36",0f,209f,p);c.drawText("−72",0f,349f,p);c.drawText("dBFS · PCM",20f,424f,p)
-        p.textAlign=Paint.Align.RIGHT;c.drawText("Hz",784f,424f,p)
-        c.restore()
+        spectrumDrawing.bars(c,r,state.spectrumFrame,lit,state.spectrumEnabled,spectrumCaption())
+    }
+    fun drawImmersiveSpectrum(c:Canvas){
+        val node=scene("immersive").flattened().firstOrNull{it.json.optString("svg").contains("0 0 600 190")}?:return
+        spectrumDrawing.plot(c,node.r,state.spectrumFrame,state.spectrumEnabled,spectrumCaption())
     }
     private fun drawPresets(c:Canvas,n:SceneNode,lit:Boolean){
         val root=scene("modern-${if(lit)"lit" else "ink"}")
@@ -451,7 +459,7 @@ class ScenePainter(val context:Context,val state:Session) {
         val selected=base.children[0]
         val unselected=base.children[1]
         n.children.take(4).forEachIndexed {i,target->
-            val station=state.lookup(state.favorites.getOrNull(i+state.presetOffset))
+            val station=state.presetPool().getOrNull(i+state.presetStart)
             val template=if(!state.powered)off?.children?.getOrNull(i)?:unselected else if(station?.id==state.station?.id)selected else unselected
             c.save();c.translate(target.r.left-template.r.left,0f)
             drawPresetPart(c,template,lit,station,i+1)
@@ -460,7 +468,7 @@ class ScenePainter(val context:Context,val state:Session) {
     }
     private fun drawPresetPart(c:Canvas,n:SceneNode,lit:Boolean,s:Station?,digit:Int){
         if(n.json.has("svg")){
-            val r=n.r;p.reset();p.isAntiAlias=true
+            val r=n.r;resetPaint();p.isAntiAlias=true
             // The seven bars remain vectors. Only the corner slot number changes.
             val shapes=listOf("4,1 16,1 18,3 16,5 4,5 2,3","18,4 20,6 20,14 18,16 16,14 16,6","18,17 20,19 20,27 18,29 16,27 16,19","4,28 16,28 18,30 16,32 4,32 2,30","2,17 4,19 4,27 2,29 0,27 0,19","2,4 4,6 4,14 2,16 0,14 0,6","4,14 16,14 18,16 16,18 4,18 2,16")
             val on=when(digit){1->listOf(1,2);2->listOf(0,1,3,4,6);3->listOf(0,1,2,3,6);else->listOf(1,2,5,6)}
@@ -474,9 +482,9 @@ class ScenePainter(val context:Context,val state:Session) {
         n.json.optJSONObject("before")?.let{drawPseudo(c,it)}
         if(n.cls=="preset-title"){
             val a=n.json.optJSONArray("text")?:JSONArray()
-            if(a.length()>0){val t=JSONObject(a.getJSONObject(0).toString());val title=fit(s?.name?:"—",t,n.r.width()-4);p.reset();p.typeface=font(false,600);p.textSize=t.f("size");t.put("x",n.r.centerX()-p.measureText(title)/2);c.save();c.clipRect(n.r);drawText(c,t,title,0f);c.restore()}
+            if(a.length()>0){val t=JSONObject(a.getJSONObject(0).toString());val title=fit(s?.name?:"—",t,n.r.width()-4);t.put("x",n.r.centerX()-textPaint(t).measureText(title)/2);c.save();c.clipRect(n.r);drawText(c,t,title,0f);c.restore()}
         }
-        for(child in n.children){c.save();if(child.cls=="preset-cap"&&pressed=="preset:${digit-1+state.presetOffset}")c.translate(0f,3.4f*pressProgress);drawPresetPart(c,child,lit,s,digit);c.restore()}
+        for(child in n.children){c.save();if(child.cls=="preset-cap"&&pressed=="preset:${digit-1+state.presetStart}")c.translate(0f,3.4f*pressProgress);drawPresetPart(c,child,lit,s,digit);c.restore()}
         n.json.optJSONObject("after")?.let{drawPseudo(c,it)}
     }
     private fun drawMenu(c:Canvas,n:SceneNode,lit:Boolean){
@@ -493,12 +501,12 @@ class ScenePainter(val context:Context,val state:Session) {
             t.put("y",t.f("y")+i*height);t.put("color",if(selected)if(lit)"#f5f0db" else "#d0d2c5" else if(lit)"#353932" else "#34483a")
             val label=if(key=="ui-language")if(value=="zh")"中文" else "English" else if(value.isBlank())when(key){"region"->"ALL REGIONS";"genre"->"ALL GENRES";else->"ALL LANGUAGES"} else value.uppercase().replace("UK","UNITED KINGDOM")
             drawText(c,t,label,if(label==optionTemplate.json.getJSONArray("text").getJSONObject(0).optString("text"))t.f("w") else 0f)
-            if(selected){p.reset();p.isAntiAlias=true;p.style=Paint.Style.STROKE;p.strokeWidth=1.7f;p.color=if(lit)0xfff5f0db.toInt() else 0xffd0d2c5.toInt();val x=r.right-14;val y=r.centerY();val path=Path();path.moveTo(x-4,y);path.lineTo(x-1,y+3);path.lineTo(x+5,y-3);c.drawPath(path,p)}
+            if(selected){resetPaint();p.isAntiAlias=true;p.style=Paint.Style.STROKE;p.strokeWidth=1.7f;p.color=if(lit)0xfff5f0db.toInt() else 0xffd0d2c5.toInt();val x=r.right-14;val y=r.centerY();val path=Path();path.moveTo(x-4,y);path.lineTo(x-1,y+3);path.lineTo(x+5,y-3);c.drawPath(path,p)}
         }
     }
     private fun drawSettingsDetails(c:Canvas,n:SceneNode,lit:Boolean){
         if(!state.updateMessage&&!state.about)return
-        p.reset();p.isAntiAlias=true;p.typeface=font(false,400);p.textSize=13.6f;p.color=if(lit)0xff353932.toInt() else 0xff34483a.toInt()
+        resetPaint();p.isAntiAlias=true;p.typeface=font(false,400);p.textSize=13.6f;p.color=if(lit)0xff353932.toInt() else 0xff34483a.toInt()
         var y=n.r.top+231f
         if(state.updateMessage){c.drawText(if(state.language=="zh")"更新服务暂不可用。" else "Update service is currently unavailable.",n.r.left+36,y,p);y+=26}
         if(state.about){p.typeface=font(false,700);c.drawText("漫频 Aether",n.r.left+36,y,p);p.typeface=font(false,400);c.drawText("不设边界，漫游频率。",n.r.left+36,y+23,p);c.drawText("No boundaries. Just frequencies.",n.r.left+36,y+44,p);p.textSize=11.9f;c.drawText(if(state.reference)"Design preview · 0.0.0" else "Android preview · ${BuildConfig.VERSION_NAME}",n.r.left+36,y+65,p)}

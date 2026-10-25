@@ -31,11 +31,15 @@ class AetherView(context:Context,val state:Session):View(context) {
     var committedRefresh=true;private set
     var committedFrontlight=-1f;private set
     var committedPage=-1;private set
+    var committedView="";private set
+    var committedOffset=0f;private set
     private var ignoreGesture=false
     private val displayLists=android.util.LruCache<String,Picture>(4)
     private class SceneLayer(val node:RenderNode,var source:Picture?=null,var width:Int=0,var height:Int=0)
     private val nativeLayers=mutableMapOf<String,SceneLayer>()
     private var revision=0L
+    val contentRevision get()=revision
+    var committedRevision=-1L;private set
     private var active=true
     private val physical=PathInterpolator(.16f,.72f,.2f,1f)
     private val lightCurve=PathInterpolator(.22f,.08f,.24f,1f)
@@ -47,7 +51,7 @@ class AetherView(context:Context,val state:Session):View(context) {
     private var refreshGeneration=0
     private var offset=0f
     private var downX=0f;private var downY=0f;private var lastY=0f;private var lastAngle:Double?=null
-    private var action="";private var moved=false;private var verticalVolume=false
+    private var action="";private var moved=false;private var consumedGesture=false;private var verticalVolume=false
     private var focusAction="volume"
     private var settingsStartScroll=0f
     private val rotaryGate=DetentGate(.57,180,.2)
@@ -84,11 +88,11 @@ class AetherView(context:Context,val state:Session):View(context) {
         state.onChange={if(state.motion&&!previousMotion)phaseTick=SystemClock.uptimeMillis();previousMotion=state.motion;revision++;displayLists.evictAll();sync();invalidate();sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)}
         sync(false)
         viewTreeObserver.addOnPreDrawListener {
-            if(assetsReady&&(!firstFrame||BuildConfig.DEBUG)){
-                val refreshAtDraw=refreshing;val lightAtDraw=frontlight;val pageAtDraw=state.page
+            if(assetsReady){
+                val refreshAtDraw=refreshing;val lightAtDraw=frontlight;val pageAtDraw=state.page;val viewAtDraw=state.view;val offsetAtDraw=offset;val revisionAtDraw=revision
                 val first=!firstFrame;firstFrame=true
                 viewTreeObserver.registerFrameCommitCallback {post{
-                    if(!released){committedRefresh=refreshAtDraw;committedFrontlight=lightAtDraw;committedPage=pageAtDraw;if(first)onFirstFrame()}
+                    if(!released){committedRefresh=refreshAtDraw;committedFrontlight=lightAtDraw;committedPage=pageAtDraw;committedView=viewAtDraw;committedOffset=offsetAtDraw;committedRevision=revisionAtDraw;if(first)onFirstFrame()}
                 }}
             }
             true
@@ -198,7 +202,7 @@ class AetherView(context:Context,val state:Session):View(context) {
             }
             c.save();c.scale(1/sx,1/sx);c.drawRenderNode(layer.node);c.restore()
         }else c.drawPicture(list)
-        if(!immersive&&!state.reference)painter.drawLiveSpectrum(c,lit)
+        if(!state.reference){if(immersive)painter.drawImmersiveSpectrum(c)else painter.drawLiveSpectrum(c,lit)}
         if(!immersive)painter.drawPointers(c)
         if(painter.pressProgress>0f)painter.drawPressOverlay(c,lit,immersive)
     }
@@ -233,7 +237,19 @@ class AetherView(context:Context,val state:Session):View(context) {
         val panel=painter.updatePanel.bounds()
         return all.filter{!panel.contains(it.r.centerX(),it.r.centerY())}+painter.updatePanel.nodes()
     }
-    private fun hit(x:Float,y:Float):SceneNode?=nodes().lastOrNull{it.action.isNotBlank()&&it.r.contains(x,y)}
+    private fun touchBounds(node:SceneNode):RectF=RectF(node.r).apply{
+        if(node.r.height()<32f||node.r.width()<32f){
+            val minimum=48f*resources.displayMetrics.density/sx
+            inset(-((minimum-width()).coerceAtLeast(0f)/2),-((minimum-height()).coerceAtLeast(0f)/2))
+        }
+    }
+    private fun hit(x:Float,y:Float):SceneNode?{
+        val targets=nodes().filter{it.action.isNotBlank()}
+        targets.lastOrNull{it.r.contains(x,y)}?.let{return it}
+        return targets.filter{touchBounds(it).contains(x,y)}.minByOrNull{
+            val r=touchBounds(it);val dx=(x-r.centerX())/r.width();val dy=(y-r.centerY())/r.height();dx*dx+dy*dy
+        }
+    }
     private fun hitAction(x:Float,y:Float):String {
         val raw=hit(x,y)?.action?:""
         if(state.page==0&&state.view=="settings"&&state.updateOpen&&painter.updatePanel.bounds().contains(x,y))return painter.updatePanel.nodes().lastOrNull{it.r.contains(x,y)}?.action?:"update:body"
@@ -257,8 +273,8 @@ class AetherView(context:Context,val state:Session):View(context) {
             }
             val presets=root.find("favorite-stations")
             if(presets!=null&&presets.r.contains(x,y)){
-                val i=((x-presets.r.left)/presets.r.width()*4).toInt().coerceIn(0,3)+state.presetOffset
-                return if(i<state.favorites.size)"preset:$i" else "empty-preset"
+                val i=((x-presets.r.left)/presets.r.width()*4).toInt().coerceIn(0,3)+state.presetStart
+                return if(i<state.presetPool().size)"preset:$i" else "empty-preset"
             }
         }
         return raw
@@ -286,10 +302,12 @@ class AetherView(context:Context,val state:Session):View(context) {
         when(e.actionMasked){
             MotionEvent.ACTION_DOWN->{
                 if(refreshing)return true
-                downX=x;downY=y;lastY=y;moved=false;action=hitAction(x,y)
+                downX=x;downY=y;lastY=y;moved=false;consumedGesture=false;action=hitAction(x,y)
                 settingsStartScroll=state.settingsScroll
-                if(!(state.enabled||action in listOf("device-lock","device-light")&&state.powered||action=="device-power"&&!state.locked)){action="";ignoreGesture=true;return true}
-                if(state.menu!=null&&action.isBlank()){state.menu=null;state.changed();return true}
+                if(!state.canUse(action)){action="";ignoreGesture=true;return true}
+                if(state.menu!=null&&!action.startsWith("option:")&&!action.startsWith("menu:")){
+                    state.menu=null;state.changed();ignoreGesture=true;return true
+                }
                 focusAction=action.ifBlank{focusAction}
                 if(physical(action)){press(action,true);haptics.press()}
                 invalidate()
@@ -304,17 +322,18 @@ class AetherView(context:Context,val state:Session):View(context) {
             }
             MotionEvent.ACTION_POINTER_DOWN->{ignoreGesture=true;cancelInput();return true}
             MotionEvent.ACTION_MOVE->{
-                if(hypot(x-downX,y-downY)>7)moved=true
+                if(hypot(x-downX,y-downY)>ViewConfiguration.get(context).scaledTouchSlop/sx)moved=true
                 if(!state.enabled)return true
                 val now=SystemClock.uptimeMillis()
-                if(state.view=="settings"&&state.menu==null&&painter.scene(painter.name(false)).find("settings-view")?.r?.contains(downX,downY)==true&&abs(y-downY)>12){state.settingsScroll=(settingsStartScroll+downY-y).coerceIn(0f,if(state.about)100f else 0f);state.changed()}
-                if(action.startsWith("choose:")&&abs(y-lastY)>=28){state.listOffset=(state.listOffset+if(y<lastY)1 else -1).coerceIn(0,(state.filtered().size-4).coerceAtLeast(0));lastY=y;state.changed()}
-                if(action.startsWith("preset:")&&abs(x-downX)>=40){state.presetOffset=(state.presetOffset+if(x<downX)1 else -1).coerceIn(0,(state.favorites.size-4).coerceAtLeast(0));downX=x;state.changed()}
-                if(state.menu!=null&&abs(y-lastY)>=28){val count=state.options(state.menu!!).size;state.menuOffset=(state.menuOffset+if(y<lastY)1 else -1).coerceIn(0,(count-4).coerceAtLeast(0));lastY=y;state.changed()}
+                if(state.view=="settings"&&state.about&&!state.updateOpen&&state.menu==null&&painter.scene(painter.name(false)).find("settings-view")?.r?.contains(downX,downY)==true&&abs(y-downY)>12){consumedGesture=true;state.settingsScroll=(settingsStartScroll+downY-y).coerceIn(0f,if(state.about)100f else 0f);state.changed()}
+                if(action.startsWith("choose:")&&abs(y-lastY)>=28){consumedGesture=true;state.listOffset=(state.listOffset+if(y<lastY)1 else -1).coerceIn(0,(state.filtered().size-4).coerceAtLeast(0));lastY=y;state.changed()}
+                if(action.startsWith("preset:")&&abs(x-downX)>=40){consumedGesture=true;state.presetOffset=(state.presetOffset+if(x<downX)1 else -1).coerceIn(0,(state.presetPool().size-4).coerceAtLeast(0));downX=x;state.changed()}
+                if(state.menu!=null&&abs(y-lastY)>=28){consumedGesture=true;val count=state.options(state.menu!!).size;state.menuOffset=(state.menuOffset+if(y<lastY)1 else -1).coerceIn(0,(count-4).coerceAtLeast(0));lastY=y;state.changed()}
                 if(action=="tempo")tempo(x)
                 else if(action=="segmented-volume")strip(x)
                 else if(action=="volume"&&verticalVolume){val d=verticalGate.push((lastY-y).toDouble(),now);lastY=y;if(d!=0)stepControl("volume",d)}
                 else if(action in listOf("volume","tuning-dial","tuning-mode")){
+                    if(moved)consumedGesture=true
                     val next=angle(action,x,y);val prev=lastAngle;lastAngle=next
                     val gate=when(action){"volume"->volumeGate;"tuning-mode"->modeGate;else->rotaryGate}
                     if(next==null||prev==null)gate.reset()else{
@@ -335,7 +354,7 @@ class AetherView(context:Context,val state:Session):View(context) {
                     val dx=x-downX;val dy=y-downY
                     if(abs(dx)>=72&&abs(dx)>abs(dy)*1.3f)settle(true,if(dx>0)1 else -1)
                     else {settle(false,if(dx>0)1 else -1);if(state.page==1&&abs(dy)>=40&&abs(dy)>abs(dx)){val before=state.station?.id;state.step(if(dy<0)1 else -1);if(before!=state.station?.id)haptics.tick()}}
-                } else if(!moved){
+                } else if(!consumedGesture&&(hitAction(x,y)==action||nodeFor(action)?.let{touchBounds(it).contains(x,y)}==true)){
                     if(action=="tuning-dial"||action=="tuning-mode"){val r=nodeFor(action)?.r;if(r!=null&&angle(action,x,y)!=null)stepControl(action,if(x<r.centerX())-1 else 1)}
                     else if(action!in listOf("volume","tempo","segmented-volume","empty-preset","update:body")){if(action.isNotBlank()&&!physical(action))haptics.press();activate(action)}
                 }
@@ -365,20 +384,20 @@ class AetherView(context:Context,val state:Session):View(context) {
     }
     fun cancelInput(resetPage:Boolean=true){action="";press(null,false);lastAngle=null;listOf(rotaryGate,modeGate,volumeGate,verticalGate,wheelGate,volumeWheelGate).forEach{it.reset()};if(resetPage)offset=0f;invalidate()}
     fun activate(a:String){
-        if(refreshing)return
+        if(refreshing||!state.canUse(a))return
         if(a=="device-lock"&&state.powered){state.locked=!state.locked;if(state.locked)state.menu=null;state.changed();return}
         if(a=="device-light"&&state.powered){setLight(!state.light);return}
         if(!state.enabled&&a!="device-power")return
         when {
             a.startsWith("update:")->{if(a=="update:back"){state.updateOpen=false;state.changed()}else state.onUpdateAction(a.substringAfter(':'))}
             a=="device-power"->power()
-            a=="device-settings"->{state.view=if(state.view=="settings")"directory" else "settings";state.menu=null;state.changed()}
-            a.startsWith("view:")->{state.view=a.substringAfter(':');state.menu=null;state.listOffset=0;state.changed()}
+            a=="device-settings"->state.showView(if(state.view=="settings")state.lastBrowseView else "settings")
+            a.startsWith("view:")->state.showView(a.substringAfter(':'))
             a.startsWith("menu:")->{val key=a.substringAfter(':').removeSuffix("-filter");state.menu=if(state.menu==key)null else key;state.settingsScroll=0f;state.changed()}
             a.startsWith("option:")->{val key=state.menu?:return;val i=a.substringAfter(':').toIntOrNull()?:return;state.options(key).getOrNull(i)?.let{state.filter(key,it)}}
             a.startsWith("station:")->{val i=a.substringAfter(':').toIntOrNull()?:return;state.catalog.getOrNull(i)?.let{state.select(it.id)}}
             a.startsWith("choose:")->state.select(a.substringAfter(':'))
-            a.startsWith("preset:")->state.favorites.getOrNull(a.substringAfter(':').toIntOrNull()?:-1)?.let{state.select(it)}
+            a.startsWith("preset:")->state.presetPool().getOrNull(a.substringAfter(':').toIntOrNull()?:-1)?.let{state.select(it.id)}
             a.startsWith("step:")->state.step(a.substringAfter(':').toInt())
             a.startsWith("favorite-step:")->state.step(a.substringAfter(':').toInt(),true)
             a=="previous"->state.step(-1)
@@ -388,13 +407,13 @@ class AetherView(context:Context,val state:Session):View(context) {
             a=="stereo-button"->state.toggleMute()
             a in listOf("monitor-toggle","equalizer-preview")->{
                 if(state.reference){if(!reducedMotion)state.motion=!state.motion}
-                else if(a=="monitor-toggle"){state.motion=!state.motion&&!reducedMotion;state.spectrumEnabled=if(reducedMotion)!state.spectrumEnabled else state.motion}
+                else if(a=="monitor-toggle"){if(!reducedMotion)state.motion=!state.motion}
                 else state.spectrumEnabled=!state.spectrumEnabled
                 state.changed()
             }
             a=="clear-filters"->state.resetFilters()
             a=="random-station"->state.filtered().randomOrNull()?.let{state.select(it.id)}
-            a in listOf("station-search","automatic-search")->{state.view="directory";state.changed();search()}
+            a in listOf("station-search","automatic-search")->{state.showView("directory");search()}
             a=="check-updates"->{if(state.reference)state.updateMessage=true else {state.updateOpen=true;state.onUpdateAction("check")};state.changed()}
             a=="about-toggle"->{state.about=!state.about;state.settingsScroll=if(state.about)70f else 0f;state.changed()}
         }
@@ -417,7 +436,7 @@ class AetherView(context:Context,val state:Session):View(context) {
     override fun onKeyDown(keyCode:Int,event:KeyEvent):Boolean {
         if(!assetsReady)return super.onKeyDown(keyCode,event)
         if(keyCode in listOf(KeyEvent.KEYCODE_ESCAPE,KeyEvent.KEYCODE_BACK)&&state.updateOpen){state.updateOpen=false;state.changed();return true}
-        if(keyCode==KeyEvent.KEYCODE_ESCAPE||keyCode==KeyEvent.KEYCODE_BACK){if(state.menu!=null){state.menu=null;state.changed();return true};if(state.view=="settings"){state.view="directory";state.changed();return true};if(state.page==1){state.page=0;invalidate();return true}}
+        if(keyCode==KeyEvent.KEYCODE_ESCAPE||keyCode==KeyEvent.KEYCODE_BACK){if(state.menu!=null){state.menu=null;state.changed();return true};if(state.view=="settings"){state.showView(state.lastBrowseView);return true};if(state.page==1){state.page=0;invalidate();return true}}
         if(state.enabled&&keyCode in listOf(KeyEvent.KEYCODE_DPAD_UP,KeyEvent.KEYCODE_DPAD_RIGHT,KeyEvent.KEYCODE_DPAD_DOWN,KeyEvent.KEYCODE_DPAD_LEFT,KeyEvent.KEYCODE_MOVE_HOME,KeyEvent.KEYCODE_MOVE_END)){
             if(focusAction=="volume"&&keyCode==KeyEvent.KEYCODE_MOVE_HOME){state.changeVolume(0);haptics.boundary()}
             else if(focusAction=="volume"&&keyCode==KeyEvent.KEYCODE_MOVE_END){state.changeVolume(30);haptics.boundary()}
@@ -435,15 +454,16 @@ class AetherView(context:Context,val state:Session):View(context) {
                 setSource(this@AetherView,virtualViewId);setParent(this@AetherView);packageName=context.packageName
                 className=if(item.action in listOf("volume","tuning-dial","tuning-mode","tempo"))"android.widget.SeekBar" else "android.widget.Button"
                 val actual=hitAction(item.r.centerX(),item.r.centerY())
-                contentDescription=when{actual.startsWith("choose:")->state.lookup(actual.substringAfter(':'))?.name?:"—";actual.startsWith("preset:")->state.lookup(state.favorites.getOrNull(actual.substringAfter(':').toIntOrNull()?:-1))?.name?:"Empty preset";actual.startsWith("option:")->state.options(state.menu?:"").getOrNull(actual.substringAfter(':').toIntOrNull()?:-1)?:"—";else->item.label.ifBlank{item.action}}
+                contentDescription=when{actual.startsWith("choose:")->state.lookup(actual.substringAfter(':'))?.name?:"—";actual.startsWith("preset:")->state.presetPool().getOrNull(actual.substringAfter(':').toIntOrNull()?:-1)?.name?:"Empty preset";actual.startsWith("option:")->state.options(state.menu?:"").getOrNull(actual.substringAfter(':').toIntOrNull()?:-1)?:"—";else->item.label.ifBlank{item.action}}
                 if(actual=="empty-preset")contentDescription="Empty preset"
                 if(item.action=="tempo")contentDescription="Tempo ${state.tempo} percent"
                 if(item.action=="tuning-mode")contentDescription="Tuning dimension: ${listOf("station","region","genre","language")[state.mode]}"
                 if(item.action=="play-toggle")contentDescription=if(state.playing)"Pause" else "Play"
-                if(item.action in listOf("monitor-toggle","equalizer-preview")&&!state.reference)contentDescription="Live PCM spectrum ${if(state.spectrumEnabled)"on" else "off"}"
-                isEnabled=(state.enabled||item.action in listOf("device-lock","device-light","device-power"))&&actual!="empty-preset";isClickable=true;isFocusable=true;isVisibleToUser=true
+                if(item.action=="equalizer-preview"&&!state.reference)contentDescription="Live PCM spectrum ${if(state.spectrumEnabled)"on" else "off"}"
+                if(item.action=="monitor-toggle"&&!state.reference)contentDescription="Artwork motion ${if(state.motion)"on" else "off"}"
+                isEnabled=state.canUse(actual);isClickable=true;isFocusable=true;isVisibleToUser=true
                 addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK)
-                val r=item.r;val b=Rect((ox+r.left*sx).toInt(),(oy+r.top*sx).toInt(),(ox+r.right*sx).toInt(),(oy+r.bottom*sx).toInt());setBoundsInParent(b)
+                val r=touchBounds(item);val b=Rect((ox+r.left*sx).toInt(),(oy+r.top*sx).toInt(),(ox+r.right*sx).toInt(),(oy+r.bottom*sx).toInt());setBoundsInParent(b)
                 val loc=IntArray(2);getLocationOnScreen(loc);b.offset(loc[0],loc[1]);setBoundsInScreen(b)
                 if(item.action=="volume"){rangeInfo=AccessibilityNodeInfo.RangeInfo.obtain(AccessibilityNodeInfo.RangeInfo.RANGE_TYPE_INT,0f,30f,state.volume.toFloat());contentDescription="Volume ${state.volume} / 30";addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD);addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD)}
             }

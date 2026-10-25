@@ -1,13 +1,13 @@
 """Run 300 actual release opens/uses; retain native records, screenshots and Android diagnostics."""
 from pathlib import Path
 import argparse,datetime,hashlib,json,subprocess,time
-p=argparse.ArgumentParser();p.add_argument('--rounds',type=int,default=300);p.add_argument('--out',default='verification/local/experience-300');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--apk',type=Path,required=True);p.add_argument('--rounds',type=int,default=300);p.add_argument('--out',default='verification/local/experience-300');a=p.parse_args()
 root=Path(__file__).resolve().parents[1];out=root/a.out;out.mkdir(parents=True,exist_ok=True)
 adb=[str(root/'.tooling/sdk/platform-tools/adb'),'-s','emulator-5582'];pkg='io.github.dpan538.aether'
 def run(*args,timeout=60):return subprocess.run(adb+list(args),capture_output=True,check=True,timeout=timeout).stdout
 rows=[];ledger=out/'rounds.json'
 if ledger.exists():rows=json.loads(ledger.read_text())
-metadata={'requestedRounds':a.rounds,'package':pkg,'startedAtUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'designPixels':[3408,2272],'batchSize':10,'method':'30 process-cold Activity starts and 270 warm foreground returns; native pointer events and actual release/player state; per-round PNG previews, native PNGs on cold starts and failures. openMs is Activity launch request to interactive committed frame, excluding instrumentation process bootstrap; actionMs includes condition waits and frame commit.'}
+metadata={'requestedRounds':a.rounds,'package':pkg,'startedAtUtc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'designPixels':[3408,2272],'batchSize':10,'method':'30 process-cold Activity starts and 270 warm foreground returns; native pointer events and actual release/player state; 12 scenarios including all four actual station keys and visible pixel changes in both decoded-PCM spectra; per-round PNG previews, native PNGs on cold starts and failures. openMs is Activity launch request to interactive committed frame, excluding instrumentation process bootstrap; actionMs includes condition waits and frame commit.'}
 if not (out/'environment.json').exists():
     metadata['installedPackage']=run('shell','dumpsys','package',pkg).decode()
     metadata['device']=run('shell','getprop','ro.product.model').decode().strip()
@@ -16,7 +16,7 @@ if not (out/'environment.json').exists():
     metadata['renderer']='\n'.join(l for l in run('shell','dumpsys','SurfaceFlinger').decode().splitlines() if 'GLES:' in l)
     apkPath=run('shell','pm','path',pkg).decode().strip().removeprefix('package:')
     metadata['installedApkSha256']=run('shell','sha256sum',apkPath).decode().split()[0]
-    assert metadata['installedApkSha256']=='9f81bbd8977a9a8bf2d354497652c3e75fee95b0a3ef2d3f483e1650d1670810'
+    assert metadata['installedApkSha256']==hashlib.sha256(a.apk.read_bytes()).hexdigest()
     metadata['guestMemTotal']='\n'.join(l for l in run('shell','cat','/proc/meminfo').decode().splitlines() if l.startswith('MemTotal:'))
     (out/'environment.json').write_text(json.dumps(metadata,indent=2))
 while len(rows)<a.rounds:

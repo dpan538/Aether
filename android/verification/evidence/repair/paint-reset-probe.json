@@ -1,0 +1,35 @@
+{
+  "iconClass": "android.graphics.drawable.BitmapDrawable",
+  "package": "io.github.dpan538.aether",
+  "versionCode": 2,
+  "versionName": "0.1.0-preview.1",
+  "reference": false,
+  "query": "",
+  "filteredCount": 89,
+  "station": "Verification stream",
+  "selectedId": "verification:stream",
+  "favorites": [
+    "verification:stream"
+  ],
+  "volume": 20,
+  "tempo": 100,
+  "language": "en",
+  "spectrumEnabled": false,
+  "spectrumSamples": 0,
+  "updatePhase": "IDLE",
+  "cached": false,
+  "downloadRequests": 0,
+  "reusedPackages": 0,
+  "passed": true,
+  "securityChecks": [
+    {
+      "before": "CENTER",
+      "afterReset": "CENTER"
+    },
+    {
+      "before": "RIGHT",
+      "afterReset": "RIGHT"
+    }
+  ],
+  "cachedFiles": []
+}

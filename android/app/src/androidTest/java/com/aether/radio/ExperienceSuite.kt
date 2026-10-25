@@ -20,27 +20,27 @@ class ExperienceSuite(private val test:Instrumentation,private val activity:Main
     private fun point(action:String,fraction:Float=.5f):Pair<Float,Float> = ui {
         val v=activity.surface;val s=activity.session
         val nodes=v.painter.scene(if(s.page==1)"immersive" else v.painter.name(s.light)).flattened()
-        val r=nodes.first{it.action==action||it.id==action}.r
+        val r=if(action.startsWith("preset:"))nodes.first{it.id=="favorite-stations"}.children[action.substringAfter(':').toInt()].r else nodes.first{it.action==action||it.id==action}.r
         val scale=minOf(v.width/1704f,v.height/1136f);val at=IntArray(2);v.getLocationOnScreen(at)
         (at[0]+(v.width-1704*scale)/2+(r.left+r.width()*fraction.coerceIn(.001f,.999f))*scale) to (at[1]+(v.height-1136*scale)/2+r.centerY()*scale)
     }
-    private fun tap(action:String,fraction:Float=.5f){val p=point(action,fraction);val now=SystemClock.uptimeMillis();test.sendPointerSync(MotionEvent.obtain(now,now,0,p.first,p.second,0));test.sendPointerSync(MotionEvent.obtain(now,now+70,1,p.first,p.second,0));Thread.sleep(120)}
+    private fun tap(action:String,fraction:Float=.5f){val p=point(action,fraction);val now=SystemClock.uptimeMillis();check(test.uiAutomation.injectInputEvent(MotionEvent.obtain(now,now,0,p.first,p.second,0),false));Thread.sleep(70);check(test.uiAutomation.injectInputEvent(MotionEvent.obtain(now,now+70,2,p.first+3,p.second+2,0),false));Thread.sleep(40);check(test.uiAutomation.injectInputEvent(MotionEvent.obtain(now,now+110,1,p.first+3,p.second+2,0),false));Thread.sleep(120)}
     private fun swipe(fromX:Float,toX:Float){
         val values=ui{val v=activity.surface;val scale=minOf(v.width/1704f,v.height/1136f);floatArrayOf(scale,(v.width-1704*scale)/2,(v.height-1136*scale)/2)}
         val scale=values[0];val y=values[2]+575*scale;val start=SystemClock.uptimeMillis()
-        test.sendPointerSync(MotionEvent.obtain(start,start,0,values[1]+fromX*scale,y,0))
-        for(i in 1..12){Thread.sleep(25);test.sendPointerSync(MotionEvent.obtain(start,SystemClock.uptimeMillis(),2,values[1]+(fromX+(toX-fromX)*i/12)*scale,y,0))}
-        test.sendPointerSync(MotionEvent.obtain(start,SystemClock.uptimeMillis(),1,values[1]+toX*scale,y,0));Thread.sleep(400)
+        check(test.uiAutomation.injectInputEvent(MotionEvent.obtain(start,start,0,values[1]+fromX*scale,y,0),false))
+        for(i in 1..12){Thread.sleep(25);check(test.uiAutomation.injectInputEvent(MotionEvent.obtain(start,SystemClock.uptimeMillis(),2,values[1]+(fromX+(toX-fromX)*i/12)*scale,y,0),false))}
+        check(test.uiAutomation.injectInputEvent(MotionEvent.obtain(start,SystemClock.uptimeMillis(),1,values[1]+toX*scale,y,0),false));Thread.sleep(400)
     }
     private fun audio():AudioSession? = MainActivity::class.java.getDeclaredField("audio").apply{isAccessible=true}.get(activity) as? AudioSession
     private fun snapshot():JSONObject = ui {
         val s=activity.session;val a=audio();val memory=Debug.MemoryInfo();Debug.getMemoryInfo(memory)
-        JSONObject().put("station",s.station?.name).put("selectedId",s.station?.id).put("catalogCount",s.catalog.size).put("favorites",JSONArray(s.favorites)).put("volume",s.volume).put("tempo",s.tempo).put("language",s.language).put("page",s.page).put("powered",s.powered).put("locked",s.locked).put("light",s.light).put("reference",s.reference).put("connection",s.connection.name).put("playing",s.playing).put("decodedFormat",s.decodedFormat).put("playerIdentity",a?.let{System.identityHashCode(it.player)}).put("speed",a?.player?.playbackParameters?.speed).put("pitch",a?.player?.playbackParameters?.pitch).put("pssKiB",memory.totalPss).put("javaHeapBytes",Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory()).put("width",activity.surface.width).put("height",activity.surface.height).put("hapticAttempts",activity.surface.haptics.attempts).put("hapticAccepted",activity.surface.haptics.accepted)
+        JSONObject().put("station",s.station?.name).put("selectedId",s.station?.id).put("catalogCount",s.catalog.size).put("favorites",JSONArray(s.favorites)).put("volume",s.volume).put("tempo",s.tempo).put("language",s.language).put("page",s.page).put("powered",s.powered).put("locked",s.locked).put("light",s.light).put("reference",s.reference).put("connection",s.connection.name).put("playing",s.playing).put("decodedFormat",s.decodedFormat).put("playerIdentity",a?.let{System.identityHashCode(it.player)}).put("speed",a?.player?.playbackParameters?.speed).put("pitch",a?.player?.playbackParameters?.pitch).put("pssKiB",memory.totalPss).put("javaHeapBytes",Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory()).put("width",activity.surface.width).put("height",activity.surface.height).put("spectrumSamples",s.spectrumFrame?.samples?:0).put("spectrumRms",s.spectrumFrame?.rms?:0).put("presetIds",JSONArray(s.presetPool().drop(s.presetStart).take(4).map{it.id})).put("hapticAttempts",activity.surface.haptics.attempts).put("hapticAccepted",activity.surface.haptics.accepted)
     }
     private fun committedFrame(){
         val finished=java.util.concurrent.atomic.AtomicBoolean(false)
         ui{activity.surface.viewTreeObserver.registerFrameCommitCallback{finished.set(true)};activity.surface.invalidate()}
-        waitFor{finished.get()}
+        waitFor{finished.get()&&activity.surface.contentRevision==activity.surface.committedRevision&&activity.surface.committedPage==activity.session.page&&activity.surface.committedView==activity.session.view&&kotlin.math.abs(activity.surface.committedOffset)<.01f}
     }
     private fun ready(){waitFor{activity.surface.assetsReady&&!activity.surface.refreshing&&activity.hasWindowFocus()};committedFrame()}
     private fun reset(){
@@ -48,19 +48,20 @@ class ExperienceSuite(private val test:Instrumentation,private val activity:Main
             val s=activity.session
             if(s.locked)s.locked=false
             if(!s.powered)activity.surface.power()
-            s.page=0;s.view="directory";s.menu=null;s.updateOpen=false;s.motion=false;s.spectrumEnabled=false
+            s.page=0;s.view="directory";s.menu=null;s.updateOpen=false;s.motion=false;s.spectrumEnabled=true
             if(s.playIntent)s.togglePlay()
-            s.resetFilters();s.changeVolume(20);s.changeTempo(100);activity.surface.setLight(false);s.changed()
+            s.region="";s.genre="";s.stationLanguage="";s.query="SomaFM";s.listOffset=0;s.changeVolume(20);s.changeTempo(100);activity.surface.setLight(false);s.changed()
         }
         ready()
     }
     fun run():JSONObject {
         check(!activity.session.reference){"Experience acceptance must use real release data"}
         val startRound=arguments.getString("startRound","1").toInt();val count=arguments.getString("rounds","10").toInt()
+        ui{activity.session.query="SomaFM";activity.session.changed()};waitFor(45){activity.session.catalog.size>=4&&activity.session.catalog.all{it.name.contains("SomaFM",true)}}
         val batch=JSONArray();val player=ui{System.identityHashCode(audio()!!.player)}
         for(offset in 0 until count){
-            val number=startRound+offset;val scenario=(number-1)%10
-            val row=JSONObject().put("round",number).put("scenario",listOf("frontlight","volume-mute","tempo-pitch","settings-language","real-directory-filter","favorites","shared-page-session","lock-protection","power-retained-ink","real-playback")[scenario]).put("launchKind",if(offset==0)"cold" else "warm").put("startedAtEpochMs",System.currentTimeMillis())
+            val number=startRound+offset;val scenario=(number-1)%12
+            val row=JSONObject().put("round",number).put("scenario",listOf("frontlight","volume-mute","tempo-pitch","settings-language","real-directory-filter","favorites","shared-page-session","lock-protection","power-retained-ink","real-playback","four-station-presets","decoded-spectrum")[scenario]).put("launchKind",if(offset==0)"cold" else "warm").put("startedAtEpochMs",System.currentTimeMillis())
             var begin=if(offset==0)arguments.getLong("launchStart",SystemClock.elapsedRealtime())else SystemClock.elapsedRealtime()
             try {
                 if(offset>0){
@@ -81,7 +82,24 @@ class ExperienceSuite(private val test:Instrumentation,private val activity:Main
                     6->{val selected=ui{activity.session.station?.id};val volume=ui{activity.session.volume};swipe(1250f,800f);waitFor{activity.session.page==1};check(ui{activity.session.station?.id==selected&&activity.session.volume==volume});committedFrame();swipe(450f,750f);waitFor{activity.session.page==0}}
                     7->{val volume=ui{activity.session.volume};tap("device-lock");waitFor{activity.session.locked};tap("segmented-volume",1f);check(ui{activity.session.volume==volume});tap("device-light");waitFor{activity.session.light};tap("device-lock");waitFor{!activity.session.locked}}
                     8->{val selected=ui{activity.session.station?.id};tap("device-power");waitFor{!activity.session.powered};waitFor{!activity.surface.refreshing};tap("segmented-volume",1f);check(ui{activity.session.station?.id==selected&&activity.session.volume==20&&!activity.session.powered});tap("device-power");waitFor{activity.session.powered&&!activity.surface.refreshing}}
-                    9->{check(ui{activity.session.station?.stream?.startsWith("https://")==true});tap("play-toggle");waitFor(40){activity.session.playing};check(ui{audio()!!.player.isPlaying});Thread.sleep(500);tap("play-toggle");waitFor{!activity.session.playing};check(ui{audio()!!.player.audioFormat!=null})}
+                    9->{ui{activity.session.select(activity.session.presetPool().first().id)};waitFor(40){activity.session.playing};check(ui{audio()!!.player.isPlaying});Thread.sleep(500);tap("play-toggle");waitFor{!activity.session.playing};check(ui{audio()!!.player.audioFormat!=null})}
+                    10->{val favorites=ui{activity.session.favorites.toList()};val keys=JSONArray()
+                        for(i in 0..3){val expected=ui{activity.session.presetPool()[activity.session.presetStart+i]};tap("preset:$i");waitFor{activity.session.station?.id==expected.id&&audio()!!.player.currentMediaItem?.mediaId==expected.id};keys.put(JSONObject().put("slot",i+1).put("id",expected.id).put("name",expected.name))}
+                        check(ui{activity.session.favorites==favorites});row.put("stationKeys",keys)
+                    }
+                    11->{ui{activity.session.select(activity.session.presetPool().first().id)};waitFor(45){activity.session.playing&&(activity.session.spectrumFrame?.samples?:0)>8192};check(ui{(activity.session.spectrumFrame?.rms?:0f)>0})
+                        fun sample(name:String,immersive:Boolean):IntArray {
+                            committedFrame();Thread.sleep(500)
+                            val bitmap=test.uiAutomation.takeScreenshot()?:error("No native screenshot")
+                            val rect=ui{val scene=activity.surface.painter.scene(if(immersive)"immersive" else "modern-ink");if(immersive)scene.flattened().first{it.json.optString("svg").contains("0 0 600 190")}.r else scene.find("spectrum")!!.r}
+                            val scale=bitmap.width/1704f;val left=(rect.left*scale).toInt();val top=(rect.top*scale).toInt();val width=(rect.width()*scale).toInt();val height=(rect.height()*scale).toInt();val pixels=IntArray(width*height);bitmap.getPixels(pixels,0,width,left,top,width,height)
+                            val preview=Bitmap.createScaledBitmap(bitmap,852,568,true);File(output,"round-%03d-%s.png".format(number,name)).outputStream().use{preview.compress(Bitmap.CompressFormat.PNG,100,it)};preview.recycle()
+                            if(number<=12)File(output,"round-%03d-%s-native.png".format(number,name)).outputStream().use{bitmap.compress(Bitmap.CompressFormat.PNG,100,it)}
+                            bitmap.recycle();return pixels
+                        }
+                        val a=sample("modern-a",false);Thread.sleep(800);val b=sample("modern-b",false);val modern=a.indices.count{a[it]!=b[it]};check(modern>100){"Modern spectrum did not visibly move"}
+                        val id=ui{activity.session.station?.id};swipe(1250f,800f);waitFor{activity.session.page==1};val c=sample("immersive-a",true);Thread.sleep(800);val d=sample("immersive-b",true);val immersive=c.indices.count{c[it]!=d[it]};check(immersive>100){"Immersive spectrum did not visibly move"};check(ui{activity.session.station?.id==id&&audio()!!.player.isPlaying});row.put("visibleSpectrumChangedPixels",JSONObject().put("modern",modern).put("immersive",immersive));swipe(450f,750f);waitFor{activity.session.page==0}
+                    }
                 }
                 committedFrame();row.put("actionMs",SystemClock.elapsedRealtime()-actionStart)
                 check(ui{System.identityHashCode(audio()!!.player)==player}){"Player recreated during the batch"}

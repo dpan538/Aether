@@ -53,6 +53,20 @@ class SessionTest {
         assertTrue(s.catalog.isEmpty());assertNull(s.station);assertNull(s.metadata);assertNull(s.decodedFormat)
         assertFalse(s.playing);assertTrue(s.favorites.isEmpty())
     }
+    @Test fun fourLivePresetsWorkWithoutInventingFavorites() {
+        val s=Session(false);s.catalog=(1..6).map{Station("station:$it","Station $it",stream="https://example.test/$it")}
+        assertTrue(s.spectrumEnabled)
+        assertEquals(6,s.presetPool().size)
+        for(i in 0..3){assertTrue(s.canUse("preset:$i"));s.select(s.presetPool()[i].id);assertEquals("station:${i+1}",s.station?.id)}
+        assertTrue(s.favorites.isEmpty());s.presetOffset=99;assertEquals(2,s.presetStart)
+        assertEquals("station:6",s.presetPool()[s.presetStart+3].id)
+        s.locked=true;assertFalse(s.canUse("preset:0"))
+    }
+    @Test fun settingsRetainsTheUnderlyingTuningPool() {
+        val s=Session(true);s.showView("favorites");val ids=s.tuningPool().map{it.id}
+        s.showView("settings");assertEquals(ids,s.tuningPool().map{it.id});assertEquals("favorites",s.lastBrowseView)
+        s.showView(s.lastBrowseView);assertEquals("favorites",s.view)
+    }
     @Test fun directoryRefreshCannotRenameThePlayingStream() {
         val s=Session(false);val playing=Station("a","Actual station",stream="https://example.test/a")
         s.catalog=listOf(playing);s.select(playing.id)

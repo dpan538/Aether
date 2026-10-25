@@ -1,78 +1,27 @@
-# Android delivery and verification
+# preview.2 严重缺陷修复验证
 
-Verified preview: **0.1.0-preview.1**, versionCode **2**, package `io.github.dpan538.aether`. [APK download](https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.1/Aether-0.1.0-preview.1.apk) · [Release](https://github.com/dpan538/Aether/releases/tag/v0.1.0-preview.1) · [Build provenance](BUILD.json).
+preview.1 的验收已撤回。用户实机截图与原有真实播放截图都能看到文字损坏；此前300轮主要检查状态，漏掉了实际画面的严重问题。[历史报告](HISTORICAL-PREVIEW1.md)与原始数据保留，不能作为当前交付通过依据。
 
-APK SHA-256: `9f81bbd8977a9a8bf2d354497652c3e75fee95b0a3ef2d3f483e1650d1670810`. The installed APK matched these exact bytes after a real in-app download and Android covering install. This is a preview; physical-tablet acceptance and unknown-defect guarantees are not established.
+本轮只以小米 Pad 9 Pro Max 的 **3408×2272、横屏3:2** 为适配目标。当前可执行环境是独立 API36 ARM64 模拟器；不冒充小米实机、HyperOS、144Hz、扬声器或振动马达验证。
 
-## 300 actual opens and uses
+## 根因与改动
 
-The formal dataset contains **300 unique completed rounds: 300 passes, 0 failures, 0 crash events, 0 ANR events**. It used 30 process-cold Activity starts and 270 foreground returns on the unchanged, non-debuggable published APK, in real mode at **3408×2272**, density 320. Each of ten scenarios ran 30 times: front light, relative volume/mute, real Tempo/pitch, language/settings, real-directory filtering, favorites, shared-page session, lock protection, power/retained ink, and actual HTTPS playback/pause.
+- **文字损坏**：原绘制代码让频谱和文字共用 Paint，依赖 reset 清除文字对齐。原生探针实测 reset 后仍保持 CENTER/RIGHT；按字符逐个绘制时因此产生丢字、错位。现在每个完整字符串使用独立 TextPaint，显式设置对齐、缩放、斜切与字距，并按整段文字塑形；省略及双行使用相同测量方式，兼容中文、组合字符和代理对。
+- **四个 Station 键无效**：原先只绑定收藏，首次启动收藏为空时四键全部禁用。现在优先真实收藏，其后接真实目录并按 UUID 去重；四键立即可选，横滑可到后续电台，不替用户创建收藏。锁定/关机时仍禁用。
+- **主频谱与沉浸频谱**：真实模式默认启用；Equalizer 控制真实 PCM 监测，波形键独立控制艺术动画。左右声道分别 FFT、按功率合成，避免反相抵消。沉浸页的模拟日期曲线替换为同一 PCM 帧的左右声道频率图。暂停、缓冲、错误、关闭监测分别显示真实状态，缺失资料不编造。
+- **页面与点击**：小目标扩展到48dp；普通手指抖动仍算点击，明确滚动/旋转后不误点。设置返回先前目录/收藏页，两页共用当前电台和同一个播放器，三角按实际筛选池切台。
+- **资料与生命周期**：节目资料缺失时显示真实台名；音频格式使用真实解码器的 codec、采样率、声道和已知码率；时间明确为 DEVICE TIME。筛选重置也触发真实目录请求，中断请求在恢复前台后重试。频谱帧合并投递，避免主线程恢复后补播过期帧。
 
-[Portable HTML/charts/screenshots bundle](https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.1/Aether-300-round-experience.zip) · [Complete native visual evidence](https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.1/Aether-native-visual-evidence.zip) · [Complete CSV](evidence/experience-rounds.csv) · [Complete state records](evidence/experience-rounds.json) · [Summary](evidence/experience-summary.json) · [Environment and exact test-APK hash](evidence/experience-environment.json). The downloadable report bundle contains an offline filterable HTML report, five charts, all 300 screenshot previews, native cold-start screenshots, per-batch logs and excluded-run records.
+## 已执行的针对性验证
 
-| Observation | Median | P95 | Maximum |
-| --- | ---: | ---: | ---: |
-| Cold Activity launch → interactive committed frame | 4.069s | 4.172s | 4.213s |
-| Foreground return → interactive committed frame | 264ms | 380ms | 548ms |
-| App PSS at round completion | 347.48 MiB | 358.75 MiB | 364.77 MiB |
+15项单元测试通过，Release lint零错误、13警告、1提示。原生测试验证16位/浮点PCM、左右声道分频、反相信号、静音、空缓冲/EOS、20Hz投递上限及音频字节完全不变。对3408×2272整屏分别注入 CENTER/RIGHT、非默认缩放、斜切与字距，重绘变化像素均为0。
 
-![Observed readiness across 300 rounds](evidence/experience-charts/chart-1.png)
+四键真实触摸含4×3物理像素移动：逐一比对键面台名、选中UUID、Media3 mediaId；收藏保持为空。另验证50/150/100%速度与pitch=1、EQ开关、设置中英文、设置返回、两个沉浸三角、单播放器切页、暂停、锁定、关机留墨。主屏和沉浸频谱分别保存不同时间的实际PNG，并检测各自区域的变化像素。
 
-![Scenario coverage](evidence/experience-charts/chart-5.png)
+## 循环与交付
 
-Method: a separate, same-signer instrumentation APK opens the actual release Activity with a launcher Intent. Each warm round backgrounds and reopens it. Readiness waits for resources, the specified ink refresh, window focus and a committed GPU frame. `openMs` excludes instrumentation/process bootstrap; it is not Android Vitals full-startup latency. Each round restores a controlled baseline through test code (paused, unlocked, directory, volume20, Tempo100); baseline restoration is not counted as a user action. The measured operations use real native pointer events and observe the actual player/session. The same player object must survive every warm return and page change within a ten-round process batch.
+新一轮非debug APK循环及最终附件正在生成。完成后在此记录真实结果，旧preview.1循环不计入本轮。
 
-Every round retains before/after state, timestamps, timings, PSS/Java heap, real data mode, actual dimensions, player identity, playback parameters and a derived 852×568 screenshot. Cold starts and failures retain raw 3408×2272 screenshots. Screenshots and cleanup are not included in `actionMs`; the action timing includes the whole sequence and condition/frame waits, not one-touch latency. Thirty process restarts mean this is not a 300-return single-process memory-leak proof.
+## 边界
 
-Two earlier datasets are explicitly excluded, not erased: [17 preflight rounds](evidence/experience-preflight.json) include two harness failures from tapping the slider's excluded right edge; the pointer helper now targets inside the hitbox. [36 software-renderer rounds](evidence/software-renderer-investigation.json) include one foreground-wait failure and global emulator stalls, including an ADB timeout and a 119.901s readiness outlier. The formal run switched to the host GPU and 4096MiB guest RAM; the old environment used SwiftShader and 6144MiB. This is an environment change, not an application-code fix or a controlled causal A/B comparison. Full old records are in the report bundle.
-
-The formal emulator is API36 ARM64 with the Apple M1 OpenGL ES translator. Its SDK warns that macOS host OpenGL is deprecated and API36 expects GLES3.1 while the observed backend exposes GLES3.0. [Read-only gfxinfo samples](evidence/frame-samples.json) include over-budget frames. Functional success does not prove 60fps or physical-tablet smoothness. No physical Android device was connected.
-
-## Design fidelity and resolution
-
-The 33-file frozen baseline is unchanged, and the lunar shader matches byte for byte. Native Kotlin Canvas/text/SVG and GLES artwork implement two pages with one session/player, no WebView and no whole-interface screenshot drawable. Individual empty material skins are 2× exports; the main disc is 3801², selector 966². Display lists record at the device's 3408×2272 pixel size; typography remains native. A 1704×1136 logical frame scales uniformly and letterboxes other aspect ratios.
-
-![Nine native states; explicitly downscaled contact sheet](evidence/visuals/contact-sheet.png)
-
-[Raw modern 3408×2272](evidence/visuals/modern-ink-native.png) · [Raw immersive 3408×2272](evidence/visuals/immersive-native.png) · [50% overlay](evidence/visuals/modern-ink-overlay50.png) · [Guide pair, reference left/native right](evidence/visuals/modern-ink-guides-reference-native.png) · [Controls pair](evidence/visuals/modern-lit-controls-reference-native.png).
-
-Raw same-size comparison, without registration, baseline changes or thresholded differences. MAE/RMSE are absolute RGB-channel values on 0–255, descriptive rather than acceptance guarantees. Native fonts, antialiasing, minor material shadows and cross-GPU grain remain different from Chromium. Preset004 uses an explicitly recorded browser recipe from the immutable source, not a modified baseline. The primary nine-state comparisons were captured with SwiftShader before the host-GPU experience run; the app code/artifact is the same.
-
-| State | MAE /255 | RMSE /255 |
-| --- | ---: | ---: |
-| immersive | 4.8283 | 18.3476 |
-| modern-genre-menu | 5.6039 | 18.6995 |
-| modern-ink | 4.6362 | 15.8985 |
-| modern-language-menu | 4.9675 | 16.8290 |
-| modern-lit | 5.3536 | 17.8684 |
-| modern-mute | 5.3260 | 17.7813 |
-| modern-off | 4.6130 | 15.9383 |
-| modern-settings | 4.8580 | 16.4554 |
-| preset004 | 4.0541 | 17.5639 |
-
-## Controls, real data and motion
-
-- **13 JVM tests** passed: session/filter/selection, mute/clamps/relative gates, live metadata separation, directory refresh identity, FFT known-signal behavior, update-host restrictions and empty PCM buffers.
-- [35 real-touch control checks](evidence/control-checks.json) passed: presets, lock/light, 50/150 Tempo endpoints, filters, language, shared pages, triangles and power retention. [20 edge checks](evidence/edge-checks.json) passed: empty favorites, native IME/no results, station-language filter, all four selector stops, dead zone, random action and cancellation without residual travel.
-- [Three window sizes](evidence/window-checks.json), 1704×1136 / 2560×1440 / 1136×1704, passed preset hit mapping. Continuous drag/CANCEL was captured at 3408×2272. An auxiliary native 1704×1136 recording avoids a 4K software-encoder timing bottleneck.
-- [Five haptic checks](evidence/haptic-checks.json) passed: no tick/seek on encoder press, accepted detents, no queued changes, bounded end stop and explicit system-preference suppression. The emulator can record calls, not motor feel or strength.
-- [Eleven live checks](evidence/live-checks.json) passed: actual AAC/MP3 decode, decoded-PCM levels, actual speed1.5/0.5 with pitch1.0, shared player while changing page, persisted favorite recall, background/resume, and a real HTTP error with cleared metadata. The separate native buffer test also verifies byte-identical PCM pass-through and safe empty/EOS input.
-- [17 motion states](evidence/motion-checks.json) cover light 0/525/1050ms, six refresh samples, three reference-spectrum phases, four foil phases and reduced motion. Front-light observations: 0 / 0.80619675 / 1 on the prescribed 1050ms curve. The static lunar region has maximum channel difference0 across phases; the selector loop seam MAE is 0.0002554 at 166.667s. Deterministic keyframes do not establish live frame rate.
-
-Real mode uses Radio Browser fields, Media3/ICY/decoder state, decoded PCM, Android battery percentage/**battery temperature**, network transport and device time. Missing city, callsign, station zone or programme data stay absent. Artwork and the printed graph are artistic composition, not measured history. The bounded directory preserves service ordering. Release mode cannot activate the reference MOCK session. Audio pauses on Activity stop; there is no background service, recording or time shift. Custom Canvas accessibility/dynamic type is not complete.
-
-## Real repository update and security
-
-A constructed local version1 fixture with Aether's own preview signer seeded a real HTTPS favorite, volume17, Tempo90 and Chinese UI. Aether's own update panel downloaded the public version2 APK once. A second check and a process restart reused the same verified file, with the same hash, size and modification time and zero new download requests. Permission denial and Android-installer cancellation retained it. The real system installer then covered version1 with the exact published version2. [Post-install state](evidence/upgrade-installed-release-state.json) confirms favorite, volume17, Tempo90 and Chinese preserved. Obsolete pending APKs were removed after installation. [Integrity record](evidence/upgrade-installed-integrity.json). On installed version2, a real repository check returned CURRENT / No newer version with zero downloads.
-
-[Native security checks](evidence/upgrade-security.json) accepted the valid same-signer release and rejected ten cases including wrong signer/version, downgrade, wrong size/hash, untrusted URL variants and tampered bytes even with a matching advertised hash. The APK was cryptographically verified, non-debuggable and contained no private keystore/config files. Only INTERNET, network state and APK-source installation permissions are requested; FileProvider is not exported and grants only the retained APK URI. No GitHub token or microphone permission is shipped. [OSV query](evidence/osv-dependencies.json) covered 56 locked Maven versions with zero matched advisories at its timestamp; advisory coverage does not prove absence of unknown vulnerabilities.
-
-Release lint has zero errors, 13 warnings and one hint. Warnings concern deliberately pinned newer-available dependencies, launcher-resource format/monochrome guidance and the programmatic View constructor. The APK actually loads E1 as a **BitmapDrawable**; legacy full-square PNGs preserve the chosen composition and Launcher adds its own surrounding shape. The source adaptive XML was not selected in this artifact, so adaptive-mask certification is not claimed. The [actual Launcher crop](evidence/visuals/e1-actual-launcher.png) shows the complete E1 composition; the selected entry opened the permanent package. E1 remains temporary, generated-raster artwork rather than a final vector/handmade brand mark.
-
-## Iteration and remaining limits
-
-Verification found and corrected deferred insets, corrupted browser material export, SVG/menu clipping, station identity changing after directory refresh, absolute/relative volume conflicts, repeated page changes on lifecycle stop, a CD paint-alpha error, and a no-op page settle blocking the next triangle tap. Actual cold resource-decoding/SVG-preparation input ANRs led to worker preparation and a bounded two-page cache. Frame-commit readiness excludes loading/splash captures. Empty PCM EOS buffers caused a real playback runtime error and now have an explicit guard plus regression. The emulator accepted haptic calls despite its preference, so the controller now checks that preference directly. Post-install observation initially reused the installer's task; the test harness now uses launcher Intents and a fresh task.
-
-Only the final complete native captures and the formal 300-round dataset support the final figures. Earlier splash/partly rendered captures remain excluded. The HTTPS-only policy replaces an earlier broad-cleartext request rejected by automatic approval review. There is no remaining approval block.
-
-Physical tablet tactile strength, listening quality and 3.4K frame pacing remain unverified. These results do not certify worldwide station availability, pixel identity, full accessibility, 60fps or zero undiscovered defects. Preserve Aether's private preview signing key for all future in-place updates; it is intentionally outside Git and release attachments.
+冻结设计文件保持原始字节，另保留原生参考态截图、叠图与差分；实时资料、首次可用预设及真实频谱的改动有明确功能原因，不能宣称与静态MOCK稿逐像素相同。测试不证明零未知漏洞、全球电台可用性或实机触感。APK沿用永久包名和Aether自己的签名，更新仍由Android系统确认安装。

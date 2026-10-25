@@ -2,7 +2,7 @@ package com.aether.radio
 
 import kotlin.math.*
 
-data class SpectrumFrame(val levels:FloatArray,val rms:Float,val sampleRate:Int,val samples:Long)
+data class SpectrumFrame(val levels:FloatArray,val rms:Float,val sampleRate:Int,val samples:Long,val leftLevels:FloatArray=levels,val rightLevels:FloatArray=levels)
 
 /** Hann-windowed FFT of decoded PCM, in dBFS. No synthesized input or microphone. */
 class SpectrumAnalyzer(private val rate:Int,private val size:Int=2048) {

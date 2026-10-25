@@ -31,7 +31,7 @@ class Session(val reference: Boolean) {
     val station get() = selectedStation ?: catalog.getOrNull(selected)
     fun restoreStation(value:Station){selectedStation=value;savedStations[value.id]=value}
     fun lookup(id:String?)=catalog.find{it.id==id}?:savedStations[id]
-    var powered = true
+    @Volatile var powered = true
     var locked = false
     var light = false
     var volume = 20
@@ -47,6 +47,7 @@ class Session(val reference: Boolean) {
     fun freezeInk(){retainedInk=RetainedInk(station,metadata,decodedFormat,connection,playing)}
     val favorites = if(reference) mutableListOf("ref:0", "ref:2", "ref:1", "ref:3") else mutableListOf()
     var view = "directory"
+    var lastBrowseView="directory"
     var page = 0
     var menu: String? = null
     var language = "en"
@@ -57,7 +58,7 @@ class Session(val reference: Boolean) {
     var mode = 0
     var tempo = 100
     var motion = false
-    @Volatile var spectrumEnabled=false
+    @Volatile var spectrumEnabled=!reference
     var spectrumFrame:SpectrumFrame?=null
     var deviceReadings:DeviceReadings?=null
     var onSpectrum:()->Unit={}
@@ -80,11 +81,36 @@ class Session(val reference: Boolean) {
     var onPower:(Boolean)->Unit={}
     val enabled get() = powered && !locked
     fun changed() = onChange()
-    fun filtered(): List<Station> = (if(view=="favorites")favorites.mapNotNull{lookup(it)} else catalog).filter {
+    private val browseView get()=if(view=="settings")lastBrowseView else view
+    fun filtered(): List<Station> = (if(browseView=="favorites")favorites.mapNotNull{lookup(it)} else catalog).filter {
         (query.isBlank() || normal(it.name+it.city+it.region).contains(normal(query))) &&
         (region.isBlank() || it.region==region) && (genre.isBlank() || it.genre==genre) &&
-        (stationLanguage.isBlank() || it.language==stationLanguage) && (view!="favorites" || it.id in favorites)
+        (stationLanguage.isBlank() || it.language==stationLanguage) && (browseView!="favorites" || it.id in favorites)
     }
+    fun showView(value:String){
+        if(value=="settings"){if(view!="settings")lastBrowseView=view;view="settings"}
+        else{view=value;lastBrowseView=value;listOffset=0}
+        menu=null;changed()
+    }
+    fun tuningPool():List<Station> = filtered().ifEmpty{if(browseView=="favorites"&&favorites.isEmpty())catalog else emptyList()}
+    fun canUse(action:String):Boolean=when{
+        action=="device-power"->!locked
+        action in listOf("device-lock","device-light")->powered
+        !enabled->false
+        action=="empty-preset"->false
+        action.startsWith("preset:")->presetPool().getOrNull(action.substringAfter(':').toIntOrNull()?:-1)!=null
+        action.startsWith("favorite-step:")->favorites.any{lookup(it)!=null}
+        action in listOf("previous","next")||action.startsWith("step:")->tuningPool().isNotEmpty()
+        action in listOf("play-toggle","favorite-toggle")->station!=null
+        action=="random-station"->filtered().isNotEmpty()
+        else->true
+    }
+    val displayOrdinal:Int? get(){val i=tuningPool().indexOfFirst{it.id==station?.id};return if(i<0)null else i+1}
+    fun presetPool():List<Station> {
+        val saved=favorites.mapNotNull{lookup(it)}
+        return if(reference)saved else (saved+catalog).distinctBy{it.id}
+    }
+    val presetStart get()=presetOffset.coerceIn(0,(presetPool().size-4).coerceAtLeast(0))
     fun select(id: String) {
         if(!enabled)return
         val chosen=lookup(id)?:return
@@ -95,7 +121,7 @@ class Session(val reference: Boolean) {
         changed()
     }
     fun step(direction: Int, favorite: Boolean=false) {
-        val pool=if(favorite) favorites.mapNotNull { id->lookup(id) } else filtered()
+        val pool=if(favorite) favorites.mapNotNull { id->lookup(id) } else tuningPool()
         if(pool.isEmpty())return
         val i=pool.indexOfFirst {it.id==station?.id}
         select(pool[if(i<0)if(direction>0)0 else pool.lastIndex else Math.floorMod(i+direction,pool.size)].id)

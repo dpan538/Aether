@@ -2,7 +2,7 @@
 from pathlib import Path
 import argparse,hashlib,json,subprocess
 from xml.etree import ElementTree as ET
-p=argparse.ArgumentParser();p.add_argument('--prepared',default='verification/local/delivery-pcm-final');p.add_argument('--release-commit');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('--prepared',default='verification/local/delivery-pcm-final');p.add_argument('--release-commit');p.add_argument('--device',default='verification/local/final/modern-ink.json');p.add_argument('--output',default='verification/BUILD.json');a=p.parse_args()
 root=Path(__file__).resolve().parents[1]
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 sources=[]
@@ -20,7 +20,7 @@ disc=(frozen/'source/design/immersive/disc.js').read_text().split('const fragmen
 native=(root/'app/src/main/assets/disc.frag').read_bytes();assert native==disc
 snapshot=json.loads((frozen/'manifest.json').read_text())
 for item in snapshot['files']:assert sha(frozen/item['file'])==item['sha256'],item['file']
-device=json.loads((root/'verification/local/final/modern-ink.json').read_text())
+device=json.loads((root/a.device).read_text())
 manifest={
  'releaseSourceCommit':a.release_commit,
  'version':identity['versionName'],'versionCode':identity['versionCode'],'applicationId':identity['packageName'],
@@ -34,5 +34,5 @@ manifest={
  'shaderSha256':hashlib.sha256(native).hexdigest(),'shaderMatchesFrozenSource':True,
  'frozenManifestSha256':sha(frozen/'manifest.json'),'frozenFilesVerified':len(snapshot['files']),
  'sourceFiles':files}
-(root/'verification/BUILD.json').write_text(json.dumps(manifest,indent=2)+'\n')
+(root/a.output).write_text(json.dumps(manifest,indent=2)+'\n')
 print('APK',manifest['apk']['sha256'],'source',digest)
