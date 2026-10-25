@@ -53,6 +53,8 @@ class ImmersiveSuite(private val test:Instrumentation,private var activity:MainA
         check(test.targetContext.contentResolver.persistedUriPermissions.any{it.uri==uri&&it.isReadPermission})
         val track=LocalMusic.imported(test.targetContext,uri)
         check(track.album=="Embedded Cover Test"&&track.title=="Embedded cover fixture"&&track.coverUri.startsWith("file:"))
+        val originalPicture=Id3Artwork.read(test.targetContext,uri).picture!!
+        check(java.io.File(android.net.Uri.parse(track.coverUri).path!!).readBytes().contentEquals(originalPicture)){"Embedded cover bytes were resized or recompressed"}
         val cover=ArtworkStore.load(test.targetContext,track.coverUri,2048)!!;check(maxOf(cover.width,cover.height)>=1900);cover.recycle()
         val live=main{MainActivity::class.java.getDeclaredField("live").apply{isAccessible=true}.get(activity) as LivePlayback}
         main{live.addImported(listOf(track));s.page=1;s.selectLocal(listOf(track),0);s.changed()}

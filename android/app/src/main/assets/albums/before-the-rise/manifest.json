@@ -181,8 +181,9 @@
   "linerNotesEn": "Phantasmagoria: The Absolute Dissolution\n\nBetween the shifting contours of reality and the void, all perceived forms are but transient dreams—evaporating under the absolute glare of day.\n\nThis suite draws on the ancient spirit frequencies of East Asian instruments: Yamato-koto, Tonkori, Hyeongeum, Kokyu, Nohkan, and Taiko. Music becomes a spatial manifestation of human consciousness: from the warmth of a clear night and a glass garden, into hypnagogic drift and Noh-ritual haunting; across the tension of metal and fire, toward the emotional epiphany of a mother’s youthful face, before reaching dissolution in the morning sun.\n\nThe Uncanny & The False Awakening\n\nThe piercing Nohkan captures the horror of encountering spirits within a dream. Taiko thunder reflects the struggle against the unseen structure of the illusion. Waking offers no refuge: it is an entry into a deeper, colder layer of the dream realm. Snare drum, tuning fork and triangle sharpen its edges; shamisen and tom-toms release the kinetic force of its last embers.\n\nMemory’s Radiant Epiphanies\n\nCascading Yamato-koto glissandos and emotional string motifs give voice to a joyous vision: a subconscious confrontation with the young, vivid face of one’s mother. Triumphant light carries an awareness of its ephemeral nature.\n\nSunlight & The Absolute Vaporization\n\nAs Tonkori and Hyeongeum resonance dissolves into the trumpet’s piercing clarity, daylight strikes the dreamscape. Hauntings, memories and visions evaporate into wisps of white smoke, returning to absolute stillness and undeniable reality.\n\nEach pluck and chime is an act of invocation; a journey through the threshold of illusion, returning at last to the silence of dawn.\n\nDai Pan (潘岱)\nCreated with Google AI assistance. Concept and track descriptions supplied by Dai Pan; this edition’s notes are adapted to the eleven supplied recordings.",
   "cover": {
     "file": "cover.png",
-    "source": "branding/icons/2026-10-25-symmetric-gradient/exports/J3-01.png",
-    "sha256": "90c5ff75ebbee30b544f945d93cb854ac87e9ebf710c9c998de1a5348c3a8ae6",
-    "method": "Existing project artwork used byte-for-byte; no redrawing or recoloring."
+    "width": 6144,
+    "height": 6144,
+    "sha256": "7788555ee8e4c3d678d4700ac68f2c6c758ba2b904975628c632e2ca4a8b6605",
+    "method": "High-resolution derivative of the existing project cover; smoothed vector contours, original composition and palette."
   }
 }

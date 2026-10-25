@@ -28,8 +28,9 @@ class MusicLibraryDialog(context:Context,private val state:Session,private val a
     private fun text(value:String,size:Float=16f,color:Int=ink)=TextView(context).apply{text=value;textSize=size;setTextColor(color);setLineSpacing(dp(3).toFloat(),1f);includeFontPadding=true}
     private fun shape(color:Int,radius:Int=10)=GradientDrawable().apply{setColor(color);cornerRadius=dp(radius).toFloat()}
     private fun button(label:String,id:Int,primary:Boolean=false,action:()->Unit)=Button(context).apply{
-        text=label;this.id=id;textSize=18f;isAllCaps=false;setTextColor(if(primary)paper else accent);minHeight=dp(48)
+        text=label;this.id=id;textSize=18f;isAllCaps=false;setSingleLine(true);setTextColor(if(primary)paper else accent);minHeight=dp(48)
         background=shape(if(primary)accent else Color.TRANSPARENT,26);setPadding(dp(18),dp(5),dp(18),dp(5));stateListAnimator=null
+        if(id==CLOSE||id==OPTIONS_CLOSE){setPadding(0,0,0,0);includeFontPadding=false;gravity=Gravity.CENTER}
         setOnClickListener{if(state.enabled)action()}
     }
     private fun LinearLayout.space(size:Int){addView(Space(context),LinearLayout.LayoutParams(dp(size),dp(size)))}
@@ -86,9 +87,10 @@ class MusicLibraryDialog(context:Context,private val state:Session,private val a
         }}
         addTracks(album)
         scroll.addView(list);right.add(scroll,-1,0,1f)
-        val footer=LinearLayout(context).apply{gravity=Gravity.END or Gravity.CENTER_VERTICAL;setPadding(0,dp(12),0,0)}
-        footer.add(button("•••",MORE){showOptions()}.apply{textSize=24f;contentDescription=if(cn)"专辑选项"else"Album options"},64,64)
-        right.add(footer);body.add(right,0,-1,1f)
+        body.add(right,0,-1,1f)
+        val optionsRail=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.BOTTOM;setPadding(dp(8),0,0,0)}
+        optionsRail.add(AlbumMoreButton(context).apply{id=MORE;contentDescription=if(cn)"专辑选项"else"Album options";setOnClickListener{if(state.enabled)showOptions()}},48,48)
+        body.add(optionsRail,56,-1)
         root.add(body,-1,0,1f)
         setContentView(root)
         setOnDismissListener{main.removeCallbacks(tick);notesDialog?.dismiss();optionsDialog?.dismiss();image.setImageDrawable(null)}

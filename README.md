@@ -23,6 +23,8 @@
 - 支持本地音乐与设备文件导入，附带 Dai Pan（潘岱）的器乐专辑 **Before the Rise**。
 - 无广告、推荐信息流、热度榜单或算法个性化。
 
+[独立下载 Before the Rise 专辑](https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.7/Before-the-Rise-Dai-Pan-MP3.zip)：无需安装应用，包含 11 首 MP3、内嵌封面、曲序播放列表和专辑手记。原始音频为 192 kbps / 44.1 kHz 双声道，导出不再次有损压缩。
+
 电台目录来自 [Radio Browser](https://www.radio-browser.info/)。电台的可用性由各自的音源、地区和网络条件决定；应用只播放 HTTPS 音源。
 
 ## 下载与更新

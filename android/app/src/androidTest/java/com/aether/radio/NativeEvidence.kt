@@ -138,6 +138,7 @@ class NativeEvidence:Instrumentation() {
                     securityChecks.put(JSONObject().put("check","16-bit / float, anti-phase stereo, isolated channel frequencies, silence, 20 Hz ceiling and bit-exact pass-through").put("passed",true))
                     securityChecks.put(JSONObject().put("check","PCM pass-through and empty/end-of-stream buffers").put("passed",true))
                 }
+                "album-presentation"->{val data=AlbumPresentationSuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
                 "network-recovery"->{val data=NetworkRecoverySuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
                 "ink-motion"->{val data=InkMotionSuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
                 "library-management"->{val data=LibraryManagementSuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}

@@ -175,7 +175,7 @@ class AetherView(context:Context,val state:Session):View(context) {
         if(active&&state.powered&&state.playing&&!reducedMotion)immersivePlayback.advance((frameTime-phaseTick).coerceIn(0,100)/1000f)
         if(state.motion&&active&&state.powered){phaseMillis+=(frameTime-phaseTick).coerceAtLeast(0);painter.phase=(testTime?:phaseMillis)/1000f}
         phaseTick=frameTime
-        if(!state.reference)immersivePlayback.syncArtwork()
+        if(!state.reference){immersivePlayback.setRenderScale(sx);immersivePlayback.syncArtwork()}
         if((state.page==1||offset!=0f)&&painter.mainDisc==null&&(state.reference||immersivePlayback.needsFallback))disc.render(true,3801)
         if(state.page==1&&testTime!=null&&state.motion&&(!painter.smallDiscPhase.isFinite()||abs(painter.smallDiscPhase-painter.phase)>.0001f))disc.render(false,966,painter.phase)
         canvas.save();canvas.translate(ox,oy);canvas.scale(sx,sx);canvas.clipRect(0f,0f,1704f,1136f)

@@ -14,6 +14,9 @@ class ImmersivePlayback(private val context:Context,private val state:Session,pr
     private val worker=Executors.newSingleThreadExecutor();private val main=Handler(Looper.getMainLooper())
     private var closed=false;private var artworkKey="initial";private var artwork:Bitmap?=null
     private var coverPending=false
+    private var artworkPixels=3072
+    val coverPixelWidth get()=artwork?.width?:0
+    fun setRenderScale(scale:Float){artworkPixels=kotlin.math.ceil(DISC.width()*scale*1.5f).toInt().coerceAtLeast(2048)}
     val needsFallback get()=artwork==null&&!coverPending
     var rotation=0f
     var dragging=false
@@ -24,11 +27,13 @@ class ImmersivePlayback(private val context:Context,private val state:Session,pr
     private val path=Path()
     private val white=Color.rgb(238,241,242)
     fun syncArtwork(){
-        val key=state.localTrack?.coverUri.orEmpty()
+        val uri=state.localTrack?.coverUri.orEmpty()
+        val key="$uri:$artworkPixels"
         if(key==artworkKey)return
-        artworkKey=key;artwork=null;coverPending=key.isNotBlank()
-        if(key.isBlank())return
-        worker.execute{val result=ArtworkStore.load(context.applicationContext,key,2048);main.post{if(!closed&&artworkKey==key){coverPending=false;artwork=result;invalidate()}else result?.recycle()}}
+        artworkKey=key;artwork=null;coverPending=uri.isNotBlank()
+        if(uri.isBlank())return
+        val pixels=artworkPixels
+        worker.execute{val result=ArtworkStore.load(context.applicationContext,uri,pixels);main.post{if(!closed&&artworkKey==key){coverPending=false;artwork=result;invalidate()}else result?.recycle()}}
     }
     fun advance(seconds:Float){if(!dragging)rotation=(rotation+seconds*18f)%360f}
     fun drawDisc(c:Canvas,fallback:Bitmap?){
