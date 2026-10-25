@@ -75,6 +75,30 @@ class AlbumSuite(private val test:Instrumentation,private val activity:MainActiv
         main{s.selectLocal(LocalMusic.bundled(activity),0)};waitFor{s.playing&&s.spectrumFrame!=null};record("Recovery from unreadable document to bundled audio succeeds")
         return JSONObject().put("passed",true).put("checks",checks)
     }
+    fun runLayout():JSONObject {
+        main{s.page=1;s.language="zh";s.changed()};Thread.sleep(300);openAlbum()
+        main{
+            fun texts(v:View):List<TextView> = if(v is TextView)listOf(v)else if(v is android.view.ViewGroup)(0 until v.childCount).flatMap{texts(v.getChildAt(it))}else emptyList()
+            val title=texts(dialog()!!.window!!.decorView).first{it is AlbumTitleView}
+            check(title.text.toString()=="Before the Rise"&&title.textSize<=128.1f&&title.textSize>=68f)
+            for(sample in listOf("Before the Rise","Music for the Quiet Hours: A Journey Through Memory and the First Light of Morning","The Complete Recordings of the Nocturnal Garden, Volume One: Visions, Echoes and the Dissolution of Dreams")){
+                val v=AlbumTitleView(activity).apply{text=sample}
+                v.measure(View.MeasureSpec.makeMeasureSpec(860,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(0,View.MeasureSpec.UNSPECIFIED));v.layout(0,0,v.measuredWidth,v.measuredHeight)
+                check(v.text.toString()==sample&&v.textSize in 68f..128.1f)
+                check((0 until v.lineCount).all{v.layout.getEllipsisCount(it)==0})
+            }
+            val root=android.graphics.Rect();dialog()!!.window!!.decorView.getGlobalVisibleRect(root)
+            for(id in listOf(MusicLibraryDialog.ALBUM_PLAY,MusicLibraryDialog.NOTES,MusicLibraryDialog.CLOSE)){
+                val v=dialog()!!.findViewById<View>(id);val r=android.graphics.Rect();check(v.getGlobalVisibleRect(r));check(r.height()>=v.height-1){"Clipped album action $id"}
+            }
+        }
+        record("Adaptive 34–64sp titles retain complete short/long text; album actions fit the 3.4K sheet")
+        screenshot("layout")
+        tapView(MusicLibraryDialog.ALBUM_PLAY);waitFor{s.playing&&s.spectrumFrame!=null};record("Enlarged album play action decodes real audio")
+        tapView(MusicLibraryDialog.NOTES);Thread.sleep(350);screenshot("layout-notes");test.sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK);Thread.sleep(200);record("Enlarged notes action opens readable booklet")
+        tapView(MusicLibraryDialog.CLOSE);waitFor{dialog()?.isShowing!=true};record("Large close returns to immersive playback")
+        return JSONObject().put("passed",true).put("checks",checks).put("width",activity.surface.width).put("height",activity.surface.height)
+    }
     fun run():JSONObject {
         main{s.page=1;s.language="zh";s.tempo=100;s.spectrumEnabled=true;s.changed()};Thread.sleep(500)
         openAlbum();record("Physical ellipsis source menu opens monochrome album sheet");screenshot("library")

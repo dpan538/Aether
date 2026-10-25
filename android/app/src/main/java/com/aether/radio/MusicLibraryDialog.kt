@@ -27,7 +27,7 @@ class MusicLibraryDialog(context:Context,private val state:Session,private val a
     private fun text(value:String,size:Float=16f,color:Int=ink)=TextView(context).apply{text=value;textSize=size;setTextColor(color);setLineSpacing(dp(3).toFloat(),1f);includeFontPadding=true}
     private fun shape(color:Int,radius:Int=10)=GradientDrawable().apply{setColor(color);cornerRadius=dp(radius).toFloat()}
     private fun button(label:String,id:Int,primary:Boolean=false,action:()->Unit)=Button(context).apply{
-        text=label;this.id=id;textSize=16f;isAllCaps=false;setTextColor(if(primary)paper else accent);minHeight=dp(48)
+        text=label;this.id=id;textSize=18f;isAllCaps=false;setTextColor(if(primary)paper else accent);minHeight=dp(48)
         background=shape(if(primary)accent else Color.TRANSPARENT,26);setPadding(dp(18),dp(5),dp(18),dp(5));stateListAnimator=null
         setOnClickListener{if(state.enabled)action()}
     }
@@ -45,20 +45,20 @@ class MusicLibraryDialog(context:Context,private val state:Session,private val a
         val left=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
         val image=ImageView(context).apply{scaleType=ImageView.ScaleType.FIT_CENTER;contentDescription="Before the Rise — Dai Pan (潘岱), album cover";setImageBitmap(context.assets.open("${LocalMusic.ROOT}/cover.png").use{BitmapFactory.decodeStream(it)})}
         left.add(image,-1,430)
-        left.add(Space(context),-1,0,1f)
-        left.space(26)
-        left.add(text("Before the Rise",42f).apply{typeface=Typeface.create("serif",Typeface.NORMAL);letterSpacing=-.025f})
-        left.add(text("幻昼 · 万象归寂录",20f).apply{letterSpacing=.04f});left.space(7)
-        left.add(text("Dai Pan (潘岱)",19f,accent));left.space(8)
-        left.add(text(if(cn)"11 首器乐作品 · 30 分 39 秒 · 离线唱片" else "11 instrumentals · 30 min 39 sec · Offline album",13f,muted))
+        left.space(28)
+        left.add(AlbumTitleView(context).apply{text=album.firstOrNull()?.album?:"Before the Rise";setTextColor(ink)})
+        left.add(text("幻昼 · 万象归寂录",26f).apply{letterSpacing=.04f});left.space(7)
+        left.add(text("Dai Pan (潘岱)",23f,accent));left.space(8)
+        left.add(text(if(cn)"11 首器乐作品 · 30 分 39 秒 · 离线唱片" else "11 instrumentals · 30 min 39 sec · Offline album",14f,muted))
         left.space(18)
         albumPlay=button(if(cn)"▶  播放专辑" else "▶  Play album",ALBUM_PLAY,true){if(state.isLocal&&state.localQueue==album)state.togglePlay()else state.selectLocal(album,0);update()}
         val heroActions=LinearLayout(context).apply{gravity=Gravity.CENTER_VERTICAL}
-        heroActions.add(albumPlay,166,50);heroActions.space(14)
-        heroActions.add(button(if(cn)"专辑手记 ↗" else "Album notes ↗",NOTES){showNotes()},166,50)
+        heroActions.add(albumPlay,190,60);heroActions.space(14)
+        heroActions.add(button(if(cn)"专辑手记 ↗" else "Album notes ↗",NOTES){showNotes()},180,60)
         left.add(heroActions);left.space(16)
         left.add(text(if(cn)"由梦入真，由幻归寂。" else "Through illusion, returning to the silence of dawn.",16f,muted).apply{typeface=Typeface.create("serif",Typeface.ITALIC)})
-        body.add(left,430,-1);body.space(58)
+        val leftScroll=ScrollView(context).apply{isFillViewport=true;isVerticalScrollBarEnabled=false;addView(left)}
+        body.add(leftScroll,430,-1);body.space(58)
         val right=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL}
         right.add(text(if(cn)"梦境的十一种形态" else "Eleven forms of a dream",29f).apply{typeface=Typeface.create("serif",Typeface.NORMAL)})
         right.space(6)

@@ -4,7 +4,7 @@
 
 Native Android implementation of the immutable two-page design. The app uses Kotlin `View`/`Canvas`, native text and SVG paths, individual material skins, and the original lunar GLES shader. It contains no WebView and no whole-interface screenshot drawable. The launcher uses the user-selected temporary E1 raster from `branding/icons/current/`, preserving its full square composition. The inspected APK selects the legacy PNG; Android Launcher adds its own normalization and surrounding shape. The adaptive XML in the source is not selected in this artifact, so adaptive-mask certification is not claimed. Its generated-raster provenance is retained; this is not final brand approval.
 
-The permanent APK application ID is `io.github.dpan538.aether`; debug evidence uses `io.github.dpan538.aether.debug`. The initial distribution channel is a preview. Aether has its own local preview signing identity for lasting in-place updates; no other app's signing material or store credentials are used. Download the [signed preview APK](https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.3/Aether-0.1.0-preview.3.apk). See [APK distribution](release/README.md).
+The permanent APK application ID is `io.github.dpan538.aether`; debug evidence uses `io.github.dpan538.aether.debug`. The initial distribution channel is a preview. Aether has its own local preview signing identity for lasting in-place updates; no other app's signing material or store credentials are used. Download the [signed preview APK](https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.4/Aether-0.1.0-preview.4.apk). See [APK distribution](release/README.md).
 
 ## Build
 
@@ -81,7 +81,7 @@ The only product target is Xiaomi Pad 9 Pro Max at 3408×2272 landscape (3:2), u
 
 ## Current verification
 
-The local-album extension is preview.3 / versionCode4. Its exact signed release passed 26 native cases plus 18 unit tests; see [album acceptance](verification/ALBUM-REPORT.md). The 300-cycle results below describe the preceding repair baseline.
+The local-album extension is preview.4 / versionCode5 with adaptive 34–64sp titles. Four native layout/control checks passed on this release; the unchanged playback baseline passed 26 native cases plus 18 unit tests on preview.3. See [album acceptance](verification/ALBUM-REPORT.md). The 300-cycle results below describe the preceding repair baseline.
 
 [preview.2 repair report](verification/REPORT.md) records the typography root cause, all four initial Station keys, independent real PCM spectra, touch handling, shared page state and actual verification limits. The previous preview.1 300-round result is withdrawn as visual/usability acceptance; its [historical report](verification/HISTORICAL-PREVIEW1.md) and original records remain available.
 

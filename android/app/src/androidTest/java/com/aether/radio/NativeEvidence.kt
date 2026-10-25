@@ -137,6 +137,7 @@ class NativeEvidence:Instrumentation() {
                     securityChecks.put(JSONObject().put("check","16-bit / float, anti-phase stereo, isolated channel frequencies, silence, 20 Hz ceiling and bit-exact pass-through").put("passed",true))
                     securityChecks.put(JSONObject().put("check","PCM pass-through and empty/end-of-stream buffers").put("passed",true))
                 }
+                "album-layout"->{val data=AlbumSuite(this,activity).runLayout();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
                 "album-import"->{val data=AlbumSuite(this,activity).runImport();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
                 "album-restore"->{val data=AlbumSuite(this,activity).runRestore();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}
                 "album"->{val data=AlbumSuite(this,activity).run();result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result);return}

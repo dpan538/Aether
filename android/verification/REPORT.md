@@ -1,4 +1,4 @@
-> Newer delivery: the local-album extension is preview.3 / code4; see [album acceptance](ALBUM-REPORT.md). The repair-cycle evidence below remains the preview.2 baseline.
+> Newer delivery: the local-album extension is preview.4 / code5; see [album acceptance](ALBUM-REPORT.md). The repair-cycle evidence below remains the preview.2 baseline.
 
 # preview.2 严重缺陷修复验证
 
