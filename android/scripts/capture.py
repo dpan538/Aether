@@ -32,7 +32,7 @@ for name in a.states:
     for _ in range(120):
         try:
             committed=json.loads(run('shell','run-as',package,'cat','files/runtime-state.json'))
-            if committed.get('assetsReady') and committed.get('contentRevision')==committed.get('committedRevision') and committed.get('committedView')==committed.get('view') and not committed.get('committedRefresh',True) and committed.get('committedPage')==committed.get('page') and abs(committed.get('committedFrontlight',-1)-committed.get('frontlight',0))<.001:break
+            if committed.get('assetsReady') and committed.get('committedRevision',-1)>=0 and committed.get('contentRevision')==committed.get('committedRevision') and committed.get('committedView')==committed.get('view') and not committed.get('committedRefresh',True) and committed.get('committedPage')==committed.get('page') and abs(committed.get('committedFrontlight',-1)-committed.get('frontlight',0))<.001:break
         except Exception:pass
         time.sleep(.25)
     else:raise RuntimeError('Final native frame was not committed: '+name)

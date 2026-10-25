@@ -178,7 +178,7 @@ class ScenePainter(val context:Context,val state:Session) {
                     target=JSONObject(t.toString()).put("x",node.r.right-textPaint(t).measureText(text))
                 }else if(!state.reference&&id=="stream-quality")text=fit(text,t,330f)
                 else if(!state.reference&&id=="selected-readout")text=fit(text,t,510f)
-                else if(!state.reference&&id in listOf("stream-format","now-playing","programme-description","selected-readout","scope-filters"))text=fit(text,t,node.r.width())
+                else if(!state.reference&&id in listOf("stream-format","stream-profile","stream-output","clock-location","now-playing","programme-description","selected-readout","scope-filters"))text=fit(text,t,node.r.width())
                 val changed=text!=original
                 if(node.id=="preset-number")t.put("preset",true)
                 drawText(canvas,target,text,if(changed)0f else t.f("w"))
@@ -307,7 +307,7 @@ class ScenePainter(val context:Context,val state:Session) {
         }
         val translation=n.json.optString("i18n")
         if(translation=="favoriteStations"&&!state.reference)return if(cn)"电台预设" else "Station presets"
-        if(!state.reference&&original=="LOCAL TIME")return "DEVICE TIME"
+        if(!state.reference&&original.startsWith("LOCAL TIME"))return if(original.contains("MOCK"))"DEVICE TIME · LIVE" else "DEVICE TIME"
         if(!state.reference&&original.contains("10 BAND"))return "10 BAND / PCM"
         if(cn&&translation.isNotBlank())return translations[translation]?:original
         return when(id){
@@ -317,7 +317,7 @@ class ScenePainter(val context:Context,val state:Session) {
             "now-station"->if(state.reference||metadata!=null)s?.name?:"—" else listOf(s?.region,s?.language).filterNot{it.isNullOrBlank()}.joinToString(" / ").ifBlank{"—"}
             "station-name"->s?.name?:"—"
             "local-time","station-time"->if(id=="station-time")if(state.reference)s?.localTime?:"—" else "${state.deviceReadings?.time?:"—"} ${state.deviceReadings?.zone.orEmpty()}" else time
-            "clock-location"->if(state.reference)"${s?.city} · ${s?.region}" else "DEVICE · ${state.deviceReadings?.zone?:"—"}"
+            "clock-location"->if(state.reference)"${s?.city} · ${s?.region}" else state.deviceReadings?.zone?:"—"
             "selected-readout"->"SELECTED $serial / ${s?.name?:"—"}"
             "result-counter"->if(state.view=="settings")"03 ${if(cn)"设置" else "OPTIONS"} · $mock" else "${state.filtered().size.toString().padStart(2,'0')} ${if(cn)"条目" else "ENTRIES"} · ${if(state.directoryIssue!=null)"CACHE" else mock}"
             "screen-title"->if(state.view=="settings")"AETHER / SYSTEM" else "AETHER / STATION DIRECTORY"

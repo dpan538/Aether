@@ -1,0 +1,13 @@
+{
+  "legacyPreflightRounds": 12,
+  "legacyPreflightPassed": 12,
+  "nativePreflightRounds": 12,
+  "nativePreflightPassed": 12,
+  "appApkSha256": "2fbb260278180937e4b9f7ad3956b07989653065bffec3ae76a6d01f224d3533",
+  "notes": [
+    "Both preflights use the exact non-debuggable preview.2 APK. The second uses actual asynchronous native input with physical event spacing, explicit state and committed-content checks.",
+    "One early haptic test read a telemetry snapshot before its final counter update: volume stayed22, ticks settled from1 to2. Stable counter observations were added; all five checks passed.",
+    "Earlier focus harness attempts used exported station action names for dynamically mapped presets/triangles; those coordinate/name failures are not app passes. An early language option did not switch; repeated real-pointer locale checks passed in both 12-scenario release preflights.",
+    "The formal300 is separate and will retain any failures."
+  ]
+}

@@ -15,10 +15,15 @@ for name in dict.fromkeys(r['scenario'] for r in rows):
 events='\n'.join(p.read_text() for p in out.glob('batch-*/events.txt'))
 summary['crashEvents']=sum('am_crash' in l for l in events.splitlines());summary['anrEvents']=sum('am_anr' in l for l in events.splitlines())
 (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
-fields=['round','launchKind','scenario','passed','openMs','actionMs','totalMs','pssKiB','javaHeapBytes','station','volume','tempo','language','playerIdentity','width','height','error','preview']
+fields=['round','launchKind','scenario','passed','openMs','actionMs','totalMs','pssKiB','javaHeapBytes','station','volume','tempo','language','playerIdentity','width','height','error','preview','stationKeysJson','spectrumModernChangedPixels','spectrumImmersiveChangedPixels']
 with (out/'rounds.csv').open('w',newline='',encoding='utf-8-sig') as f:
  writer=csv.DictWriter(f,fieldnames=fields);writer.writeheader()
- for r in rows:writer.writerow({k:r.get(k,r.get('after',{}).get(k,'')) for k in fields})
+ for r in rows:
+  item={k:r.get(k,r.get('after',{}).get(k,'')) for k in fields}
+  item['stationKeysJson']=json.dumps(r.get('stationKeys',[]),ensure_ascii=False)
+  item['spectrumModernChangedPixels']=r.get('visibleSpectrumChangedPixels',{}).get('modern','')
+  item['spectrumImmersiveChangedPixels']=r.get('visibleSpectrumChangedPixels',{}).get('immersive','')
+  writer.writerow(item)
 colors={'cold':'#e3a05e','warm':'#70bfd2'}
 def plot(title,series,ylabel):
  width,height=1160,300;l,t,rr,b=70,40,25,45;w=width-l-rr;h=height-t-b
