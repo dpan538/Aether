@@ -1,3 +1,5 @@
+> Newer delivery: the local-album extension is preview.3 / code4; see [album acceptance](ALBUM-REPORT.md). The repair-cycle evidence below remains the preview.2 baseline.
+
 # preview.2 严重缺陷修复验证
 
 preview.1 的验收已撤回。用户实机截图与原有真实播放截图都能看到文字损坏；此前300轮主要检查状态，漏掉了实际画面的严重问题。[历史报告](HISTORICAL-PREVIEW1.md)与原始数据保留，不能作为当前交付通过依据。

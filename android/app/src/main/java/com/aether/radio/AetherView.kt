@@ -19,6 +19,7 @@ class AetherView(context:Context,val state:Session):View(context) {
     var refreshing=false;private set
     var reducedMotion=false
     var search:()->Unit={}
+    var musicSources:()->Unit={}
     var touchTrace=false
     var onFirstFrame:()->Unit={}
     var onResourcesReady:()->Unit={}
@@ -232,7 +233,9 @@ class AetherView(context:Context,val state:Session):View(context) {
     fun close(){released=true;assetsReady=false;pause();displayLists.evictAll();nativeLayers.values.forEach{it.node.discardDisplayList()};nativeLayers.clear();disc.close();painter.close()}
     private fun nodes():List<SceneNode>{
         if(!assetsReady)return emptyList()
-        val all=painter.scene(if(state.page==1)"immersive" else painter.name(frontlight>.5f)).flattened()
+        val all=painter.scene(if(state.page==1)"immersive" else painter.name(frontlight>.5f)).flattened().map{
+            if(state.page==1&&it.cls=="station-selector__registration"&&!state.reference)SceneNode(org.json.JSONObject(it.json.toString()).put("action","music-sources").put("label",if(state.language=="zh")"音乐来源与本地专辑" else "Music sources and local album"))else it
+        }
         if(state.page!=0||!state.updateOpen||state.view!="settings")return all
         val panel=painter.updatePanel.bounds()
         return all.filter{!panel.contains(it.r.centerX(),it.r.centerY())}+painter.updatePanel.nodes()
@@ -390,6 +393,7 @@ class AetherView(context:Context,val state:Session):View(context) {
         if(!state.enabled&&a!="device-power")return
         when {
             a.startsWith("update:")->{if(a=="update:back"){state.updateOpen=false;state.changed()}else state.onUpdateAction(a.substringAfter(':'))}
+            a=="music-sources"->musicSources()
             a=="device-power"->power()
             a=="device-settings"->state.showView(if(state.view=="settings")state.lastBrowseView else "settings")
             a.startsWith("view:")->state.showView(a.substringAfter(':'))
@@ -454,7 +458,7 @@ class AetherView(context:Context,val state:Session):View(context) {
                 setSource(this@AetherView,virtualViewId);setParent(this@AetherView);packageName=context.packageName
                 className=if(item.action in listOf("volume","tuning-dial","tuning-mode","tempo"))"android.widget.SeekBar" else "android.widget.Button"
                 val actual=hitAction(item.r.centerX(),item.r.centerY())
-                contentDescription=when{actual.startsWith("choose:")->state.lookup(actual.substringAfter(':'))?.name?:"—";actual.startsWith("preset:")->state.presetPool().getOrNull(actual.substringAfter(':').toIntOrNull()?:-1)?.name?:"Empty preset";actual.startsWith("option:")->state.options(state.menu?:"").getOrNull(actual.substringAfter(':').toIntOrNull()?:-1)?:"—";else->item.label.ifBlank{item.action}}
+                contentDescription=when{actual.startsWith("choose:")->state.lookup(actual.substringAfter(':'))?.name?:"—";actual.startsWith("preset:")->state.presetPool().getOrNull(actual.substringAfter(':').toIntOrNull()?:-1)?.name?:"Empty preset";actual.startsWith("option:")->state.options(state.menu?:"").getOrNull(actual.substringAfter(':').toIntOrNull()?:-1)?:"—";state.isLocal&&actual in listOf("previous","next")->if(actual=="previous")"Previous track" else "Next track";state.isLocal&&actual.startsWith("favorite-step:")->if(actual.endsWith("-1"))"First track" else "Last track";else->item.label.ifBlank{item.action}}
                 if(actual=="empty-preset")contentDescription="Empty preset"
                 if(item.action=="tempo")contentDescription="Tempo ${state.tempo} percent"
                 if(item.action=="tuning-mode")contentDescription="Tuning dimension: ${listOf("station","region","genre","language")[state.mode]}"

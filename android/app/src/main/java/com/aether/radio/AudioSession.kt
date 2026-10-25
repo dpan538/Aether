@@ -5,6 +5,7 @@ import androidx.media3.common.*
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.extractor.metadata.icy.IcyInfo
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.analytics.AnalyticsListener
@@ -41,15 +42,19 @@ class AudioSession(context:Context,private val state:Session) {
         override fun buildAudioSink(context:Context,enableFloatOutput:Boolean,enableAudioTrackPlaybackParams:Boolean):AudioSink = DefaultAudioSink.Builder(context).setEnableFloatOutput(false).setEnableAudioTrackPlaybackParams(false).setAudioProcessors(arrayOf(spectrum)).build()
     }
     val player:ExoPlayer=ExoPlayer.Builder(context,renderers)
-        .setMediaSourceFactory(DefaultMediaSourceFactory(context).setDataSourceFactory(DefaultHttpDataSource.Factory().setUserAgent("Aether/${BuildConfig.VERSION_NAME}").setConnectTimeoutMs(8000).setReadTimeoutMs(8000).setAllowCrossProtocolRedirects(false)))
+        .setMediaSourceFactory(DefaultMediaSourceFactory(context).setDataSourceFactory(DefaultDataSource.Factory(context,DefaultHttpDataSource.Factory().setUserAgent("Aether/${BuildConfig.VERSION_NAME}").setConnectTimeoutMs(8000).setReadTimeoutMs(8000).setAllowCrossProtocolRedirects(false))))
         .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),true)
         .setHandleAudioBecomingNoisy(true).build()
     init {
         player.volume=state.volume/30f
         player.playbackParameters=PlaybackParameters(state.tempo/100f,1f)
         player.addListener(object:Player.Listener {
+            override fun onMediaItemTransition(mediaItem:MediaItem?,reason:Int){
+                if(state.isLocal){val i=state.localQueue.indexOfFirst{it.id==mediaItem?.mediaId};if(i>=0){generation++;latestSpectrum.set(null);state.localIndex=i;state.localPositionMs=0;state.localDurationMs=state.localQueue[i].durationMs;state.spectrumFrame=null;state.metadata=null;state.issue=null;state.changed()}}
+            }
             override fun onPlaybackStateChanged(playbackState:Int){
                 state.connection=when(playbackState){Player.STATE_BUFFERING->Connection.BUFFERING;Player.STATE_READY->if(player.isPlaying)Connection.CONNECTED else Connection.PAUSED;Player.STATE_ENDED->Connection.DISCONNECTED;else->if(state.issue!=null)Connection.ERROR else Connection.DISCONNECTED}
+                if(playbackState==Player.STATE_ENDED){state.playIntent=false;state.spectrumFrame=null}
                 state.decodedFormat=showFormat(player.audioFormat)
                 state.changed()
             }
@@ -64,21 +69,23 @@ class AudioSession(context:Context,private val state:Session) {
             override fun onAudioInputFormatChanged(eventTime:AnalyticsListener.EventTime,format:Format,decoderReuseEvaluation:androidx.media3.exoplayer.DecoderReuseEvaluation?){
                 if(eventTime.timeline.isEmpty)return
                 val id=eventTime.timeline.getWindow(eventTime.windowIndex,Timeline.Window()).mediaItem.mediaId
-                if(id==state.station?.id){state.decodedFormat=showFormat(format);state.changed()}
+                if(id==state.activeId){state.decodedFormat=showFormat(format);state.changed()}
             }
             override fun onMetadata(eventTime:AnalyticsListener.EventTime,metadata:Metadata){
                 val window=Timeline.Window()
                 if(eventTime.timeline.isEmpty)return
                 val id=eventTime.timeline.getWindow(eventTime.windowIndex,window).mediaItem.mediaId
-                if(id!=state.station?.id)return
+                if(state.isLocal||id!=state.activeId)return
                 for(i in 0 until metadata.length()){val entry=metadata[i];if(entry is IcyInfo)state.metadata=entry.title?.takeIf{it.isNotBlank()}}
                 state.changed()
             }
         })
         state.onSelect={station->select(station)}
+        state.onLocalSelect={queue,index->selectLocal(queue,index)}
+        state.onLocalSeek={player.seekTo(it);samplePosition()}
         state.onVolume={player.volume=it/30f}
         state.onTempo={player.playbackParameters=PlaybackParameters(it/100f,1f)}
-        state.onPlay={play->if(play){if(player.mediaItemCount==0)state.station?.let{select(it)}else {if(player.playbackState==Player.STATE_IDLE){state.issue=null;player.prepare()};player.play()}}else player.pause()}
+        state.onPlay={play->if(play){if(player.mediaItemCount==0){if(state.isLocal)selectLocal(state.localQueue,state.localIndex)else state.station?.let{select(it)}}else {if(player.playbackState==Player.STATE_ENDED)player.seekTo(0);if(player.playbackState==Player.STATE_IDLE){state.issue=null;player.prepare()};player.play()}}else player.pause()}
     }
     fun select(station:Station){
         val url=station.stream?:return
@@ -87,6 +94,14 @@ class AudioSession(context:Context,private val state:Session) {
         player.setMediaItem(MediaItem.Builder().setUri(url).setMediaId(station.id).setMediaMetadata(MediaMetadata.Builder().setTitle(station.name).build()).build())
         player.prepare();player.play()
     }
-    fun pause(){player.pause()}
+    fun selectLocal(queue:List<LocalTrack>,index:Int){
+        if(index !in queue.indices)return
+        require(queue.all{it.uri.startsWith("asset:///albums/before-the-rise/")||android.net.Uri.parse(it.uri).scheme=="content"})
+        generation++;latestSpectrum.set(null);state.spectrumFrame=null;state.metadata=null;state.decodedFormat=null
+        val items=queue.map{t->MediaItem.Builder().setUri(t.uri).setMediaId(t.id).setMediaMetadata(MediaMetadata.Builder().setTitle(t.title).setAlbumTitle(t.album).setArtist(t.artist.takeIf{it.isNotBlank()}).build()).build()}
+        player.setMediaItems(items,index,0L);player.prepare();player.play()
+    }
+    fun samplePosition(){if(state.isLocal){state.localPositionMs=player.currentPosition.coerceAtLeast(0);if(player.duration!=C.TIME_UNSET&&player.duration>=0)state.localDurationMs=player.duration}}
+    fun pause(){player.pause();samplePosition()}
     fun close(){player.release()}
 }

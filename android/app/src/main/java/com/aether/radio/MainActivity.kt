@@ -19,6 +19,13 @@ class MainActivity:Activity() {
     lateinit var session:Session;private set
     lateinit var surface:AetherView;private set
     private var audio:AudioSession?=null
+    private var musicDialog:MusicLibraryDialog?=null
+    private var musicSourceDialog:android.app.AlertDialog?=null
+    private var bundledAlbum:List<LocalTrack> = emptyList()
+    private var importedTracks:List<LocalTrack> = emptyList()
+    private val musicWorker=java.util.concurrent.Executors.newSingleThreadExecutor()
+    private var destroyed=false
+    private var savedQueueStamp=""
     private var repository:RadioRepository?=null
     private var updater:Updates?=null
     private var searchField:EditText?=null
@@ -36,6 +43,8 @@ class MainActivity:Activity() {
     private fun savePreferences(){
         if(session.reference)return
         val station=session.station?.let{stationJson(it).toString()}.orEmpty()
+        val queueStamp="${session.isLocal}:${session.localIndex}:"+session.localQueue.joinToString("|"){it.id}
+        if(queueStamp!=savedQueueStamp){savedQueueStamp=queueStamp;preferences.edit().putBoolean("local-source",session.isLocal).putInt("local-index",session.localIndex).putString("local-queue",JSONArray(session.localQueue.map{it.json()}).toString()).apply()}
         val stamp=listOf(session.volume,session.unmutedVolume,session.tempo,session.language,session.spectrumEnabled,station).joinToString("|")
         if(stamp==savedPreferenceState)return;savedPreferenceState=stamp
         preferences.edit().putInt("volume",session.volume).putInt("unmuted",session.unmutedVolume).putInt("tempo",session.tempo).putString("language",session.language).putString("last-station",station).putBoolean("spectrum-enabled",session.spectrumEnabled).apply()
@@ -57,6 +66,12 @@ class MainActivity:Activity() {
                 val saved=JSONArray(session.favorites.mapNotNull{session.lookup(it)}.map{s->JSONObject().put("id",s.id).put("name",s.name).put("region",s.region).put("language",s.language).put("genre",s.genre).put("stream",s.stream)})
                 preferences.edit().putString("favorites",JSONArray(session.favorites).toString()).putString("favorite-stations",saved.toString()).apply()
             }
+            bundledAlbum=LocalMusic.bundled(this)
+            importedTracks=runCatching{LocalMusic.restoreQueue(this,preferences.getString("imported-tracks","[]")?:"[]",bundledAlbum)}.getOrDefault(emptyList())
+            session.localQueue=runCatching{LocalMusic.restoreQueue(this,preferences.getString("local-queue","[]")?:"[]",bundledAlbum)}.getOrDefault(emptyList())
+            session.localIndex=preferences.getInt("local-index",0).coerceIn(0,(session.localQueue.size-1).coerceAtLeast(0))
+            session.isLocal=preferences.getBoolean("local-source",false)&&session.localQueue.isNotEmpty()
+            session.localDurationMs=session.localTrack?.durationMs?:0
             repository=RadioRepository(this)
             session.onPower={if(!it){cancelDirectory();updater?.cancel()}else{if(directoryInterrupted||session.catalog.isEmpty())searchDirectory(session.query,false);updater?.let{u->session.updateUi=u.ui}}}
             session.catalog=repository!!.cached()
@@ -65,6 +80,7 @@ class MainActivity:Activity() {
             session.onUpdateAction={action->when(action){"check"->updater?.check();"download"->updater?.download();"install"->updater?.install(this);"cancel"->updater?.cancel()}}
         }
         surface=AetherView(this,session)
+        surface.musicSources={showMusicSources()}
         session.onSpectrum={surface.invalidate()}
         surface.touchTrace=BuildConfig.DEBUG&&intent.getBooleanExtra("touch_trace",false)
         if(BuildConfig.DEBUG&&intent.hasExtra("preset_font"))surface.painter.presetFont=intent.getStringExtra("preset_font")?.takeUnless{it=="Arimo"}
@@ -94,6 +110,53 @@ class MainActivity:Activity() {
         setContentView(layout)
         surface.post {window.insetsController?.let{it.hide(WindowInsets.Type.systemBars());it.systemBarsBehavior=WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE}}
         if(!session.reference)searchDirectory(session.query,false)
+    }
+    private fun showMusicLibrary(){
+        if(session.reference||!session.enabled||isFinishing||destroyed)return
+        musicDialog?.dismiss()
+        musicDialog=MusicLibraryDialog(this,session,bundledAlbum,{audio?.samplePosition()}).also{it.show()}
+    }
+    private fun showMusicSources(){
+        if(session.reference||!session.enabled||destroyed)return
+        val cn=session.language=="zh"
+        val options=mutableListOf("Before the Rise — Dai Pan",if(cn)"设备上的音乐" else "Music on this device")
+        if(session.isLocal&&session.station!=null)options.add(if(cn)"返回电台" else "Return to radio")
+        musicSourceDialog=android.app.AlertDialog.Builder(android.view.ContextThemeWrapper(this,R.style.MusicSheetTheme)).setItems(options.toTypedArray()){_,which->when(which){0->showMusicLibrary();1->showDeviceMusic();2->session.station?.let{session.select(it.id)}}}.create().also{it.show()}
+    }
+    private fun showDeviceMusic(){
+        if(!session.enabled)return
+        val options=importedTracks.map{it.title}+if(session.language=="zh")"选择音频文件…" else "Choose audio files…"
+        musicSourceDialog=android.app.AlertDialog.Builder(android.view.ContextThemeWrapper(this,R.style.MusicSheetTheme)).setItems(options.toTypedArray()){_,which->if(which<importedTracks.size)session.selectLocal(importedTracks,which)else chooseAudioFiles()}.create().also{it.show()}
+    }
+    private fun chooseAudioFiles(){
+        musicDialog?.dismiss()
+        runCatching{startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply{addCategory(Intent.CATEGORY_OPENABLE);type="audio/*";putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)},71)}.onFailure{android.widget.Toast.makeText(this,if(session.language=="zh")"没有可用的文件选择器" else "No audio document picker available",android.widget.Toast.LENGTH_LONG).show()}
+    }
+    @Deprecated("Activity document result is retained for this platform Activity")
+    override fun onActivityResult(requestCode:Int,resultCode:Int,data:Intent?){
+        super.onActivityResult(requestCode,resultCode,data)
+        if(requestCode!=71)return
+        if(resultCode!=RESULT_OK||data==null){showDeviceMusic();return}
+        val uris=(data.clipData?.let{clip->(0 until clip.itemCount).map{clip.getItemAt(it).uri}}?:listOfNotNull(data.data)).distinct().take(100)
+        val permission=data.flags and Intent.FLAG_GRANT_READ_URI_PERMISSION
+        musicWorker.execute{
+            val loaded=mutableListOf<LocalTrack>();var failures=0
+            uris.forEach{uri->runCatching{
+                require(uri.scheme=="content")
+                require(permission!=0){"Audio document has no read grant"}
+                contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                LocalMusic.imported(this,uri)
+            }.onSuccess{loaded.add(it)}.onFailure{failures++}}
+            main.post{if(!destroyed){
+                if(loaded.isNotEmpty()){
+                    importedTracks=(importedTracks+loaded).distinctBy{it.id}.takeLast(100)
+                    preferences.edit().putString("imported-tracks",JSONArray(importedTracks.map{it.json()}).toString()).apply()
+                    session.selectLocal(loaded,0)
+                }
+                if(failures>0)android.widget.Toast.makeText(this,if(session.language=="zh")"$failures 个文件无法读取，请重新选择音频文件。" else "$failures audio documents could not be opened.",android.widget.Toast.LENGTH_LONG).show()
+                if(loaded.isEmpty())showDeviceMusic()
+            }}
+        }
     }
     private fun applyScenario(name:String){
         session.light=name in listOf("modern-lit","modern-settings","modern-language-menu","modern-genre-menu","modern-mute","preset004")
@@ -147,6 +210,7 @@ class MainActivity:Activity() {
             .put("assetsReady",surface.assetsReady).put("preparationMillis",surface.preparationMillis)
             .put("hapticAvailable",surface.haptics.available).put("hapticAttempts",surface.haptics.attempts).put("hapticAccepted",surface.haptics.accepted).put("hapticSuppressed",surface.haptics.suppressed).put("hapticTicks",surface.haptics.ticks).put("hapticPresses",surface.haptics.presses).put("hapticStops",surface.haptics.stops).put("lastHaptic",surface.haptics.last)
             .put("selected",session.selected).put("station",session.station?.name).put("volume",session.volume).put("powered",session.powered).put("locked",session.locked).put("light",session.light).put("frontlight",surface.frontlight).put("page",session.page).put("view",session.view).put("menu",session.menu).put("tempo",session.tempo).put("favorites",JSONArray(session.favorites)).put("filteredCount",session.filtered().size).put("query",session.query).put("metadata",session.metadata).put("decodedFormat",session.decodedFormat)
+            .put("audioSource",if(session.isLocal)"local" else "radio").put("localTitle",session.localTrack?.title).put("localIndex",session.localIndex).put("localQueueCount",session.localQueue.size).put("musicDialogOpen",musicDialog?.isShowing?:false)
             .put("playerCount",if(audio==null)0 else 1).put("isPlaying",audio?.player?.isPlaying?:false).put("positionMs",audio?.player?.currentPosition?:0).put("playIntent",session.playIntent).put("playbackSpeed",audio?.player?.playbackParameters?.speed?:1f).put("playbackPitch",audio?.player?.playbackParameters?.pitch?:1f)
             .put("language",session.language).put("about",session.about).put("updateMessage",session.updateMessage).put("settingsScroll",session.settingsScroll).put("motion",session.motion).put("tuningMode",session.mode).put("region",session.region).put("genre",session.genre).put("stationLanguage",session.stationLanguage).put("refreshing",surface.refreshing).put("phaseSeconds",surface.painter.phase)
             .put("presentationPlaying",session.playing)
@@ -160,5 +224,5 @@ class MainActivity:Activity() {
     override fun onWindowFocusChanged(hasFocus:Boolean){super.onWindowFocusChanged(hasFocus);if(hasFocus)window.insetsController?.hide(WindowInsets.Type.systemBars())}
     override fun onResume(){super.onResume();if(::surface.isInitialized)surface.resume();updater?.returnedToApp(this);if(!session.reference&&session.powered&&directoryInterrupted)searchDirectory(session.query,false);main.post(deviceTick);if(BuildConfig.DEBUG)main.postDelayed(debugTick,1000)}
     override fun onStop(){main.removeCallbacks(deviceTick);main.removeCallbacks(debugTick);if(::surface.isInitialized)surface.pause();audio?.pause();cancelDirectory();super.onStop()}
-    override fun onDestroy(){pendingInput?.let{main.removeCallbacks(it)};pendingSearch?.let{main.removeCallbacks(it)};surface.close();audio?.close();repository?.close();updater?.close();super.onDestroy()}
+    override fun onDestroy(){destroyed=true;musicDialog?.dismiss();musicSourceDialog?.dismiss();musicWorker.shutdownNow();pendingInput?.let{main.removeCallbacks(it)};pendingSearch?.let{main.removeCallbacks(it)};surface.close();audio?.close();repository?.close();updater?.close();super.onDestroy()}
 }

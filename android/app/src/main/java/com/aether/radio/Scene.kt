@@ -299,6 +299,27 @@ class ScenePainter(val context:Context,val state:Session) {
         val time=s?.localTime?.substringBefore(' ')?:"—"
         val mock=if(state.reference)"MOCK" else "LIVE"
         val cn=state.language=="zh"
+        val local=if(station==null)state.localTrack else null
+        if(local!=null){
+            if(original=="PRESET")return if(cn)"曲目" else "TRACK"
+            if(original=="NET")return "FILE"
+            when(id){
+                "now-title","station-name"->return local.title
+                "now-station","station-subtitle"->return local.album.ifBlank{if(cn)"设备音频" else "Device audio"}
+                "preset-number","station-serial"->return (state.localIndex+1).toString().padStart(3,'0')
+                "preset-badge"->return "1"
+                "station-position"->return "${(state.localIndex+1).toString().padStart(2,'0')} / ${state.localQueue.size.toString().padStart(2,'0')}"
+                "station-time"->return LocalMusic.time(local.durationMs)
+                "programme"->return twoLines(local.title,n.json.getJSONArray("text").getJSONObject(0),n.r.width()).getOrNull(line)?:""
+                "programme-description"->return local.instruments.ifBlank{local.album}.ifBlank{if(cn)"设备音频" else "Device audio"}
+                "now-playing"->return local.artist.ifBlank{local.album}.ifBlank{"—"}
+                "stream-profile"->return local.album.ifBlank{"LOCAL AUDIO"}
+                "disc-edition"->return "TRACK ${(state.localIndex+1).toString().padStart(2,'0')} · LOCAL AUDIO"
+                "selected-readout"->return "LOCAL / ${local.title}"
+            }
+            if(n.cls.contains("playing-kicker"))return "LOCAL · ${connection.name}"
+            if(n.cls=="signal-note__live")return "LOCAL · ${connection.name}"
+        }
         if(!state.reference&&original.contains("WIFI"))return state.deviceReadings?.network?:"NETWORK · —"
         val control=n.json.optString("control")
         if(control.isNotBlank()&&n.json.optString("tag")=="SPAN") {
@@ -365,7 +386,7 @@ class ScenePainter(val context:Context,val state:Session) {
         visible.forEachIndexed {i,s->
             val original=template.getOrNull(if(state.reference)state.catalog.indexOf(s) else i)?:template.firstOrNull()?:return@forEachIndexed
             val targetTop=n.r.top+i*height;val dy=targetTop+(height-original.r.height())/2-original.r.top
-            if(s.id==state.station?.id){resetPaint();p.color=0x1c526650;c.drawRect(n.r.left,targetTop,n.r.right,targetTop+height,p);p.color=0xff4f6553.toInt();c.drawRect(n.r.left,targetTop+height*.22f,n.r.left+2,targetTop+height*.78f,p)}
+            if(!state.isLocal&&s.id==state.station?.id){resetPaint();p.color=0x1c526650;c.drawRect(n.r.left,targetTop,n.r.right,targetTop+height,p);p.color=0xff4f6553.toInt();c.drawRect(n.r.left,targetTop+height*.22f,n.r.left+2,targetTop+height*.78f,p)}
             c.save();c.translate(0f,dy)
             for(child in original.children)drawRowPart(c,child,lit,s)
             c.restore()
@@ -460,7 +481,7 @@ class ScenePainter(val context:Context,val state:Session) {
         val unselected=base.children[1]
         n.children.take(4).forEachIndexed {i,target->
             val station=state.presetPool().getOrNull(i+state.presetStart)
-            val template=if(!state.powered)off?.children?.getOrNull(i)?:unselected else if(station?.id==state.station?.id)selected else unselected
+            val template=if(!state.powered)off?.children?.getOrNull(i)?:unselected else if(!state.isLocal&&station?.id==state.station?.id)selected else unselected
             c.save();c.translate(target.r.left-template.r.left,0f)
             drawPresetPart(c,template,lit,station,i+1)
             c.restore()
@@ -472,7 +493,7 @@ class ScenePainter(val context:Context,val state:Session) {
             // The seven bars remain vectors. Only the corner slot number changes.
             val shapes=listOf("4,1 16,1 18,3 16,5 4,5 2,3","18,4 20,6 20,14 18,16 16,14 16,6","18,17 20,19 20,27 18,29 16,27 16,19","4,28 16,28 18,30 16,32 4,32 2,30","2,17 4,19 4,27 2,29 0,27 0,19","2,4 4,6 4,14 2,16 0,14 0,6","4,14 16,14 18,16 16,18 4,18 2,16")
             val on=when(digit){1->listOf(1,2);2->listOf(0,1,3,4,6);3->listOf(0,1,2,3,6);else->listOf(1,2,5,6)}
-            val bright=state.powered&&s?.id==state.station?.id
+            val bright=state.powered&&!state.isLocal&&s?.id==state.station?.id
             val fill=if(!state.powered)"#30473f" else if(bright)"#edfffc" else "#7e9b90"
             val source="<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"35\" viewBox=\"-2 -1 24 35\">"+shapes.mapIndexed{j,points->"<polygon points=\"$points\" fill=\"${if(j in on)fill else "#27443e"}\"/>"}.joinToString("")+"</svg>"
             if(bright){p.color=0x55a6f4f7;p.maskFilter=BlurMaskFilter(2f,BlurMaskFilter.Blur.NORMAL);c.drawRoundRect(r,2f,2f,p)}

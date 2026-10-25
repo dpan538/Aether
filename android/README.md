@@ -4,7 +4,7 @@
 
 Native Android implementation of the immutable two-page design. The app uses Kotlin `View`/`Canvas`, native text and SVG paths, individual material skins, and the original lunar GLES shader. It contains no WebView and no whole-interface screenshot drawable. The launcher uses the user-selected temporary E1 raster from `branding/icons/current/`, preserving its full square composition. The inspected APK selects the legacy PNG; Android Launcher adds its own normalization and surrounding shape. The adaptive XML in the source is not selected in this artifact, so adaptive-mask certification is not claimed. Its generated-raster provenance is retained; this is not final brand approval.
 
-The permanent APK application ID is `io.github.dpan538.aether`; debug evidence uses `io.github.dpan538.aether.debug`. The initial distribution channel is a preview. Aether has its own local preview signing identity for lasting in-place updates; no other app's signing material or store credentials are used. Download the [signed preview APK](https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.2/Aether-0.1.0-preview.2.apk). See [APK distribution](release/README.md).
+The permanent APK application ID is `io.github.dpan538.aether`; debug evidence uses `io.github.dpan538.aether.debug`. The initial distribution channel is a preview. Aether has its own local preview signing identity for lasting in-place updates; no other app's signing material or store credentials are used. Download the [signed preview APK](https://github.com/dpan538/Aether/releases/download/v0.1.0-preview.3/Aether-0.1.0-preview.3.apk). See [APK distribution](release/README.md).
 
 ## Build
 
@@ -38,6 +38,12 @@ adb shell am start -n io.github.dpan538.aether.debug/com.aether.radio.MainActivi
 Reference scenarios (debug only): `modern-ink`, `modern-lit`, `modern-settings`, `modern-language-menu`, `modern-genre-menu`, `modern-mute`, `modern-off`, `preset004`, `immersive`, `locked`, `empty-results`, `tempo-min`, `tempo-max`, `volume-max`. They use the frozen four stations, programme text, clocks, 20/30 volume, `[0,2,1,3]` favorites, and static visual instruments. MOCK/real data are separate. The distributable release always uses real mode.
 
 Debug-only launch extras support repeatable evidence: `light_time` (integer milliseconds 0–1050), `refresh_time` (long milliseconds 0–1800), `phase_time` (long milliseconds), `motion`, `animate_light`, `animate_power`, and optional `touch_trace`. They add no controls to the designed UI. After a true native frame completes, `run-as … cat files/frame-ready.txt` identifies the scenario. `files/runtime-state.json` reports actual device, state and Media3 observations; diagnostics are local to the debug app.
+
+## Local album extension
+
+The user has now explicitly authorized bundled and device-local music from the immersive ellipsis. **Before the Rise**, credited to **Dai Pan (潘岱)**, contains the 11 supplied recordings in a night-to-day sequence with bilingual concept notes and per-track instrumentation/descriptions. The cover is the existing project J3-01 export without redrawing. The album sheet follows the user’s final monochrome, large-cover, lower-left-information layout and removes the marked utility dock. See [album notes and provenance](album-art/before-the-rise/README.md).
+
+The source menu also opens Android’s document picker and remembers granted audio documents. Radio and finite files share one player, decoder PCM spectrum, volume and tempo. Selecting a radio preset switches back to radio. This explicit extension supersedes earlier planning that deferred local music and kept the immersive registration mark decorative; it does not alter the immutable two-page design reference.
 
 ## Interaction and state
 
@@ -74,6 +80,8 @@ The only product target is Xiaomi Pad 9 Pro Max at 3408×2272 landscape (3:2), u
 `scripts/capture.py` saves raw device PNGs and state. `scripts/compare.py` makes 50% overlays, raw absolute differences, explicitly labeled 4× difference previews and region pairs, without registration or changing any baseline. `scripts/ui-regression.py` drives real touch/key events. See [verification report](verification/REPORT.md) for the actual tested build, metrics, evidence and remaining differences. Compilation alone is not visual acceptance, and this delivery does not claim 100% pixel equality or physical-tablet validation.
 
 ## Current verification
+
+The local-album extension is preview.3 / versionCode4. Its exact signed release passed 26 native cases plus 18 unit tests; see [album acceptance](verification/ALBUM-REPORT.md). The 300-cycle results below describe the preceding repair baseline.
 
 [preview.2 repair report](verification/REPORT.md) records the typography root cause, all four initial Station keys, independent real PCM spectra, touch handling, shared page state and actual verification limits. The previous preview.1 300-round result is withdrawn as visual/usability acceptance; its [historical report](verification/HISTORICAL-PREVIEW1.md) and original records remain available.
 

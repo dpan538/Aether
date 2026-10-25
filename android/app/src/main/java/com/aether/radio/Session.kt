@@ -25,6 +25,22 @@ data class RetainedInk(val station:Station?,val metadata:String?,val format:Stri
 /** One state and one player, shared by both native scenes. Reference never opens audio. */
 class Session(val reference: Boolean) {
     var catalog = if(reference) ReferenceStations.all else emptyList()
+    var localQueue:List<LocalTrack> = emptyList()
+    var localIndex=0
+    var isLocal=false
+    val localTrack get()=if(isLocal)localQueue.getOrNull(localIndex) else null
+    val activeId get()=if(isLocal)localTrack?.id else station?.id
+    var localPositionMs=0L
+    var localDurationMs=0L
+    var onLocalSelect:(List<LocalTrack>,Int)->Unit={_,_->}
+    var onLocalSeek:(Long)->Unit={}
+    fun selectLocal(queue:List<LocalTrack>,index:Int){
+        if(!enabled||index !in queue.indices)return
+        localQueue=queue.toList();localIndex=index;isLocal=true;localPositionMs=0;localDurationMs=queue[index].durationMs
+        metadata=null;decodedFormat=null;issue=null;spectrumFrame=null;connection=Connection.CONNECTING;playIntent=true
+        onLocalSelect(localQueue,index);changed()
+    }
+    fun seekLocal(position:Long){if(enabled&&isLocal)onLocalSeek(position.coerceIn(0,localDurationMs.coerceAtLeast(0)))}
     var selected = 0
     private var selectedStation:Station?=null
     val savedStations=mutableMapOf<String,Station>()
@@ -99,13 +115,14 @@ class Session(val reference: Boolean) {
         !enabled->false
         action=="empty-preset"->false
         action.startsWith("preset:")->presetPool().getOrNull(action.substringAfter(':').toIntOrNull()?:-1)!=null
-        action.startsWith("favorite-step:")->favorites.any{lookup(it)!=null}
-        action in listOf("previous","next")||action.startsWith("step:")->tuningPool().isNotEmpty()
-        action in listOf("play-toggle","favorite-toggle")->station!=null
+        action.startsWith("favorite-step:")->if(isLocal)localQueue.isNotEmpty() else favorites.any{lookup(it)!=null}
+        action in listOf("previous","next")||action.startsWith("step:")->if(isLocal)localQueue.isNotEmpty() else tuningPool().isNotEmpty()
+        action=="play-toggle"->if(isLocal)localTrack!=null else station!=null
+        action=="favorite-toggle"->!isLocal&&station!=null
         action=="random-station"->filtered().isNotEmpty()
         else->true
     }
-    val displayOrdinal:Int? get(){val i=tuningPool().indexOfFirst{it.id==station?.id};return if(i<0)null else i+1}
+    val displayOrdinal:Int? get(){if(isLocal)return localIndex+1;val i=tuningPool().indexOfFirst{it.id==station?.id};return if(i<0)null else i+1}
     fun presetPool():List<Station> {
         val saved=favorites.mapNotNull{lookup(it)}
         return if(reference)saved else (saved+catalog).distinctBy{it.id}
@@ -116,11 +133,16 @@ class Session(val reference: Boolean) {
         val chosen=lookup(id)?:return
         val index=catalog.indexOfFirst {it.id==id}
         if(index>=0)selected=index
-        selectedStation=chosen;metadata=null;decodedFormat=null;issue=null;spectrumFrame=null
+        isLocal=false;selectedStation=chosen;metadata=null;decodedFormat=null;issue=null;spectrumFrame=null
         if(!reference) {connection=Connection.CONNECTING;playIntent=true;onSelect(chosen)}
         changed()
     }
     fun step(direction: Int, favorite: Boolean=false) {
+        if(!enabled)return
+        if(isLocal){if(localQueue.isNotEmpty())selectLocal(localQueue,if(favorite)if(direction<0)0 else localQueue.lastIndex else Math.floorMod(localIndex+direction,localQueue.size));return}
+        stepRadio(direction,favorite)
+    }
+    private fun stepRadio(direction:Int,favorite:Boolean=false){
         val pool=if(favorite) favorites.mapNotNull { id->lookup(id) } else tuningPool()
         if(pool.isEmpty())return
         val i=pool.indexOfFirst {it.id==station?.id}
@@ -128,7 +150,7 @@ class Session(val reference: Boolean) {
     }
     fun changeVolume(v: Int) {if(!enabled)return;val next=v.coerceIn(0,30);if(next==volume)return;volume=next;onVolume(volume);changed()}
     fun toggleMute() { if(volume>0){unmutedVolume=volume;changeVolume(0)}else changeVolume(unmutedVolume) }
-    fun toggleFavorite() {if(!enabled)return;station?.let {if(!favorites.remove(it.id)){favorites.add(it.id);savedStations[it.id]=it}else savedStations.remove(it.id)};presetOffset=presetOffset.coerceAtMost((favorites.size-4).coerceAtLeast(0));listOffset=0;onFavorites();changed()}
+    fun toggleFavorite() {if(!enabled||isLocal)return;station?.let {if(!favorites.remove(it.id)){favorites.add(it.id);savedStations[it.id]=it}else savedStations.remove(it.id)};presetOffset=presetOffset.coerceAtMost((favorites.size-4).coerceAtLeast(0));listOffset=0;onFavorites();changed()}
     fun togglePlay() {if(!enabled)return;playIntent=if(!reference&&connection in listOf(Connection.CONNECTING,Connection.BUFFERING))false else !playing;if(reference)playing=playIntent;onPlay(playIntent);changed()}
     fun changeTempo(value:Int){if(!enabled)return;val next=(value/5.0).roundToInt().times(5).coerceIn(50,150);if(next==tempo)return;tempo=next;onTempo(next);changed()}
     fun options(key:String):List<String> = when(key) {
@@ -142,7 +164,7 @@ class Session(val reference: Boolean) {
     fun tune(direction:Int) {
         if(!enabled)return
         view="directory";tuningAngle+=24*direction
-        if(mode==0)step(direction)else {
+        if(mode==0)stepRadio(direction)else {
             val key=listOf("station","region","genre","language")[mode]
             val opts=options(key);filter(key,opts[Math.floorMod(opts.indexOf(filterValue(key))+direction,opts.size)])
         }

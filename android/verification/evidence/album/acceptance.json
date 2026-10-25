@@ -1,0 +1,284 @@
+{
+  "version": "0.1.0-preview.3",
+  "versionCode": 4,
+  "environment": {
+    "type": "Android emulator, not physical Xiaomi",
+    "api": 36,
+    "resolution": [
+      3408,
+      2272
+    ],
+    "densityDpi": 320
+  },
+  "nativeChecks": 26,
+  "passed": true,
+  "unitTests": 18,
+  "checks": [
+    {
+      "name": "Physical ellipsis source menu opens monochrome album sheet",
+      "passed": true,
+      "durationMs": -9223372036854775807,
+      "samples": 0,
+      "rms": 0,
+      "timeMs": 10064257
+    },
+    {
+      "name": "Large close target and readable album booklet",
+      "passed": true,
+      "durationMs": -9223372036854775807,
+      "samples": 0,
+      "rms": 0,
+      "timeMs": 10066799
+    },
+    {
+      "name": "Exactly 11 supplied tracks, ordered night to daylight; 30:39 total",
+      "passed": true,
+      "durationMs": -9223372036854775807,
+      "samples": 0,
+      "rms": 0,
+      "timeMs": 10066802
+    },
+    {
+      "name": "Track 1: native selection, MP3 decoder, real duration and PCM",
+      "passed": true,
+      "track": "Before the First Light",
+      "durationMs": 178990,
+      "samples": 16384,
+      "rms": 0.05961791,
+      "timeMs": 10067373
+    },
+    {
+      "name": "Track 2: native selection, MP3 decoder, real duration and PCM",
+      "passed": true,
+      "track": "Glass Garden Portraits",
+      "durationMs": 157335,
+      "samples": 16384,
+      "rms": 0.13956869,
+      "timeMs": 10067834
+    },
+    {
+      "name": "Track 3: native selection, MP3 decoder, real duration and PCM",
+      "passed": true,
+      "track": "Where Water Meets Stone",
+      "durationMs": 168437,
+      "samples": 20480,
+      "rms": 6.6786146e-05,
+      "timeMs": 10068302
+    },
+    {
+      "name": "Track 4: native selection, MP3 decoder, real duration and PCM",
+      "passed": true,
+      "track": "The Slowest Tide",
+      "durationMs": 159137,
+      "samples": 16384,
+      "rms": 0.16375853,
+      "timeMs": 10068771
+    },
+    {
+      "name": "Track 5: native selection, MP3 decoder, real duration and PCM",
+      "passed": true,
+      "track": "The Sleeper’s Lament",
+      "durationMs": 181106,
+      "samples": 16384,
+      "rms": 0.14987957,
+      "timeMs": 10069234
+    },
+    {
+      "name": "Track 6: native selection, MP3 decoder, real duration and PCM",
+      "passed": true,
+      "track": "Pattern of the Iron Canopy",
+      "durationMs": 172721,
+      "samples": 16384,
+      "rms": 0.039265607,
+      "timeMs": 10069702
+    },
+    {
+      "name": "Track 7: native selection, MP3 decoder, real duration and PCM",
+      "passed": true,
+      "track": "Three Minutes of Sharpened Iron",
+      "durationMs": 170422,
+      "samples": 16384,
+      "rms": 0.039908502,
+      "timeMs": 10070169
+    },
+    {
+      "name": "Track 8: native selection, MP3 decoder, real duration and PCM",
+      "passed": true,
+      "track": "The Last Glowing Knot",
+      "durationMs": 155585,
+      "samples": 16384,
+      "rms": 0.06798548,
+      "timeMs": 10070633
+    },
+    {
+      "name": "Track 9: native selection, MP3 decoder, real duration and PCM",
+      "passed": true,
+      "track": "November’s Glass",
+      "durationMs": 169900,
+      "samples": 16384,
+      "rms": 0.07807334,
+      "timeMs": 10071102
+    },
+    {
+      "name": "Track 10: native selection, MP3 decoder, real duration and PCM",
+      "passed": true,
+      "track": "The Clearing Vision",
+      "durationMs": 151745,
+      "samples": 16384,
+      "rms": 0.0027474132,
+      "timeMs": 10071576
+    },
+    {
+      "name": "Track 11: native selection, MP3 decoder, real duration and PCM",
+      "passed": true,
+      "track": "Morning’s Sharp Truth",
+      "durationMs": 173609,
+      "samples": 16384,
+      "rms": 0.03453981,
+      "timeMs": 10072069
+    },
+    {
+      "name": "Album pause freezes the real position and resumes",
+      "passed": true,
+      "track": "Morning’s Sharp Truth",
+      "durationMs": 173609,
+      "samples": 36864,
+      "rms": 0.031769592,
+      "timeMs": 10073903
+    },
+    {
+      "name": "Local audio obeys 50–150% tempo with pitch 1.0",
+      "passed": true,
+      "track": "Morning’s Sharp Truth",
+      "durationMs": 173609,
+      "samples": 36864,
+      "rms": 0.031769592,
+      "timeMs": 10074005
+    },
+    {
+      "name": "Media3 automatically advances to next track without another player",
+      "passed": true,
+      "track": "Glass Garden Portraits",
+      "durationMs": 157335,
+      "samples": 24576,
+      "rms": 0.1299763,
+      "timeMs": 10075054
+    },
+    {
+      "name": "Last track ends cleanly; play restarts it",
+      "passed": true,
+      "track": "Morning’s Sharp Truth",
+      "durationMs": 173609,
+      "samples": 32768,
+      "rms": 0.030112982,
+      "timeMs": 10076635
+    },
+    {
+      "name": "Immersive triangle controls the local queue",
+      "passed": true,
+      "track": "The Clearing Vision",
+      "durationMs": 151745,
+      "samples": 16384,
+      "rms": 0.0027474132,
+      "timeMs": 10077317
+    },
+    {
+      "name": "Both pages share local metadata, audio and PCM",
+      "passed": true,
+      "track": "The Clearing Vision",
+      "durationMs": 151745,
+      "samples": 176128,
+      "rms": 0.23344764,
+      "timeMs": 10080889
+    },
+    {
+      "name": "Explicit radio selection returns the single player to a real HTTPS stream",
+      "passed": true,
+      "durationMs": -9223372036854775807,
+      "samples": 20480,
+      "rms": 0.13010809,
+      "timeMs": 10082129
+    },
+    {
+      "name": "Radio to local switch keeps decoder and spectra functional",
+      "passed": true,
+      "track": "The Sleeper’s Lament",
+      "durationMs": 181106,
+      "samples": 16384,
+      "rms": 0.14987957,
+      "timeMs": 10082268
+    },
+    {
+      "name": "System document picker returns an audio URI with persisted read permission and real MP3/PCM playback",
+      "passed": true,
+      "track": "Aether-local-import",
+      "durationMs": 178990,
+      "samples": 118784,
+      "rms": 0.061883073,
+      "timeMs": 10122344
+    },
+    {
+      "name": "Cold launch restores the imported document selection without autoplay; play reopens the persisted URI",
+      "passed": true,
+      "track": "Aether-local-import",
+      "durationMs": 178990,
+      "samples": 16384,
+      "rms": 0.05961791,
+      "timeMs": 10128202
+    },
+    {
+      "name": "Missing document reports a real playback error without crashing or showing fake PCM",
+      "passed": true,
+      "track": "Unavailable",
+      "durationMs": -9223372036854775807,
+      "samples": 0,
+      "rms": 0,
+      "timeMs": 10128337
+    },
+    {
+      "name": "Recovery from unreadable document to bundled audio succeeds",
+      "passed": true,
+      "track": "Before the First Light",
+      "durationMs": 178990,
+      "samples": 16384,
+      "rms": 0.05961791,
+      "timeMs": 10128470
+    }
+  ],
+  "upgrade": {
+    "method": "ADB package-manager in-place update, same signer",
+    "beforeVersion": 3,
+    "afterVersion": 4,
+    "preserved": {
+      "selectedId": "0042e94c-55d6-4ff4-a3a7-46136e703424",
+      "favorites": [
+        "0042e94c-55d6-4ff4-a3a7-46136e703424"
+      ],
+      "volume": 17,
+      "tempo": 90,
+      "language": "zh"
+    }
+  },
+  "apk": {
+    "apk": "Aether-0.1.0-preview.3.apk",
+    "bytes": 83461896,
+    "manifest": {
+      "schemaVersion": 1,
+      "packageName": "io.github.dpan538.aether",
+      "versionCode": 4,
+      "versionName": "0.1.0-preview.3",
+      "apk": "Aether-0.1.0-preview.3.apk",
+      "sha256": "ae624f62a211f4fccc74a9df81690af083f5bd2180cf65e80e533495c1d4e2d3",
+      "certificateSha256": "934601abcd99dd1cfbd7466f6096fd2c27a6e6ae2e75681d5233a4fd6e1a15b9"
+    },
+    "debuggable": false,
+    "signatureVerified": true
+  },
+  "audioSourceIntegrity": {
+    "files": 11,
+    "bytes": 44203233,
+    "durationMs": 1838994,
+    "allHashesMatch": true,
+    "coverHashMatches": true
+  }
+}
