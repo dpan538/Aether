@@ -4,9 +4,9 @@
 
 ## Approved visual references
 
-![Device-page design reference](media/modern-mock.png)
+![Device-page design reference](media/modern-radio-c65e811d191f.png)
 
-![Immersive-page design reference](media/immersive-mock.png)
+![Immersive-page design reference](media/immersive-radio-5f938e182259.png)
 
 These are design mock images. Their sample station/programme information illustrates composition; it is not live data or a test result. Current native source defines functional refinements such as album artwork, real PCM spectra, music-library menus and background playback. The images do not authorize adding simulated data to the live app.
 
