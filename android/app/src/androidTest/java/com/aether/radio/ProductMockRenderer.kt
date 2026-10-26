@@ -19,22 +19,36 @@ class ProductMockRenderer(private val test:Instrumentation,private val activity:
             state.powered=true;state.locked=false;state.language="zh";state.page=0
             state.query="";state.region="";state.genre="";state.stationLanguage="";state.listOffset=0;state.presetOffset=0
             state.favorites.clear();state.favorites.addAll(state.catalog.distinctBy{it.id}.take(4).map{it.id})
-            state.spectrumEnabled=true;state.changeVolume(20);state.changeTempo(100)
+            state.spectrumEnabled=true;state.motion=false;state.changeVolume(20);state.changeTempo(100)
             state.showView("directory");activity.surface.setLight(true)
-            state.selectLocal(LocalMusic.bundled(test.targetContext),0)
         }
-        waitFor{state.playing&&state.spectrumFrame!=null&&activity.surface.immersivePlayback.coverLoaded&&!activity.surface.refreshing}
-        main{state.seekLocal(21000)}
-        waitFor{state.playing&&state.displayPositionMs>=21000}
+        val candidates=main{state.catalog.filter{it.stream?.startsWith("https://")==true}.take(4)}
+        check(candidates.isNotEmpty())
+        var connected=false
+        for(station in candidates){
+            main{state.select(station.id)}
+            val end=SystemClock.uptimeMillis()+25000
+            while(SystemClock.uptimeMillis()<end){
+                connected=main{!state.isLocal&&state.station?.id==station.id&&state.playing&&state.spectrumFrame!=null&&state.decodedFormat!=null}
+                if(connected)break
+                Thread.sleep(100)
+            }
+            if(connected)break
+        }
+        check(connected){"No real catalogue radio stream decoded for the product images"}
+        // Capture the default radio disc at its resting orientation without changing playback.
+        main{activity.surface.immersivePlayback.dragging=true;activity.surface.immersivePlayback.rotation=0f}
+        waitFor{!activity.surface.immersivePlayback.coverLoaded&&!activity.surface.refreshing}
         Thread.sleep(2400)
         val files=JSONArray()
         for((page,name) in listOf(0 to "modern-mock-hd.png",1 to "immersive-mock-hd.png")){
             main{activity.surface.cancelInput();state.page=page;state.changed()}
-            waitFor{activity.surface.committedPage==page&&!activity.surface.refreshing&&state.playing}
+            waitFor{activity.surface.committedPage==page&&!activity.surface.refreshing&&state.playing&&(page==0||activity.surface.painter.mainDisc!=null)}
             Thread.sleep(1600)
             val bitmap=main{
                 val view=activity.surface
                 check(view.width==3408&&view.height==2272)
+                view.immersivePlayback.dragging=true;view.immersivePlayback.rotation=0f
                 Bitmap.createBitmap(5112,3408,Bitmap.Config.ARGB_8888).also{image->
                     val canvas=Canvas(image);canvas.scale(1.5f,1.5f);view.draw(canvas)
                 }
@@ -44,8 +58,10 @@ class ProductMockRenderer(private val test:Instrumentation,private val activity:
             files.put(JSONObject().put("file",name).put("width",bitmap.width).put("height",bitmap.height).put("page",page))
             bitmap.recycle()
         }
+        main{activity.surface.immersivePlayback.dragging=false}
         return JSONObject().put("passed",true).put("version",BuildConfig.VERSION_NAME).put("versionCode",BuildConfig.VERSION_CODE)
-            .put("source","Current native view directly drawn to a high-resolution Canvas; actual decoded album audio; no system status bar or personal screenshot")
+            .put("source","Current native radio playback directly drawn to a high-resolution Canvas; default disc at resting orientation; no system status bar or personal screenshot")
+            .put("isLocal",false).put("station",main{state.station?.name}).put("discRotation",0)
             .put("files",files)
     }
 }
