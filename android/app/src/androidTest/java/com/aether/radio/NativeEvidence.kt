@@ -67,6 +67,7 @@ class NativeEvidence:Instrumentation() {
                 "about-release"->{result.putString("aetherResult",AboutReleaseSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
                 "device-time-caption"->{result.putString("aetherResult",DeviceTimeCaptionSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
                 "album-mock"->{result.putString("aetherResult",AlbumPresentationSuite(this,activity).renderMock().toString());finish(Activity.RESULT_OK,result);return}
+                "readme-mocks"->{result.putString("aetherResult",ProductMockRenderer(this,activity).render().toString());finish(Activity.RESULT_OK,result);return}
                 "widget-sizing"->{result.putString("aetherResult",WidgetSizingSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
                 "widget-entry","widget-entry-baseline"->{result.putString("aetherResult",WidgetEntrySuite(this,activity).run(arguments.getString("operation")=="widget-entry-baseline").toString());finish(Activity.RESULT_OK,result);return}
                 "seed-local","seed-radio","restore-local","restore-radio"->{result.putString("aetherResult",WidgetEntrySuite(this,activity).persistence(arguments.getString("operation")!!).toString());finish(Activity.RESULT_OK,result);return}
