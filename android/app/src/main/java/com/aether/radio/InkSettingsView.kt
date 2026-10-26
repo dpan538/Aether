@@ -67,7 +67,7 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
             val option=LinearLayout(context).apply{tag="settings:language:$code";gravity=Gravity.CENTER_VERTICAL;setPadding(dp(12),0,dp(12),0);isClickable=true;isFocusable=true;contentDescription=label;isSelected=selected;if(selected)background=background(0xff34483a.toInt())
                 setOnClickListener{if(state.enabled&&!surface.refreshing){surface.haptics.confirm();popup.dismiss();state.language=code;state.menu=null;state.changed()}}}
             val color=if(selected)0xffeeecd8.toInt()else ink
-            option.addView(text(label,17f,color),LayoutParams(0,-2,1f));if(selected)option.addView(text("✓",17f,color))
+            option.addView(text(label,15f,color),LayoutParams(0,-2,1f));if(selected)option.addView(text("✓",17f,color))
             content.addView(option,LayoutParams(-1,dp(48)))
         }
         languagePopup=popup
@@ -80,19 +80,22 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
     private val zh get()=state.language=="zh"
     private val ink=Color.rgb(43,56,46)
     private val secondary=0xff687561.toInt()
-    private fun dp(n:Int)=(n*resources.displayMetrics.density).toInt()
+    private var inkScale=1f
+    private var geometryReady=false
+    private fun dp(n:Int)=kotlin.math.round(n*inkScale).toInt().coerceAtLeast(if(n>0)1 else 0)
+    private fun TextView.inkSize(size:Float){setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,size*inkScale)}
     private fun words(cn:String,en:String)=if(zh)cn else en
     private fun text(value:String,size:Float,color:Int=ink)=TextView(context).apply{
-        text=value;textSize=size;typeface=surface.painter.font(false,400);setTextColor(color)
+        text=value;inkSize(size);typeface=surface.painter.font(false,400);setTextColor(color)
         includeFontPadding=false;setLineSpacing(dp(4).toFloat(),1f)
     }
     private fun background(fill:Int,stroke:Boolean=false)=GradientDrawable().apply{setColor(fill);cornerRadius=dp(4).toFloat();if(stroke)setStroke(dp(1),0xff7d8978.toInt())}
     private fun button(value:String,key:String="",click:()->Unit)=Button(context).apply{
-        text=value;tag=key;textSize=16f;typeface=surface.painter.font(false,600);isAllCaps=false
+        text=value;tag=key;inkSize(14f);typeface=surface.painter.font(false,600);isAllCaps=false
         setSingleLine(true);ellipsize=android.text.TextUtils.TruncateAt.END;contentDescription=value;setTextColor(ink);background=background(Color.TRANSPARENT,true);setPadding(dp(12),0,dp(12),0)
         setOnClickListener{if(state.enabled&&!surface.refreshing){surface.haptics.press();click()}}
     }
-    init{orientation=VERTICAL;setPadding(dp(20),dp(14),dp(20),dp(14));importantForAccessibility=IMPORTANT_FOR_ACCESSIBILITY_YES}
+    init{orientation=VERTICAL;importantForAccessibility=IMPORTANT_FOR_ACCESSIBILITY_YES}
     fun alignWithSurface(){
         visibility=if(!state.reference&&surface.modernVisible&&state.view=="settings")View.VISIBLE else View.GONE
         translationX=surface.modernOffsetPixels
@@ -126,6 +129,7 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
         if(!surface.assetsReady||surface.width==0)return
         val r=surface.painter.scene(surface.painter.name(state.light)).flattened().first{it.cls=="directory-screen"}.r
         val scale=minOf(surface.width/1704f,surface.height/1136f);val ox=(surface.width-1704*scale)/2;val oy=(surface.height-1136*scale)/2
+        if(!geometryReady||kotlin.math.abs(inkScale-scale)>.001f){geometryReady=true;inkScale=scale;signature="";pendingSignature="";retained=null;setPadding(dp(20),dp(14),dp(20),dp(14));build()}
         val width=(r.width()*scale).toInt();val height=(r.height()*scale).toInt();val left=(ox+r.left*scale).toInt();val top=(oy+r.top*scale).toInt()
         val old=layoutParams as? FrameLayout.LayoutParams
         if(old?.width==width&&old.height==height&&old.leftMargin==left&&old.topMargin==top)return
@@ -137,7 +141,7 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
         addView(ScrollView(context).apply{isFillViewport=true;isVerticalScrollBarEnabled=false;addView(body)},LayoutParams(-1,0,1f))
         return body
     }
-    private fun LinearLayout.paragraph(value:String,size:Float=16f,muted:Boolean=false,top:Int=14){addView(text(value,size,if(muted)secondary else ink),LayoutParams(-1,-2).apply{topMargin=dp(top)})}
+    private fun LinearLayout.paragraph(value:String,size:Float=14f,muted:Boolean=false,top:Int=14){addView(text(value,size,if(muted)secondary else ink),LayoutParams(-1,-2).apply{topMargin=dp(top)})}
     private fun row(label:String,value:String,key:String,selected:Boolean=false,click:()->Unit){
         val row=LinearLayout(context).apply{
             tag=key;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(6),0,dp(6),0);isClickable=true;isFocusable=true;contentDescription=label
@@ -145,7 +149,7 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
             setOnClickListener{if(state.enabled&&!surface.refreshing){surface.haptics.press();click()}}
         }
         if(key.startsWith("settings:menu:"))row.addView(text("0${key.substringAfterLast(':').toInt()+1}",12f,secondary),LayoutParams(dp(38),-2))
-        row.addView(text(label,17f),LayoutParams(0,-2,1f));val tail=text(value,17f);if(key=="settings:menu:0")languageValue=tail;row.addView(tail)
+        row.addView(text(label,15f),LayoutParams(0,-2,1f));val tail=text(value,15f);if(key=="settings:menu:0")languageValue=tail;row.addView(tail)
         addView(row,LayoutParams(-1,0,1f));addView(View(context).apply{setBackgroundColor(0x33929d89)},LayoutParams(-1,dp(1)))
     }
     private fun build(){
@@ -158,14 +162,14 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
             if(state.updateOpen){state.updateOpen=false;state.changed()}else page(if(current in listOf("haptics","widget"))"about"else"menu")
         }.apply{contentDescription=words("返回","Back")},LayoutParams(dp(48),dp(38)).apply{marginEnd=dp(14)})
         val title=when(current){"about"->words("关于漫频","About 漫频");"feedback"->words("意见反馈","Feedback");"update"->words("检查更新","Check updates");"haptics"->words("触感检测","Haptic feedback");"widget"->words("桌面小组件","Home screen widget");else->words("漫频 / 设置","漫频 / SETTINGS")}
-        header.addView(text(title,19f).apply{typeface=surface.painter.font(false,600)},LayoutParams(0,-2,1f))
+        header.addView(text(title,16f).apply{typeface=surface.painter.font(false,600)},LayoutParams(0,-2,1f))
         if(current in listOf("about","update"))header.addView(text(BuildConfig.VERSION_NAME,12f,secondary))
         addView(header,LayoutParams(-1,dp(38)));addView(View(context).apply{setBackgroundColor(0xff929d89.toInt())},LayoutParams(-1,dp(1)).apply{topMargin=dp(8);bottomMargin=dp(10)})
         when(current){
             "update"->buildUpdate()
             "about"->{
                 val body=scrollBody()
-                body.paragraph(words("不设边界，漫游频率。","No boundaries. Just frequencies."),24f,top=8)
+                body.paragraph(words("不设边界，漫游频率。","No boundaries. Just frequencies."),17f,top=8)
                 body.paragraph(words("为小米 Pad 9 Pro Max 打造的原生聆听体验。\n在电台与本地音乐之间，保留声音，也留出安静的画面。","A native listening experience for Xiaomi Pad 9 Pro Max.\nRadio and local music, with space to simply listen."))
                 body.paragraph(words("无需账户 · 无广告 · 无第三方遥测\n电台来自 Radio Browser；可播放状态随音源与网络变化。","No account · No ads · No third-party telemetry\nRadio directory: Radio Browser. Availability varies by source and network."),13f,true)
                 val actions=LinearLayout(context)
@@ -175,24 +179,28 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
             }
             "haptics"->{
                 val body=scrollBody()
-                body.paragraph(words("旋钮每跨过一档，触发一次马达与机械音效。","Each encoder detent requests one motor pulse and mechanical click."),18f,top=8)
-                diagnostic=text(surface.haptics.description(zh),16f);body.addView(diagnostic,LayoutParams(-1,-2).apply{topMargin=dp(18)})
+                body.paragraph(words("旋钮每跨过一档，触发一次马达与机械音效。","Each encoder detent requests one motor pulse and mechanical click."),17f,top=8)
+                diagnostic=text(surface.haptics.description(zh),14f);body.addView(diagnostic,LayoutParams(-1,-2).apply{topMargin=dp(18)})
                 body.paragraph(words("请同时开启系统的触感反馈与触摸提示音。若设备没有振动马达，应用无法用软件产生真实震动。","Enable system haptic feedback and touch sounds. A device without a vibration motor cannot produce physical haptics."),13f,true)
                 addView(button(words("测试触感","Test haptics"),"settings:test-haptics"){surface.haptics.testPulse();diagnostic?.text=surface.haptics.description(zh)},LayoutParams(dp(180),dp(44)).apply{gravity=Gravity.END;topMargin=dp(12)})
             }
             "widget"->{
                 val body=scrollBody()
-                body.paragraph(words("将正在播放放到桌面。","Keep your music on the home screen."),24f,top=8)
-                body.paragraph(words("显示封面、曲目、播放进度与控制键；与后台播放器使用同一会话。尺寸可在桌面上调整。","Artwork, track, progress and controls share the background playback session. Resize the widget on your home screen."))
+                body.paragraph(words("将正在播放放到桌面。","Keep your music on the home screen."),17f,top=8)
+                body.paragraph(words("显示封面、曲目、播放进度与控制键；与后台播放器使用同一会话。可选择紧凑、横条或唱片卡片，尺寸随桌面调整。","Artwork, track, progress and controls share the background playback session. Choose Compact, Strip or Album card, then resize on your home screen."))
                 body.paragraph(words("小米桌面：添加小部件 → 支持小部件应用 → 全部 → 安卓小部件 → 漫频。系统版本不同，入口名称可能略有差异。","Xiaomi Home: Add widgets → Apps with widgets → All → Android widgets → 漫频. Names may vary by system version."),14f,true)
                 diagnostic=text("",14f,secondary);body.addView(diagnostic,LayoutParams(-1,-2).apply{topMargin=dp(12)})
-                addView(button(words("添加到桌面","Add to home screen"),"settings:pin-widget"){
-                    val supported=MusicWidget.requestPin(context)
-                    diagnostic?.text=if(supported)words("请在系统窗口中确认添加。","Confirm adding in the system window.")else words("此桌面不支持快捷添加，请通过安卓小部件列表添加。","This launcher requires adding from its Android widget list.")
-                },LayoutParams(dp(220),dp(44)).apply{gravity=Gravity.END;topMargin=dp(12)})
+                val styles=LinearLayout(context)
+                listOf("compact" to words("紧凑","Compact"),"strip" to words("横条","Strip"),"card" to words("唱片卡片","Album card")).forEachIndexed{i,(style,label)->
+                    styles.addView(button(label,if(style=="card")"settings:pin-widget"else"settings:pin-$style"){
+                        val supported=MusicWidget.requestPin(context,style)
+                        diagnostic?.text=if(supported)words("请在系统窗口中确认添加。","Confirm adding in the system window.")else words("请通过桌面的安卓小部件列表选择样式。","Choose a style from your launcher's Android widget list.")
+                    },LayoutParams(0,dp(44),1f).apply{if(i>0)marginStart=dp(10)})
+                }
+                addView(styles,LayoutParams(-1,dp(44)).apply{topMargin=dp(12)})
             }
             "feedback"->{
-                editor=EditText(context).apply{setText(feedback.draft);textSize=16f;typeface=surface.painter.font(false,400);setTextColor(ink);setHintTextColor(0xff6e7b67.toInt());hint=words("描述问题、发生步骤或修改建议…","Describe the issue, steps or suggestion…");gravity=Gravity.TOP;setPadding(dp(12),dp(10),dp(12),dp(10));background=background(0x16565e4f,true);inputType=android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES;filters=arrayOf(android.text.InputFilter.LengthFilter(1000));isSingleLine=false;contentDescription=words("反馈内容","Feedback message");addTextChangedListener(object:TextWatcher{override fun beforeTextChanged(s:CharSequence?,a:Int,c:Int,f:Int){};override fun onTextChanged(s:CharSequence?,a:Int,b:Int,c:Int){feedback.edit(s.toString())};override fun afterTextChanged(e:Editable?){}})}
+                editor=EditText(context).apply{setText(feedback.draft);inkSize(14f);typeface=surface.painter.font(false,400);setTextColor(ink);setHintTextColor(0xff6e7b67.toInt());hint=words("描述问题、发生步骤或修改建议…","Describe the issue, steps or suggestion…");gravity=Gravity.TOP;setPadding(dp(12),dp(10),dp(12),dp(10));background=background(0x16565e4f,true);inputType=android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES;filters=arrayOf(android.text.InputFilter.LengthFilter(1000));isSingleLine=false;contentDescription=words("反馈内容","Feedback message");addTextChangedListener(object:TextWatcher{override fun beforeTextChanged(s:CharSequence?,a:Int,c:Int,f:Int){};override fun onTextChanged(s:CharSequence?,a:Int,b:Int,c:Int){feedback.edit(s.toString())};override fun afterTextChanged(e:Editable?){}})}
                 addView(editor,LayoutParams(-1,0,1f))
                 val row=LinearLayout(context).apply{gravity=Gravity.CENTER_VERTICAL};row.addView(text(words("反馈将公开到 GitHub，请勿填写隐私信息。","Posted publicly to GitHub. Please omit private information."),12f),LayoutParams(0,-2,1f));count=text("",12f);row.addView(count);addView(row,LayoutParams(-1,dp(30)))
                 status=text("",14f).apply{maxLines=2};addView(status,LayoutParams(-1,dp(35)))
@@ -218,8 +226,8 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
             ui.phase==UpdatePhase.ERROR->when{ui.detail.contains("sign",true)->"签名校验未通过，已停止安装。";ui.detail.contains("digest",true)||ui.detail.contains("sha256",true)->"文件完整性校验未通过，请重新下载。";else->"无法完成更新请求，请检查网络后重试。"}
             else->ui.detail
         }
-        val body=scrollBody();body.paragraph(title,24f,top=10)
-        if(detail.isNotBlank())body.paragraph(detail,16f,top=18)
+        val body=scrollBody();body.paragraph(title,17f,top=10)
+        if(detail.isNotBlank())body.paragraph(detail,14f,top=18)
         if(ui.phase==UpdatePhase.DOWNLOADING){
             updateProgress=ProgressBar(context,null,android.R.attr.progressBarStyleHorizontal).apply{max=100;progress=ui.progress;progressTintList=android.content.res.ColorStateList.valueOf(ink);progressBackgroundTintList=android.content.res.ColorStateList.valueOf(0x33738169)}
             body.addView(updateProgress,LayoutParams(-1,dp(6)).apply{topMargin=dp(24)})

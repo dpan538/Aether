@@ -50,6 +50,19 @@ class AetherView(context:Context,val state:Session):View(context) {
     private val displayLists=android.util.LruCache<String,Picture>(4)
     private class SceneLayer(val node:RenderNode,var source:Picture?=null,var width:Int=0,var height:Int=0)
     private val nativeLayers=mutableMapOf<String,SceneLayer>()
+    private var lastInteractionAt=0L
+    var directRendering=false;private set
+    var renderRecoveries=0;private set
+    val renderHealth=RenderHealth(this,{renderStable()},{state.page}){recoverRendering(true)}
+    private fun renderStable()=active&&!released&&assetsReady&&!state.reference&&isShown&&hasWindowFocus()&&offset==0f&&action.isBlank()&&!externalInputActive&&!refreshing&&lightAnimator?.isRunning!=true&&pageAnimator?.isRunning!=true&&SystemClock.uptimeMillis()-maxOf(navigationChangedAt,lastInteractionAt)>1500
+    fun recoverRendering(failedFrame:Boolean=false){
+        if(released)return
+        if(failedFrame){renderRecoveries++;if(renderRecoveries>=2)directRendering=true;android.util.Log.w("ManpinRender","Static scene recovery $renderRecoveries; direct=$directRendering")}
+        nativeLayers.values.forEach{it.node.discardDisplayList()};nativeLayers.clear()
+        painter.resetRenderLayers(directRendering);frozenScenes=null
+        // Keep decoded artwork, the native-resolution material source and the player alive.
+        invalidate();scheduleWarm()
+    }
     private val inkFrames=mutableMapOf<Boolean,InkResponse<Picture>>()
     private var inkRects:List<RectF>?=null
     private var inkSpectrum:SpectrumFrame?=null
@@ -73,7 +86,7 @@ class AetherView(context:Context,val state:Session):View(context) {
     private var frozenScenes:Map<String,Picture>?=null
     private val warmScenes=Runnable{
         if(assetsReady&&!released&&active&&offset==0f&&width>0&&height>0){
-            for((lit,immersive)in listOf(false to false,true to false,false to true)){val list=sceneList(lit,immersive);if(isHardwareAccelerated)sceneLayer(list,lit,immersive)}
+            for((lit,immersive)in listOf(false to false,true to false,false to true)){val list=sceneList(lit,immersive);if(isHardwareAccelerated&&!directRendering)sceneLayer(list,lit,immersive)}
         }
     }
     private fun scheduleWarm(){removeCallbacks(warmScenes);if(!state.reference)postDelayed(warmScenes,180)}
@@ -104,7 +117,7 @@ class AetherView(context:Context,val state:Session):View(context) {
     private val ox get()=(width-1704*sx)/2
     private val oy get()=(height-1136*sx)/2
     override fun onAttachedToWindow(){
-        super.onAttachedToWindow()
+        super.onAttachedToWindow();renderHealth.start()
         if(!preparationStarted){
             preparationStarted=true;val started=SystemClock.uptimeMillis()
             painter.prepare{error->post{
@@ -130,6 +143,8 @@ class AetherView(context:Context,val state:Session):View(context) {
             true
         }
     }
+    override fun onWindowVisibilityChanged(visibility:Int){super.onWindowVisibilityChanged(visibility);if(visibility==VISIBLE&&assetsReady)recoverRendering()}
+    override fun onDetachedFromWindow(){renderHealth.stop();super.onDetachedFromWindow()}
     private fun discSmall(){disc.render(false,966,if(state.motion)painter.phase else 0f)}
     fun sync(animate:Boolean=true){
         fun pointer(key:String,target:Float,duration:Long,get:()->Float,set:(Float)->Unit){
@@ -180,7 +195,7 @@ class AetherView(context:Context,val state:Session):View(context) {
             p.reset();p.isAntiAlias=true;p.color=0xffc5d1ce.toInt();p.textAlign=Paint.Align.CENTER;p.textSize=22f*sx
             canvas.drawText("漫频",width/2f,height/2f,p)
             p.textSize=12f*sx;p.color=0xff84958e.toInt()
-            canvas.drawText(if(preparationError==null)"Preparing controls…" else "Interface resources could not load",width/2f,height/2f+28*sx,p)
+            canvas.drawText(if(preparationError==null)if(state.language=="zh")"正在准备界面…"else"Preparing your player…" else if(state.language=="zh")"界面暂时无法加载，请重新打开应用"else"Unable to load the interface. Please reopen the app.",width/2f,height/2f+28*sx,p)
             return
         }
         val frameTime=SystemClock.uptimeMillis()
@@ -242,7 +257,7 @@ class AetherView(context:Context,val state:Session):View(context) {
         val left=floor(bounds.left*sx).toInt();val top=floor(bounds.top*sx).toInt()
         val right=ceil(bounds.right*sx).toInt();val bottom=ceil(bounds.bottom*sx).toInt()
         val pixelsW=right-left;val pixelsH=bottom-top
-        if(layer.source!==list||layer.width!=pixelsW||layer.height!=pixelsH){
+        if(!layer.node.hasDisplayList()||layer.source!==list||layer.width!=pixelsW||layer.height!=pixelsH){
             layer.node.setPosition(left,top,right,bottom);layer.node.setClipToBounds(true);layer.node.setUseCompositingLayer(true,null)
             val target=layer.node.beginRecording(pixelsW,pixelsH)
             target.translate(-left.toFloat(),-top.toFloat());target.scale(sx,sx);target.drawPicture(list);layer.node.endRecording()
@@ -252,7 +267,7 @@ class AetherView(context:Context,val state:Session):View(context) {
     }
     private fun drawScene(c:Canvas,lit:Boolean,immersive:Boolean){
         val list=sceneList(lit,immersive)
-        if(c.isHardwareAccelerated){val layer=sceneLayer(list,lit,immersive);c.save();c.scale(1/sx,1/sx);c.drawRenderNode(layer.node);c.restore()}else c.drawPicture(list)
+        if(c.isHardwareAccelerated&&!directRendering){val layer=sceneLayer(list,lit,immersive);c.save();c.scale(1/sx,1/sx);c.drawRenderNode(layer.node);c.restore()}else c.drawPicture(list)
         if(!state.reference){if(immersive){immersivePlayback.drawDisc(c,painter.mainDisc);immersivePlayback.drawSelector(c);painter.drawImmersiveSpectrum(c)}else{
             val now=SystemClock.uptimeMillis()
             val ink=inkFrames.getOrPut(lit){InkResponse()}
@@ -295,8 +310,8 @@ class AetherView(context:Context,val state:Session):View(context) {
         painter.ghostMode=0;painter.gaugeRefresh=values
         try{root.flattened().filter{it.cls=="gauge"}.forEach{painter.drawNode(c,it,false)}}finally{painter.gaugeRefresh=null}
     }
-    fun pause(){externalInputActive=false;active=false;pausedAt=SystemClock.uptimeMillis();cancelInput();lightAnimator?.end();pageAnimator?.end();pressAnimator?.end();pointerAnimators.values.forEach{it.end()}}
-    fun resume(){active=true;phaseTick=SystemClock.uptimeMillis();pausedAt=0;reducedMotion=Settings.Global.getFloat(context.contentResolver,Settings.Global.ANIMATOR_DURATION_SCALE,1f)==0f;if(reducedMotion){refreshing=false;state.motion=false};invalidate()}
+    fun pause(){renderHealth.stop();externalInputActive=false;active=false;pausedAt=SystemClock.uptimeMillis();cancelInput();lightAnimator?.end();pageAnimator?.end();pressAnimator?.end();pointerAnimators.values.forEach{it.end()}}
+    fun resume(){recoverRendering();renderHealth.start();active=true;phaseTick=SystemClock.uptimeMillis();pausedAt=0;reducedMotion=Settings.Global.getFloat(context.contentResolver,Settings.Global.ANIMATOR_DURATION_SCALE,1f)==0f;if(reducedMotion){refreshing=false;state.motion=false};invalidate()}
     fun close(){removeCallbacks(warmScenes);frozenScenes=null;released=true;assetsReady=false;pause();displayLists.evictAll();inkFrames.values.forEach{it.clear()};inkFrames.clear();nativeLayers.values.forEach{it.node.discardDisplayList()};nativeLayers.clear();disc.close();immersivePlayback.close();haptics.close();painter.close()}
     private fun nodes():List<SceneNode>{
         if(!assetsReady)return emptyList()
@@ -372,7 +387,7 @@ class AetherView(context:Context,val state:Session):View(context) {
         return atan2((y-r.centerY()).toDouble(),(x-r.centerX()).toDouble())
     }
     override fun onSizeChanged(w:Int,h:Int,oldw:Int,oldh:Int){
-        super.onSizeChanged(w,h,oldw,oldh)
+        super.onSizeChanged(w,h,oldw,oldh);recoverRendering()
         if(oldw>0&&oldh>0){ignoreGesture=true;pageAnimator?.cancel();pageAnimator=null;cancelInput()};if(assetsReady)scheduleWarm()
     }
     private fun trackDiscDrag(x:Float,y:Float){
@@ -389,6 +404,7 @@ class AetherView(context:Context,val state:Session):View(context) {
         }
     }
     override fun onTouchEvent(e:MotionEvent):Boolean {
+        lastInteractionAt=SystemClock.uptimeMillis()
         if(sx<=0)return false
         if(e.actionMasked==MotionEvent.ACTION_DOWN)ignoreGesture=!assetsReady||refreshing||pageAnimator?.isRunning==true
         if(ignoreGesture||!assetsReady||refreshing){
@@ -571,6 +587,7 @@ class AetherView(context:Context,val state:Session):View(context) {
     }
     override fun performClick():Boolean {super.performClick();return true}
     override fun onGenericMotionEvent(event:MotionEvent):Boolean {
+        lastInteractionAt=SystemClock.uptimeMillis()
         if(!assetsReady)return super.onGenericMotionEvent(event)
         if(event.action==MotionEvent.ACTION_SCROLL&&state.enabled){
             val hardware=event.source and InputDevice.SOURCE_ROTARY_ENCODER==InputDevice.SOURCE_ROTARY_ENCODER
@@ -585,6 +602,7 @@ class AetherView(context:Context,val state:Session):View(context) {
         return super.onGenericMotionEvent(event)
     }
     override fun onKeyDown(keyCode:Int,event:KeyEvent):Boolean {
+        lastInteractionAt=SystemClock.uptimeMillis()
         if(!assetsReady)return super.onKeyDown(keyCode,event)
         if(keyCode in listOf(KeyEvent.KEYCODE_ESCAPE,KeyEvent.KEYCODE_BACK)&&state.updateOpen){state.updateOpen=false;state.changed();return true}
         if(keyCode==KeyEvent.KEYCODE_ESCAPE||keyCode==KeyEvent.KEYCODE_BACK){if(state.menu!=null){state.menu=null;state.changed();return true};if(state.view=="settings"){if(state.settingsPage!="menu")state.settingsPage="menu" else state.showView(state.lastBrowseView);state.changed();return true};if(state.page==1){state.page=0;invalidate();return true}}

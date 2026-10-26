@@ -62,6 +62,9 @@ class NativeEvidence:Instrumentation() {
             result.putString("targetVersionName",targetContext.packageManager.getPackageInfo(targetContext.packageName,0).versionName)
             when(arguments.getString("operation","state")){
                 "state"->{}
+                "ink-typography"->{result.putString("aetherResult",InkTypographySuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
+                "widget-variants"->{result.putString("aetherResult",WidgetVariantsSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
+                "render-recovery"->{result.putString("aetherResult",RenderRecoverySuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
                 "ime"->{
                     tap("station-search")
                     main {

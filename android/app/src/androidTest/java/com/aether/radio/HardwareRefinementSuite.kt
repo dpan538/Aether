@@ -57,7 +57,7 @@ class HardwareRefinementSuite(private val test:Instrumentation,private val activ
         check(main{activity.surface.haptics.attempts>attempts&&activity.surface.haptics.last=="test"})
         record("A real native diagnostic page exposes motor availability and system switches and routes its test through the functional touch-vibration API")
         tapNative("settings:back");tapNative("settings:widget");capture("widget-help-zh")
-        if(android.os.Build.VERSION.SDK_INT>=35){val info=android.appwidget.AppWidgetManager.getInstance(test.targetContext).installedProviders.first{it.provider.className==MusicWidget::class.java.name};check(info.previewLayout!=0);check(info.targetCellHeight==3)}
+        if(android.os.Build.VERSION.SDK_INT>=35){val info=android.appwidget.AppWidgetManager.getInstance(test.targetContext).installedProviders.first{it.provider.className==MusicWidget::class.java.name};check(info.previewLayout!=0);check(info.targetCellHeight==2);check(android.appwidget.AppWidgetManager.getInstance(test.targetContext).installedProviders.count{it.provider.packageName==test.targetContext.packageName}==3)}
         record("The widget provider provides a scalable preview and a default cell size consistent with its minimum height; generated previews respect Android rate limits")
         main{s.showView("directory");s.changeVolume(15);s.selectLocal(LocalMusic.bundled(test.targetContext),0);s.changed()};waitFor{s.playing&&s.seekable}
         Thread.sleep(1700)

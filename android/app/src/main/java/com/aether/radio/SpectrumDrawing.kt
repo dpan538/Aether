@@ -8,6 +8,7 @@ import kotlin.math.ceil
 class SpectrumDrawing(private val face:Typeface){
     private val frequencies=listOf("31","62","125","250","500","1K","2K","4K","8K","16K")
     private val layers=object:LruCache<String,RenderNode>(6){override fun entryRemoved(evicted:Boolean,key:String,old:RenderNode,new:RenderNode?){if(old!==new)old.discardDisplayList()}}
+    var directRendering=false
     private val shape=Paint(Paint.ANTI_ALIAS_FLAG)
     private val captionPaint=text(20f,0)
     private val plotCaption=text(9f,0xff35454e.toInt())
@@ -17,10 +18,11 @@ class SpectrumDrawing(private val face:Typeface){
     private var traceSize=""
     private fun text(size:Float,color:Int,align:Paint.Align=Paint.Align.LEFT)=Paint(Paint.ANTI_ALIAS_FLAG).apply{typeface=face;textSize=size;this.color=color;textAlign=align;textScaleX=1f;letterSpacing=0f}
     private fun fixed(c:Canvas,key:String,w:Float,h:Float,scaleX:Float,scaleY:Float,draw:(Canvas)->Unit){
-        if(!c.isHardwareAccelerated){draw(c);return}
+        if(!c.isHardwareAccelerated||directRendering){draw(c);return}
         val pixelsW=ceil(w*scaleX).toInt().coerceAtLeast(1);val pixelsH=ceil(h*scaleY).toInt().coerceAtLeast(1)
         val id="$key:$pixelsW:$pixelsH"
-        val node=layers.get(id)?:RenderNode("PCM $key").also{
+        val cached=layers.get(id)
+        val node=cached?.takeIf{it.hasDisplayList()}?:RenderNode("PCM $key").also{
             it.setPosition(0,0,pixelsW,pixelsH);it.setUseCompositingLayer(true,null);it.setClipToBounds(true)
             val target=it.beginRecording(pixelsW,pixelsH);target.scale(pixelsW/w,pixelsH/h);draw(target);it.endRecording();layers.put(id,it)
         }
@@ -70,5 +72,6 @@ class SpectrumDrawing(private val face:Typeface){
         }
         c.restore()
     }
+    fun reset(direct:Boolean){directRendering=direct;layers.evictAll()}
     fun close(){layers.evictAll()}
 }

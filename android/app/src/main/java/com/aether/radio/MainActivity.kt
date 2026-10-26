@@ -231,6 +231,7 @@ class MainActivity:Activity() {
         finish()
     }
     override fun onNewIntent(intent:Intent){super.onNewIntent(intent);if(intent.getBooleanExtra("show-player",false)&&::session.isInitialized){session.page=1;session.changed()};if(BuildConfig.DEBUG&&(intent.hasExtra("scenario")||intent.hasExtra("mode"))){setIntent(intent);recreate()}}
+    override fun onTrimMemory(level:Int){super.onTrimMemory(level);if(::surface.isInitialized&&level>=android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)surface.recoverRendering()}
     override fun onWindowFocusChanged(hasFocus:Boolean){super.onWindowFocusChanged(hasFocus);if(hasFocus)window.insetsController?.hide(WindowInsets.Type.systemBars())}
     override fun onResume(){super.onResume();foreground=true;if(::session.isInitialized)session.uiVisible=true;if(::surface.isInitialized){surface.resume();session.changed();main.post(deviceTick);if(BuildConfig.DEBUG)main.postDelayed(debugTick,1000)};updater?.returnedToApp(this);if(::session.isInitialized&&!session.reference&&session.powered&&directoryInterrupted)searchDirectory(session.query,false)}
     override fun onStop(){foreground=false;if(::session.isInitialized)session.uiVisible=false;main.removeCallbacks(deviceTick);main.removeCallbacks(debugTick);if(::surface.isInitialized)surface.pause();live?.savePosition();cancelDirectory();super.onStop()}

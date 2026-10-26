@@ -317,6 +317,11 @@ class ScenePainter(val context:Context,val state:Session) {
         p.color=0xff454d52.toInt();c.drawCircle(cx,cy,radius*.72f,p)
     }
     private fun boundText(n:SceneNode,id:String,original:String,line:Int,station:Station?,slot:Int):String {
+        if(!state.reference){
+            if(original.contains("AETHER")&&(original.contains("025")||original.contains("R/03")||original.contains("SIGNAL UNIT")))return "漫频"
+            if(original=="FIELD CONTROL / 03")return "FIELD CONTROL"
+            if(original=="AETHER / 漫频")return "漫频"
+        }
         if(!state.reference&&original.contains("AETHER"))return if(original.startsWith("AETHER /"))if(state.language=="zh")"漫频 / ${if(state.view=="settings")"设置"else"电台目录"}"else original.replace("AETHER","漫频")else original.replace("AETHER","漫频")
         if(!state.reference&&state.isLocal&&drawingImmersive&&n.r.top>600&&original.startsWith("LOCAL TIME"))return if(state.language=="zh")"时长"else"DURATION"
         val retained=if(!state.powered)state.retainedInk else null
@@ -392,7 +397,7 @@ class ScenePainter(val context:Context,val state:Session) {
             "programme"->if(state.reference)s?.programme?.split('\n')?.getOrNull(line)?:"" else twoLines(metadata?:s?.name?:if(cn)"选择电台" else "Choose a station",n.json.getJSONArray("text").getJSONObject(0),n.r.width()).getOrNull(line)?:""
             "programme-description"->if(state.reference)s?.description?:"—" else listOf(s?.region?.let{UiWords.value("region",it,cn)},s?.language?.let{UiWords.value("language",it,cn)}).filterNot{it.isNullOrBlank()}.joinToString(" / ").ifBlank{"—"}
             "now-playing"->if(state.reference)s?.track?:"—" else s?.genre?.ifBlank{"—"}?:"—"
-            "disc-edition"->"PHASE ${(state.selected+1).toString().padStart(2,'0')} · FREQUENCY"
+            "disc-edition"->if(state.reference)"PHASE ${(state.selected+1).toString().padStart(2,'0')} · FREQUENCY"else"FM $serial"
             else->when {
                 n.cls.contains("preset-title")->s?.name?:original
                 n.cls.contains("playing-kicker")->if(state.reference)if(playing)"NOW PLAYING · MOCK" else "PAUSED · MOCK" else UiWords.connection(connection,cn)
@@ -610,6 +615,7 @@ class ScenePainter(val context:Context,val state:Session) {
         if(state.updateMessage){c.drawText(if(state.language=="zh")"更新服务暂不可用。" else "Update service is currently unavailable.",n.r.left+36,y,p);y+=26}
         if(state.about){p.typeface=font(false,700);c.drawText("漫频",n.r.left+36,y,p);p.typeface=font(false,400);c.drawText("不设边界，漫游频率。",n.r.left+36,y+23,p);c.drawText("No boundaries. Just frequencies.",n.r.left+36,y+44,p);p.textSize=11.9f;c.drawText(if(state.reference)"Design preview · 0.0.0" else "Android preview · ${BuildConfig.VERSION_NAME}",n.r.left+36,y+65,p)}
     }
+    fun resetRenderLayers(direct:Boolean){spectrumDrawing.reset(direct)}
     fun close(){closed=true;spectrumDrawing.close();preparation.shutdownNow();bitmaps.evictAll();pictures.evictAll();mainDisc?.recycle();smallDisc?.recycle()}
     companion object {
         val translations=mapOf("settings" to "设置","uiLanguage" to "界面语言","checkUpdates" to "检查更新","about" to "关于","region" to "地区","genre" to "类型","language" to "语言","directory" to "目录","favorites" to "收藏","random" to "随机","favoriteStations" to "收藏电台","automaticSearch" to "直达搜索","audioFormat" to "音频规格")

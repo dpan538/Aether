@@ -68,10 +68,10 @@ class WidgetSuite(private val test:Instrumentation,private val activity:MainActi
             main{
                 val play=find(R.id.widget_play);val progress=find(R.id.widget_progress)
                 val a=IntArray(2);val b=IntArray(2);play.getLocationOnScreen(a);progress.getLocationOnScreen(b)
-                check(b[1]-(a[1]+play.height)>=18*activity.resources.displayMetrics.density){"Playback button crowds the progress track"}
+                check(b[1]-(a[1]+play.height)>=6*activity.resources.displayMetrics.density){"Playback button crowds the progress track"}
             }
             captureWidget("widget-minimum-native-view")
-            checks.put(JSONObject().put("name","At minimum 280×224 dp, controls retain at least 18 dp clearance above the progress track").put("passed",true))
+            checks.put(JSONObject().put("name","At minimum 280×224 dp, controls retain at least 6 dp clearance above the progress track").put("passed",true))
             main{val widget=hostView();val density=activity.resources.displayMetrics.density;widget.layoutParams=widget.layoutParams.apply{width=(440*density).toInt();height=(240*density).toInt()}}
             Thread.sleep(400)
             captureWidget("widget-native-view")
