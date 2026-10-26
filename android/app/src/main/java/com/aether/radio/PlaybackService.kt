@@ -57,6 +57,7 @@ class PlaybackService:MediaSessionService() {
         live.session.observe{MusicWidget.updateAll(this,live)}
         current=this;MusicWidget.updateAll(this,live);main.post(tick)
     }
+    override fun onConfigurationChanged(newConfig:android.content.res.Configuration){super.onConfigurationChanged(newConfig);if(::live.isInitialized)MusicWidget.updateAll(this,live)}
     override fun onBind(intent:Intent?):IBinder?=if(intent?.action==LOCAL_BIND)binder else super.onBind(intent)
     override fun onGetSession(controllerInfo:MediaSession.ControllerInfo):MediaSession?=mediaSession
     override fun onTaskRemoved(rootIntent:Intent?){live.savePosition();super.onTaskRemoved(rootIntent)}

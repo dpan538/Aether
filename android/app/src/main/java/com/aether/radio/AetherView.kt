@@ -21,6 +21,7 @@ class AetherView(context:Context,val state:Session):View(context) {
     private var seekBaseMs=0L
     private var seekRadians=0.0
     private var discStartRotation=0f
+    private var discPageSwipe=false
     private var discLastAngle:Double?=null
     var frontlight=if(state.light)1f else 0f
     var refreshing=false;private set
@@ -419,11 +420,17 @@ class AetherView(context:Context,val state:Session):View(context) {
                 downX=x;downY=y;lastY=y;moved=false;consumedGesture=false;action=hitAction(x,y)
                 selectorTouch=state.page==1&&!state.reference&&ImmersivePlayback.SELECTOR.contains(x,y)&&action !in listOf("music-sources","playback-progress")
                 if(action=="disc-control"){
+                    discPageSwipe=hypot(x-ImmersivePlayback.DISC.centerX(),y-ImmersivePlayback.DISC.centerY())<ImmersivePlayback.DISC.width()*.35f
                     immersivePlayback.dragging=true;seekBaseMs=state.displayPositionMs;seekRadians=0.0;discStartRotation=immersivePlayback.rotation
                     discLastAngle=if(hypot(x-ImmersivePlayback.DISC.centerX(),y-ImmersivePlayback.DISC.centerY())>ImmersivePlayback.DISC.width()*.16f)atan2((y-ImmersivePlayback.DISC.centerY()).toDouble(),(x-ImmersivePlayback.DISC.centerX()).toDouble())else null
                 }
                 settingsStartScroll=state.settingsScroll
-                if(!state.canUse(action)){action="";ignoreGesture=true;return true}
+                if(!state.canUse(action)){
+                    // Lock audio controls without trapping navigation away from the unlock key.
+                    if(state.powered&&state.locked&&(action.isBlank()||action=="disc-control"&&discPageSwipe)){
+                        action="";immersivePlayback.dragging=false;immersivePlayback.previewMs=null
+                    }else{action="";ignoreGesture=true;return true}
+                }
                 if(state.menu!=null&&!action.startsWith("option:")&&!action.startsWith("menu:")){
                     state.menu=null;state.changed();ignoreGesture=true;return true
                 }
@@ -444,8 +451,20 @@ class AetherView(context:Context,val state:Session):View(context) {
             MotionEvent.ACTION_POINTER_DOWN->{ignoreGesture=true;cancelInput();return true}
             MotionEvent.ACTION_MOVE->{
                 if(hypot(x-downX,y-downY)>ViewConfiguration.get(context).scaledTouchSlop/sx)moved=true
-                if(!state.enabled)return true
+                if(!state.enabled){
+                    val canNavigate=state.powered&&(action.isBlank()||action=="disc-control"&&discPageSwipe)
+                    if(canNavigate&&abs(x-downX)>40&&abs(x-downX)>abs(y-downY)*1.5f){
+                        action="";immersivePlayback.dragging=false;immersivePlayback.previewMs=null
+                        freezeNavigation();offset=(x-downX).coerceIn(-1704f,1704f);invalidate()
+                    }
+                    return true
+                }
                 val now=SystemClock.uptimeMillis()
+                if(action=="disc-control"&&discPageSwipe&&!consumedGesture&&abs(x-downX)>40&&abs(x-downX)>abs(y-downY)*1.5f){
+                    // The inner face can be swiped like the page; the outer rim retains rotary seeking.
+                    immersivePlayback.previewMs=null;immersivePlayback.dragging=false;immersivePlayback.rotation=discStartRotation
+                    action="";consumedGesture=false;freezeNavigation();offset=(x-downX).coerceIn(-1704f,1704f);invalidate();return true
+                }
                 if(action=="disc-control"){
                     trackDiscDrag(x,y)
                     invalidate();return true
@@ -492,7 +511,7 @@ class AetherView(context:Context,val state:Session):View(context) {
                 if(selectorTouch&&state.enabled&&maxOf(abs(x-downX),abs(y-downY))>=64){val dx=x-downX;val dy=y-downY;if(maxOf(abs(dx),abs(dy))>=64){state.step(if(abs(dx)>abs(dy))if(dx<0)1 else -1 else if(dy<0)1 else -1);haptics.tick()};selectorTouch=false;cancelInput(false);return true}
                 if(state.enabled&&action=="tempo")tempo(x)
                 if(state.enabled&&action=="segmented-volume")strip(x)
-                if(action.isBlank()&&state.enabled){
+                if(action.isBlank()&&state.powered){
                     val dx=x-downX;val dy=y-downY
                     if(abs(dx)>=72&&abs(dx)>abs(dy)*1.3f)settle(true,if(dx>0)1 else -1)
                     else settle(false,if(dx>0)1 else -1)
@@ -545,6 +564,12 @@ class AetherView(context:Context,val state:Session):View(context) {
         val destination=if(change)1-state.page else state.page
         if(reducedMotion){state.page=destination;offset=0f;frozenScenes=null;invalidate();scheduleWarm();return}
         pageAnimator=ValueAnimator.ofFloat(offset,target).apply {duration=if(change)280 else 220;interpolator=android.view.animation.LinearInterpolator();addUpdateListener{offset=it.animatedValue as Float;invalidate()};addListener(object:android.animation.AnimatorListenerAdapter(){var cancelled=false;override fun onAnimationCancel(a:android.animation.Animator){cancelled=true};override fun onAnimationEnd(a:android.animation.Animator){if(!cancelled){state.page=destination;offset=0f;frozenScenes=null;invalidate();scheduleWarm();sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)};if(pageAnimator===a)pageAnimator=null}});start()}
+    }
+    fun showPage(page:Int){
+        pageAnimator?.cancel();pageAnimator=null;cancelInput();ignoreGesture=true;externalInputActive=false
+        state.page=if(page==1&&!state.powered)0 else page.coerceIn(0,1)
+        if(state.page==1){refreshGeneration++;refreshing=false;state.menu=null;state.updateOpen=false;if(state.view=="settings")state.view=state.lastBrowseView}
+        state.changed()
     }
     fun cancelInput(resetPage:Boolean=true){mainPlayback.previewMs=null;immersivePlayback.previewMs=null;immersivePlayback.dragging=false;selectorTouch=false;action="";press(null,false);lastAngle=null;listOf(rotaryGate,modeGate,volumeGate,verticalGate,wheelGate,volumeWheelGate).forEach{it.reset()};if(resetPage){offset=0f;frozenScenes=null};invalidate()}
     fun activate(a:String){

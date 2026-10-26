@@ -31,7 +31,7 @@ class MainActivity:Activity() {
             session=live!!.session;audio=live!!.audio;repository=live!!.repository
             bundledAlbum=live!!.bundledAlbum;importedTracks=live!!.importedTracks
             if(BuildConfig.DEBUG&&intent.hasExtra("scenario"))applyScenario(intent.getStringExtra("scenario")!!)
-            if(intent.getBooleanExtra("show-player",false))session.page=1
+            session.page=if(intent.getBooleanExtra("show-player",false)&&session.powered)1 else 0
             attachLiveUi();createInterface()
         }
         override fun onServiceDisconnected(name:android.content.ComponentName){audio=null;live=null}
@@ -84,7 +84,7 @@ class MainActivity:Activity() {
         surface.touchTrace=BuildConfig.DEBUG&&intent.getBooleanExtra("touch_trace",false)
         if(BuildConfig.DEBUG&&intent.hasExtra("preset_font"))surface.painter.presetFont=intent.getStringExtra("preset_font")?.takeUnless{it=="Arimo"}
         surface.onFirstFrame={filesDir.resolve("frame-ready.txt").writeText(intent.getStringExtra("scenario")?:"modern-ink");reportState()}
-        surface.onResourcesReady={if(!session.reference)MusicWidget.publishPreview(applicationContext);surface.beginRefresh();sampleControls();inkSettings?.place();inkSettings?.refresh();reportState()}
+        surface.onResourcesReady={if(!session.reference)MusicWidget.publishPreview(applicationContext);if(session.page==0)surface.beginRefresh();sampleControls();inkSettings?.place();inkSettings?.refresh();reportState()}
         val redraw=session.onChange
         uiChange={if(foreground){redraw();inkSettings?.refresh();inkSettings?.place()};savePreferences();if(foreground&&!session.reference&&session.powered&&directoryQuery!=session.query)searchDirectory(session.query,true);if(!session.enabled){searchField?.clearFocus();searchField?.windowToken?.let{(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(it,0)}};reportState()}
         session.onChange=uiChange!!
@@ -230,7 +230,16 @@ class MainActivity:Activity() {
         }
         finish()
     }
-    override fun onNewIntent(intent:Intent){super.onNewIntent(intent);if(intent.getBooleanExtra("show-player",false)&&::session.isInitialized){session.page=1;session.changed()};if(BuildConfig.DEBUG&&(intent.hasExtra("scenario")||intent.hasExtra("mode"))){setIntent(intent);recreate()}}
+    override fun onNewIntent(intent:Intent){
+        super.onNewIntent(intent);setIntent(intent)
+        if(::surface.isInitialized){
+            if(intent.getBooleanExtra("show-player",false)){
+                musicDialog?.dismiss();musicSourceDialog?.dismiss();searchField?.clearFocus()
+                window.insetsController?.hide(WindowInsets.Type.ime());surface.showPage(1)
+            }else if(intent.action==Intent.ACTION_MAIN)surface.showPage(0)
+        }
+        if(BuildConfig.DEBUG&&(intent.hasExtra("scenario")||intent.hasExtra("mode")))recreate()
+    }
     override fun onTrimMemory(level:Int){super.onTrimMemory(level);if(::surface.isInitialized&&level>=android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)surface.recoverRendering()}
     override fun onWindowFocusChanged(hasFocus:Boolean){super.onWindowFocusChanged(hasFocus);if(hasFocus)window.insetsController?.hide(WindowInsets.Type.systemBars())}
     override fun onResume(){super.onResume();foreground=true;if(::session.isInitialized)session.uiVisible=true;if(::surface.isInitialized){surface.resume();session.changed();main.post(deviceTick);if(BuildConfig.DEBUG)main.postDelayed(debugTick,1000)};updater?.returnedToApp(this);if(::session.isInitialized&&!session.reference&&session.powered&&directoryInterrupted)searchDirectory(session.query,false)}

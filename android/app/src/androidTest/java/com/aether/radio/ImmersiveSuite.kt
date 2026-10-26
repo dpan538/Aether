@@ -98,8 +98,8 @@ class ImmersiveSuite(private val test:Instrumentation,private var activity:MainA
         tap(568f,768f);waitFor{s.playing};record("Second CD tap resumes playback")
         main{s.seekLocal(30000)};Thread.sleep(250)
         fun arc(from:Double,to:Double){gesture((0..16).map{i->val a=(from+(to-from)*i/16)*PI/180;(568+330*cos(a)).toFloat() to (568+330*sin(a)).toFloat()})}
-        val before=main{audio().player.currentPosition};arc(0.0,120.0);check(main{audio().player.currentPosition}>before+17000);record("Clockwise CD turn seeks forward against the real decoder position")
-        val forward=main{audio().player.currentPosition};arc(120.0,60.0);check(main{audio().player.currentPosition}<forward-7000);record("Counterclockwise CD turn seeks backward")
+        val before=main{audio().player.currentPosition};arc(0.0,120.0);waitFor{s.page==1&&audio().player.currentPosition>before+17000};record("Clockwise CD turn seeks forward against the real decoder position without becoming page navigation")
+        val forward=main{audio().player.currentPosition};arc(120.0,60.0);waitFor{s.page==1&&audio().player.currentPosition<forward-7000};record("Counterclockwise CD turn seeks backward without becoming page navigation")
         val id=main{s.activeId}
         gesture(listOf(1400f to 15f,1401f to 40f,1401f to 70f));check(main{s.activeId}==id)
         gesture(listOf(1000f to 600f,1000f to 640f,1000f to 680f));check(main{s.activeId}==id)

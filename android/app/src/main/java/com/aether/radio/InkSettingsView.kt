@@ -187,11 +187,11 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
             "widget"->{
                 val body=scrollBody()
                 body.paragraph(words("将正在播放放到桌面。","Keep your music on the home screen."),17f,top=8)
-                body.paragraph(words("显示封面、曲目、播放进度与控制键；与后台播放器使用同一会话。可选择紧凑、横条或唱片卡片，尺寸随桌面调整。","Artwork, track, progress and controls share the background playback session. Choose Compact, Strip or Album card, then resize on your home screen."))
+                body.paragraph(words("显示封面、曲目、播放进度与控制键；与后台播放器使用同一会话。提供 1×3 横条、2×3 唱片和 2×2 封面三种组件，填满桌面分配的空间。","Artwork, track, progress and controls share the background playback session. Choose Compact, Strip or Album card, then resize on your home screen."))
                 body.paragraph(words("小米桌面：添加小部件 → 支持小部件应用 → 全部 → 安卓小部件 → 漫频。系统版本不同，入口名称可能略有差异。","Xiaomi Home: Add widgets → Apps with widgets → All → Android widgets → 漫频. Names may vary by system version."),14f,true)
                 diagnostic=text("",14f,secondary);body.addView(diagnostic,LayoutParams(-1,-2).apply{topMargin=dp(12)})
                 val styles=LinearLayout(context)
-                listOf("compact" to words("紧凑","Compact"),"strip" to words("横条","Strip"),"card" to words("唱片卡片","Album card")).forEachIndexed{i,(style,label)->
+                listOf("compact" to words("2×2 封面","2×2 Cover"),"strip" to words("1×3 横条","1×3 Strip"),"card" to words("2×3 唱片","2×3 Album")).forEachIndexed{i,(style,label)->
                     styles.addView(button(label,if(style=="card")"settings:pin-widget"else"settings:pin-$style"){
                         val supported=MusicWidget.requestPin(context,style)
                         diagnostic?.text=if(supported)words("请在系统窗口中确认添加。","Confirm adding in the system window.")else words("请通过桌面的安卓小部件列表选择样式。","Choose a style from your launcher's Android widget list.")

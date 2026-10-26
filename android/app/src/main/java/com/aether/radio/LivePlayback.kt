@@ -79,6 +79,6 @@ class LivePlayback(val context:Context) {
         importedTracks=(importedTracks.filter{old->tracks.none{it.id==old.id}}+tracks).distinctBy{it.id}.takeLast(100)
         persistImported()
     }
-    fun savePosition(){audio.samplePosition();preferences.edit().putLong("local-position",session.localPositionMs).apply()}
+    fun savePosition(){audio.samplePosition();savePreferences();preferences.edit().putLong("local-position",session.localPositionMs).apply()}
     fun close(){savePosition();session.onChange={};session.onSpectrum={};audio.close();repository.close()}
 }

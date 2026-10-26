@@ -62,6 +62,10 @@ class NativeEvidence:Instrumentation() {
             result.putString("targetVersionName",targetContext.packageManager.getPackageInfo(targetContext.packageName,0).versionName)
             when(arguments.getString("operation","state")){
                 "state"->{}
+                "widget-entry","widget-entry-baseline"->{result.putString("aetherResult",WidgetEntrySuite(this,activity).run(arguments.getString("operation")=="widget-entry-baseline").toString());finish(Activity.RESULT_OK,result);return}
+                "seed-local","seed-radio","restore-local","restore-radio"->{result.putString("aetherResult",WidgetEntrySuite(this,activity).persistence(arguments.getString("operation")!!).toString());finish(Activity.RESULT_OK,result);return}
+                "widget-host","widget-host-baseline"->{result.putString("aetherResult",ExternalWidgetSuite(this,activity).run(arguments.getString("operation")=="widget-host-baseline").toString());finish(Activity.RESULT_OK,result);return}
+                "widget-paused-host"->{result.putString("aetherResult",ExternalWidgetSuite(this,activity).run(pausedOnly=true).toString());finish(Activity.RESULT_OK,result);return}
                 "ink-typography"->{result.putString("aetherResult",InkTypographySuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
                 "widget-variants"->{result.putString("aetherResult",WidgetVariantsSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
                 "render-recovery"->{result.putString("aetherResult",RenderRecoverySuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}

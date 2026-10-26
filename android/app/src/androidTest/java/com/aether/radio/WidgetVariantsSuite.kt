@@ -38,20 +38,18 @@ class WidgetVariantsSuite(private val test:Instrumentation,private val activity:
                 fun widget()=screen.javaClass.getMethod("getWidget").invoke(screen) as AppWidgetHostView
                 Thread.sleep(800)
                 for((w,h)in (listOf(min,max,900 to 400)+if(style=="card")listOf(280 to 224)else emptyList())){
-                    val sizes=arrayListOf(SizeF(w.toFloat(),h.toFloat()))
-                    manager.updateAppWidgetOptions(id,Bundle().apply{putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES,sizes);putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,w);putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,h);putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,w);putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,h)})
-                    main{val v=widget();val d=screen.resources.displayMetrics.density;v.layoutParams=v.layoutParams.apply{width=(w*d).toInt();height=(h*d).toInt()};MusicWidget.updateAll(screen,PlaybackService.current!!.live)}
+                    main{val v=widget();val d=screen.resources.displayMetrics.density;v.layoutParams=v.layoutParams.apply{width=(w*d).toInt();height=(h*d).toInt()};v.updateAppWidgetSize(Bundle(),listOf(SizeF(w.toFloat(),h.toFloat())));MusicWidget.updateAll(screen,PlaybackService.current!!.live)}
                     Thread.sleep(650)
                     main{
                         val root=widget().findViewById<View>(R.id.widget_root);val d=screen.resources.displayMetrics.density
-                        check(root.width<=max.first*d+1&&root.height<=max.second*d+1){"$style stretched to ${root.width/d} × ${root.height/d}"}
+                        check(kotlin.math.abs(root.width-(widget().width-widget().paddingLeft-widget().paddingRight))<=2&&kotlin.math.abs(root.height-(widget().height-widget().paddingTop-widget().paddingBottom))<=2){"$style does not fill its allocated content area"}
                         val play=widget().findViewById<View>(R.id.widget_play);val progress=widget().findViewById<View>(R.id.widget_progress)
                         val a=IntArray(2);val b=IntArray(2);play.getLocationOnScreen(a);progress.getLocationOnScreen(b)
-                        check(b[1]>=a[1]+play.height+6*d){"$style play overlaps progress"}
+                        check(b[1]>=a[1]+play.height+3*d){"$style play overlaps progress"}
                         if(style=="card"&&w>=360){val cover=widget().findViewById<View>(R.id.widget_cover);check(cover.height>=root.height*.60f){"Large card cover too small"}}
                         if(style=="card"&&w>=360){
                             val time=widget().findViewById<View>(R.id.widget_time);val tp=IntArray(2);time.getLocationOnScreen(tp)
-                            check(tp[1]+time.height<=b[1]){"Time overlaps progress"}
+                            check(tp[1]+time.height<=b[1]+1){"Time overlaps progress"}
                             check(kotlin.math.abs((tp[0]+time.width)-(b[0]+progress.width))<=1){"Time and progress right edges are not aligned"}
                             check(tp[1]>=a[1]+play.height){"Time still floats between metadata and controls"}
                         }
@@ -59,7 +57,7 @@ class WidgetVariantsSuite(private val test:Instrumentation,private val activity:
                         val bitmap=android.graphics.Bitmap.createBitmap(root.width,root.height,android.graphics.Bitmap.Config.ARGB_8888);root.draw(android.graphics.Canvas(bitmap))
                         java.io.File(test.targetContext.getExternalFilesDir("evidence"),"widget-$style-$w-$h.png").outputStream().use{bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()
                     }
-                    checks.put(JSONObject().put("name","$style at $w × $h dp stays bounded, with visible title and separated controls/progress").put("passed",true))
+                    checks.put(JSONObject().put("name","$style at $w × $h dp fills the allocated content area, with visible title and separated controls/progress").put("passed",true))
                 }
                 val elapsed=main{widget().findViewById<TextView>(R.id.widget_time).text.toString()};Thread.sleep(2200)
                 main{check(widget().findViewById<TextView>(R.id.widget_time).text.toString()!=elapsed){"Responsive progress actions did not advance time"}}

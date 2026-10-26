@@ -1,0 +1,19 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_host" android:layout_width="match_parent" android:layout_height="match_parent">
+    <FrameLayout android:id="@+id/widget_root" android:clipToPadding="false" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_background" android:clipToOutline="true">
+        <ImageView android:id="@+id/widget_cover" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="centerCrop" android:src="@drawable/icon_canvas_99" android:contentDescription="@string/widget_cover_description"/>
+        <FrameLayout android:id="@+id/widget_art_open" android:layout_width="match_parent" android:layout_height="100dp" android:layout_gravity="top" android:contentDescription="@string/widget_cover_description"/>
+        <LinearLayout android:id="@+id/widget_metadata" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="bottom" android:orientation="vertical" android:padding="12dp" android:background="@drawable/widget_art_scrim">
+            <TextView android:id="@+id/widget_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/app_name" android:textColor="#f3f3ee" android:textSize="14sp" android:maxLines="1" android:ellipsize="end" android:includeFontPadding="true"/>
+            <TextView android:id="@+id/widget_album" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="@string/widget_empty" android:textColor="#bbc0ba" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" android:includeFontPadding="true"/>
+            <LinearLayout android:id="@+id/widget_controls" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="8dp" android:orientation="horizontal" android:gravity="center">
+                <ImageButton android:scaleType="fitCenter" android:id="@+id/widget_previous" android:layout_width="48dp" android:layout_height="48dp" android:padding="14dp" android:background="@android:color/transparent" android:src="@drawable/widget_previous" android:contentDescription="@string/widget_previous"/>
+                <ImageButton android:scaleType="fitCenter" android:id="@+id/widget_play" android:layout_width="48dp" android:layout_height="48dp" android:padding="14dp" android:background="@drawable/widget_play_background" android:src="@drawable/widget_play" android:contentDescription="@string/widget_play_pause"/>
+                <ImageButton android:scaleType="fitCenter" android:id="@+id/widget_next" android:layout_width="48dp" android:layout_height="48dp" android:padding="14dp" android:background="@android:color/transparent" android:src="@drawable/widget_next" android:contentDescription="@string/widget_next"/>
+            </LinearLayout>
+            <FrameLayout android:id="@+id/widget_footer" android:layout_width="match_parent" android:layout_height="19dp">
+                <TextView android:id="@+id/widget_time" android:layout_width="match_parent" android:layout_height="16dp" android:gravity="end|center_vertical" android:text="@string/widget_time_zero" android:textColor="#bbc0ba" android:textSize="11sp" android:includeFontPadding="false" android:maxLines="1"/>
+                <ProgressBar android:padding="0dp" android:progressDrawable="@drawable/widget_progress" android:id="@+id/widget_progress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="3dp" android:layout_gravity="bottom" android:progressTint="#edede7" android:progressBackgroundTint="#40433f" android:max="1000"/>
+            </FrameLayout>
+        </LinearLayout>
+    </FrameLayout>
+</FrameLayout>
