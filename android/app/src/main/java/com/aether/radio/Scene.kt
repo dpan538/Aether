@@ -207,6 +207,17 @@ class ScenePainter(val context:Context,val state:Session) {
                 }else if(!state.reference&&id=="stream-quality")text=fit(text,t,330f)
                 else if(!state.reference&&id=="selected-readout")text=fit(text,t,510f)
                 else if(!state.reference&&id in listOf("stream-format","stream-profile","stream-output","clock-location","now-playing","programme-description","selected-readout","scope-filters"))text=fit(text,t,node.r.width())
+                if(!state.reference&&!drawingImmersive&&state.language=="zh"&&original.startsWith("LOCAL TIME")){
+                    // Keep the original face, size and weight. Only this four-character
+                    // caption gets explicit tracking; fallback CJK shaping can omit it.
+                    target=JSONObject(t.toString()).put("spacing",0).put("clockCaptionGap",.9)
+                    val paint=textPaint(target)
+                    // Retain the fallback glyphs while reserving full CJK cells rather
+                    // than the Latin monospace advance, which can overlap their ink.
+                    target.put("clockCaptionAdvance",paint.textSize)
+                    val width=paint.textSize*text.length+.9f*(text.length-1)
+                    target.put("x",node.r.right-width)
+                }
                 val changed=text!=original
                 if(node.id=="preset-number")t.put("preset",true)
                 drawText(canvas,target,text,if(changed)0f else t.f("w"))
@@ -252,7 +263,12 @@ class ScenePainter(val context:Context,val state:Session) {
         val actual=paint.measureText(text)
         if(state.reference&&width>0&&actual>0)paint.textScaleX=width/actual
         val ink=paint.color
-        fun run(){c.drawText(text,t.f("x"),t.f("y"),paint)}
+        fun run(){
+            if(t.has("clockCaptionGap")){
+                var x=t.f("x")
+                for(character in text){val glyph=character.toString();c.drawText(glyph,x,t.f("y"),paint);x+=t.f("clockCaptionAdvance")+t.f("clockCaptionGap")}
+            }else c.drawText(text,t.f("x"),t.f("y"),paint)
+        }
         if(ghostMode>0){
             paint.color=if(ghostMode==1)0x38142014 else 0x20142014
             c.save();c.translate(if(ghostMode==1)1.3632f else .4544f,0f);run();c.restore()

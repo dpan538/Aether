@@ -17,16 +17,21 @@ class ExternalWidgetSuite(private val test:Instrumentation,private val activity:
     private fun waitFor(block:()->Boolean){val end=SystemClock.uptimeMillis()+18000;while(SystemClock.uptimeMillis()<end){if(block())return;Thread.sleep(150)};error("External widget timed out; host="+host())}
     private fun tap(name:String,fx:Float=.5f,fy:Float=.5f){val b=host()!!.getJSONObject(name);val x=b.getInt("x")+b.getInt("w")*fx;val y=b.getInt("y")+b.getInt("h")*fy;val t=SystemClock.uptimeMillis();for(a in listOf(MotionEvent.ACTION_DOWN,MotionEvent.ACTION_UP)){val event=MotionEvent.obtain(t,SystemClock.uptimeMillis(),a,x,y,0).apply{source=InputDevice.SOURCE_TOUCHSCREEN};check(test.uiAutomation.injectInputEvent(event,true));event.recycle();Thread.sleep(75)};Thread.sleep(450)}
     private fun capture(name:String){
-        val b=test.uiAutomation.takeScreenshot()!!
+        val capture="frame-${SystemClock.uptimeMillis()}"
+        shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es command capture --es name $capture")
+        var frame:JSONObject?=null
+        waitFor{frame=runCatching{JSONObject(shell("run-as io.github.dpan538.widgethost cat files/capture-state.json"))}.getOrNull();frame?.optString("capture")=="$capture.png"&&frame?.optBoolean("frameCommitted")==true}
+        val b=android.os.ParcelFileDescriptor.AutoCloseInputStream(test.uiAutomation.executeShellCommand("run-as io.github.dpan538.widgethost cat files/$capture.png")).use{android.graphics.BitmapFactory.decodeStream(it)}!!
+        java.io.File(test.targetContext.getExternalFilesDir("evidence"),"external-widget-$name.png").outputStream().use{b.compress(Bitmap.CompressFormat.PNG,100,it)}
         if(name.endsWith("baseline-false")){
-            val bar=host()!!.getJSONObject("widget_progress")
-            val y=bar.getInt("y")+bar.getInt("h")/2
+            val bar=frame!!.getJSONObject("widget_progress");val root=frame!!.getJSONObject("widget_root")
+            val y=bar.getInt("y")-root.getInt("y")+bar.getInt("h")/2
             check(listOf(.25,.5,.75).any{f->
-                val c=b.getPixel(bar.getInt("x")+(bar.getInt("w")*f).toInt(),y)
+                val c=b.getPixel(bar.getInt("x")-root.getInt("x")+(bar.getInt("w")*f).toInt(),y)
                 android.graphics.Color.red(c)+android.graphics.Color.green(c)+android.graphics.Color.blue(c)>110
             }){"Progress track is not actually visible in the native screenshot: $bar"}
         }
-        java.io.File(test.targetContext.getExternalFilesDir("evidence"),"external-widget-$name.png").outputStream().use{b.compress(Bitmap.CompressFormat.PNG,100,it)};b.recycle()
+        b.recycle()
     }
     fun run(baseline:Boolean=false,pausedOnly:Boolean=false):JSONObject{
         val checks=JSONArray();val s=activity.session;var hostUid=-1
@@ -72,7 +77,7 @@ class ExternalWidgetSuite(private val test:Instrumentation,private val activity:
             }
             val padding=h.getJSONArray("padding");val filled=kotlin.math.abs(content.getInt("w")-(bounds.getInt("w")-padding.getInt(0)-padding.getInt(2)))<=2&&kotlin.math.abs(content.getInt("h")-(bounds.getInt("h")-padding.getInt(1)-padding.getInt(3)))<=2
             record(JSONObject().put("name","$style $width × $height fills the external allocation (exact sizes: $exact)").put("passed",filled).put("host",bounds).put("content",content));if(!baseline)check(filled){"Not filled: $h"}
-            if(!baseline&&width==900){
+            if(!baseline&&width==900&&style=="card"){
                 val symbols=JSONObject()
                 val title=h.getJSONObject("widget_title");val play=h.getJSONObject("widget_play")
                 check(h.getJSONObject("widget_time").getInt("gravity") and android.view.Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK==android.view.Gravity.END){"Time must stay right-aligned above the progress track"}

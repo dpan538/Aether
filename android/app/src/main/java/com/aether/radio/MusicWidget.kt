@@ -34,15 +34,12 @@ open class MusicWidget:AppWidgetProvider() {
             if(android.os.Build.VERSION.SDK_INT<35)return
             val preferences=context.getSharedPreferences("aether-widget-preview",Context.MODE_PRIVATE)
             val manager=AppWidgetManager.getInstance(context)
-            val now=System.currentTimeMillis()
-            val sample=LocalMusic.bundled(context).firstOrNull()
             for(style in listOf("compact","strip","card")){
-                val info=manager.getInstalledProvidersForPackage(context.packageName,null).firstOrNull{it.provider==component(context,style)}
-                if(preferences.getInt("version:$style",-1)==BuildConfig.VERSION_CODE&&info!=null&&info.generatedPreviewCategories and AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN!=0)continue
-                if(now-preferences.getLong("attempt:$style",0) in 0..1_800_000)continue
-                preferences.edit().putLong("attempt:$style",now).apply()
-                val preview=views(context,if(style=="compact")"square"else style,sample?.title?:"漫频",sample?.album?:"选择音乐，开始聆听",sample?.coverUri.orEmpty(),false,0,sample?.durationMs?:0,sample!=null,true,true)
-                if(runCatching{manager.setWidgetPreview(component(context,style),AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,preview)}.getOrDefault(false))preferences.edit().putInt("version:$style",BuildConfig.VERSION_CODE).apply()
+                if(preferences.getInt("static-preview:$style",-1)==BuildConfig.VERSION_CODE)continue
+                // Previously cached generated trees used full-size fixed children in a
+                // grid-sized preview. Use bounded previewLayout/previewImage resources.
+                if(runCatching{manager.removeWidgetPreview(component(context,style),AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN)}.isSuccess)
+                    preferences.edit().putInt("static-preview:$style",BuildConfig.VERSION_CODE).apply()
             }
         }
         private fun component(context:Context,style:String)=ComponentName(context,when(style){"compact"->CompactMusicWidget::class.java;"strip"->StripMusicWidget::class.java;else->MusicWidget::class.java})
@@ -54,25 +51,28 @@ open class MusicWidget:AppWidgetProvider() {
             val options=manager.getAppWidgetOptions(id)
             @Suppress("DEPRECATION") val exact=options.getParcelableArrayList<android.util.SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES).orEmpty().filter{it.width>0&&it.height>0}.distinct().take(8)
             fun sized(width:Float,height:Float):RemoteViews{
-                val w=width.coerceAtLeast(180f);val h=height.coerceAtLeast(96f)
-                val presentation=when{w/h<1.45f&&h>=170->"square";w>=320&&w/h>=2.7f->"strip";w>=320&&h>=180->"card";else->"compact"}
+                val w=width.coerceAtLeast(1f);val h=height.coerceAtLeast(1f)
+                // Resizing must not turn the selected cover widget into the card or strip.
+                val presentation=if(style=="compact")"square"else style
                 return views(context,presentation,title,album,art,playing,position,duration,local,canPlay,canStep).also{geometry(context,it,presentation,w,h)}
             }
             if(exact.size==1){val size=exact.first();return sized(size.width,size.height)}
             if(exact.size>1)return RemoteViews(exact.associateWith{sized(it.width,it.height)})
             val fallback=when(style){"compact"->248f to 248f;"strip"->480f to 104f;else->440f to 224f}
-            val minW=options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,fallback.first.toInt()).toFloat()
-            val maxW=options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,minW.toInt()).toFloat()
-            val minH=options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,fallback.second.toInt()).toFloat()
-            val maxH=options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,minH.toInt()).toFloat()
+            fun dimension(key:String,fallback:Float)=options.getInt(key).takeIf{it>0}?.toFloat()?:fallback
+            val minW=dimension(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,fallback.first)
+            val maxW=dimension(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,minW).coerceAtLeast(minW)
+            val minH=dimension(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,fallback.second)
+            val maxH=dimension(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,minH).coerceAtLeast(minH)
             // Legacy launchers may omit OPTION_APPWIDGET_SIZES. Their orientation-specific
             // ranges still describe the real allocation; no fixed card-size ceiling is applied.
-            val landscape=context.resources.configuration.orientation==android.content.res.Configuration.ORIENTATION_LANDSCAPE
-            val width=if(landscape)maxW else minW;val height=if(landscape)minH else maxH
-            return sized(width,height)
+            if(minW==maxW&&minH==maxH)return sized(minW,minH)
+            // Let the host select its orientation, rather than using the player's
+            // configuration (which can differ in split screen or after a rotation).
+            return RemoteViews(sized(maxW,minH),sized(minW,maxH))
         }
         private fun geometry(context:Context,view:RemoteViews,style:String,w:Float,h:Float){
-            val scale=minOf(w/(if(style=="square")248f else if(style=="card")440f else if(style=="strip")480f else 248f),h/(if(style=="square")248f else if(style=="card")224f else if(style=="strip")104f else 144f)).coerceIn(.75f,3f)
+            val scale=minOf(w/(if(style=="square")248f else if(style=="card")440f else if(style=="strip")480f else 248f),h/(if(style=="square")248f else if(style=="card")224f else if(style=="strip")104f else 144f)).coerceIn(.05f,3f)
             val unit=android.util.TypedValue.COMPLEX_UNIT_DIP
             fun size(id:Int,width:Float?=null,height:Float?=null){if(width!=null)view.setViewLayoutWidth(id,width,unit);if(height!=null)view.setViewLayoutHeight(id,height,unit)}
             fun text(id:Int,sp:Float){view.setTextViewTextSize(id,android.util.TypedValue.COMPLEX_UNIT_SP,sp*scale)}
@@ -81,6 +81,8 @@ open class MusicWidget:AppWidgetProvider() {
             if(style=="square"){
                 view.setViewPadding(R.id.widget_metadata,px,px,px,px)
                 text(R.id.widget_title,14f);text(R.id.widget_album,11f);text(R.id.widget_time,11f)
+                view.setViewLayoutMargin(R.id.widget_album,RemoteViews.MARGIN_TOP,4f*scale,unit)
+                view.setViewLayoutMargin(R.id.widget_controls,RemoteViews.MARGIN_TOP,8f*scale,unit)
                 size(R.id.widget_controls,height=48f*scale);size(R.id.widget_footer,height=19f*scale);size(R.id.widget_time,height=16f*scale);size(R.id.widget_progress,height=3f*scale)
                 size(R.id.widget_art_open,height=(h-133f*scale).coerceAtLeast(h*.30f))
                 for(id in listOf(R.id.widget_previous,R.id.widget_play,R.id.widget_next)){size(id,48f*scale,48f*scale);val inset=(14*scale*context.resources.displayMetrics.density).toInt();view.setViewPadding(id,inset,inset,inset,inset)}
@@ -92,8 +94,8 @@ open class MusicWidget:AppWidgetProvider() {
             text(R.id.widget_title,if(style=="card")19f else if(style=="strip")16f else 14f);text(R.id.widget_album,if(style=="card")12f else 11f);text(R.id.widget_time,11f)
             size(R.id.widget_progress,height=3f*scale)
             view.setViewLayoutMargin(R.id.widget_album,RemoteViews.MARGIN_TOP,(if(style=="card")7f else if(style=="strip")5f else 4f)*scale,unit)
-            if(style!="card")view.setViewLayoutMargin(R.id.widget_progress,RemoteViews.MARGIN_TOP,(if(style=="compact")10f else 8f)*scale,unit)
-            val cardArt=if(style=="card")minOf((w-pad*2-16f*scale)*.52f,h-pad*2-19f*scale).coerceAtLeast(80f)else 0f
+            if(style=="compact")view.setViewLayoutMargin(R.id.widget_progress,RemoteViews.MARGIN_TOP,10f*scale,unit)
+            val cardArt=if(style=="card")minOf((w-pad*2-16f*scale)*.52f,h-pad*2-19f*scale).coerceAtLeast(1f)else 0f
             // Keep large transport symbols and hit regions centred in the metadata column.
             val button=if(style=="card")minOf(60f*scale,(w-pad*2-16f*scale-cardArt)/3f)else 48f*scale
             for(id in listOf(R.id.widget_previous,R.id.widget_play,R.id.widget_next)){
@@ -118,8 +120,9 @@ open class MusicWidget:AppWidgetProvider() {
                 size(R.id.widget_cover,art,art);size(R.id.widget_time,width=art)
                 view.setViewLayoutMargin(R.id.widget_time,RemoteViews.MARGIN_END,12f*scale,unit)
             }else {
-                val available=h-pad*2-31f*scale
-                val art=maxOf(52f*scale,available*.85f).coerceAtMost(available.coerceAtLeast(40f))
+                size(R.id.widget_footer,height=19f*scale);size(R.id.widget_time,height=16f*scale)
+                val available=(h-pad*2-19f*scale).coerceAtLeast(1f)
+                val art=minOf(52f*scale,available)
                 size(R.id.widget_cover,art,art)
             }
         }

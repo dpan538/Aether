@@ -46,9 +46,12 @@ class RenderRecoverySuite(private val test:Instrumentation,private val activity:
         for(page in listOf(1,0)){
             main{s.page=page;s.changed()};Thread.sleep(1800)
             val count=main{surface.renderRecoveries}
-            main{nodes().forEach{it.beginRecording(it.width,it.height);it.endRecording()};surface.invalidate()}
+            // Freeze the watchdog only while proving the injected fault. Screenshot
+            // latency must not race a successful automatic recovery on a busy emulator.
+            main{surface.renderHealth.stop();nodes().forEach{it.beginRecording(it.width,it.height);it.endRecording()};surface.invalidate()}
             Thread.sleep(350)
             capture("blank-valid-node-page-$page").also{check(!paperVisible(it)){"Injection did not remove the static material"};it.recycle()}
+            main{surface.renderHealth.start()}
             waitFor{surface.renderRecoveries>count};Thread.sleep(800)
             capture("recovered-page-$page").also{check(paperVisible(it)){"Recovery did not restore visible pixels"};it.recycle()}
             record("Page $page: a valid but empty static GPU layer is detected from two stable window samples and restored automatically")

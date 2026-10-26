@@ -23,6 +23,31 @@ class AlbumPresentationSuite(private val test:Instrumentation,private val activi
     private fun waitFor(block:()->Boolean){val end=SystemClock.uptimeMillis()+30000;while(SystemClock.uptimeMillis()<end){if(main(block))return;Thread.sleep(100)};error("Album presentation condition timed out")}
     private fun tap(view:View){val p=main{val at=IntArray(2);view.getLocationOnScreen(at);at[0]+view.width*.5f to at[1]+view.height*.5f};val t=SystemClock.uptimeMillis();test.sendPointerSync(MotionEvent.obtain(t,t,MotionEvent.ACTION_DOWN,p.first,p.second,0));test.sendPointerSync(MotionEvent.obtain(t,t+80,MotionEvent.ACTION_UP,p.first,p.second,0));Thread.sleep(220)}
     private fun shot(name:String){test.uiAutomation.takeScreenshot()?.let{b->java.io.File(test.targetContext.getExternalFilesDir("evidence"),"presentation-$name-${activity.resources.configuration.fontScale}.png").outputStream().use{b.compress(Bitmap.CompressFormat.PNG,100,it)};b.recycle()}}
+    fun renderMock():JSONObject{
+        main{
+            s.language="zh";s.powered=true;s.locked=false
+            val owner=MainActivity::class.java.getDeclaredField("live").apply{isAccessible=true}.get(activity) as LivePlayback
+            owner.restoreBundledAlbum()
+            MainActivity::class.java.getDeclaredMethod("showMusicLibrary",LocalAlbum::class.java).apply{isAccessible=true}.invoke(activity,owner.albums().first{it.bundled})
+        }
+        Thread.sleep(700)
+        val image=main{
+            val decor=dialog().window!!.decorView
+            check(decor.width>0&&decor.height>0)
+            fun tree(v:View):List<View> = listOf(v)+(if(v is android.view.ViewGroup)(0 until v.childCount).flatMap{tree(v.getChildAt(it))}else emptyList())
+            val artwork=tree(decor).filterIsInstance<android.widget.ImageView>().first{it.contentDescription?.toString()?.endsWith("album cover")==true}
+            artwork.setImageBitmap(ArtworkStore.load(test.targetContext,LocalMusic.bundled(test.targetContext).first().coverUri,3072))
+            val screen=activity.resources.displayMetrics;val scale=1.5f
+            Bitmap.createBitmap((screen.widthPixels*scale).toInt(),(screen.heightPixels*scale).toInt(),Bitmap.Config.ARGB_8888).also{bitmap->
+                val c=Canvas(bitmap);c.drawColor(0xff080a0e.toInt());c.scale(scale,scale)
+                c.translate((screen.widthPixels-decor.width)/2f,(screen.heightPixels-decor.height)/2f);decor.draw(c)
+            }
+        }
+        val file=java.io.File(test.targetContext.getExternalFilesDir("evidence"),"album-mock-hd.png")
+        file.outputStream().use{image.compress(Bitmap.CompressFormat.PNG,100,it)}
+        val data=JSONObject().put("passed",true).put("width",image.width).put("height",image.height).put("source","Native album layout and original artwork; no personal screenshot or system status bar")
+        image.recycle();main{dialog().dismiss()};return data
+    }
     fun run():JSONObject{
         main{s.page=1;s.language="zh";s.selectLocal(LocalMusic.bundled(test.targetContext),0);s.changed()}
         waitFor{s.playing&&activity.surface.immersivePlayback.coverLoaded}

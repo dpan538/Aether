@@ -48,9 +48,22 @@ public class HostActivity extends Activity {
         else if("capture".equals(intent.getStringExtra("command"))&&widget!=null){
             String name=intent.getStringExtra("name");final String file=(name==null?"widget":name.replaceAll("[^a-zA-Z0-9_-]",""))+".png";
             int rootId=0;try{rootId=getPackageManager().getResourcesForApplication(player).getIdentifier("widget_root","id",player);}catch(Exception e){return;}
-            View root=widget.findViewById(rootId);int[] xy=new int[2];root.getLocationInWindow(xy);
-            android.graphics.Bitmap b=android.graphics.Bitmap.createBitmap(root.getWidth(),root.getHeight(),android.graphics.Bitmap.Config.ARGB_8888);
-            PixelCopy.request(getWindow(),new android.graphics.Rect(xy[0],xy[1],xy[0]+root.getWidth(),xy[1]+root.getHeight()),b,result->{try{if(result==PixelCopy.SUCCESS){try(java.io.FileOutputStream out=openFileOutput(file,MODE_PRIVATE)){b.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}}}catch(Exception e){}finally{b.recycle();}},handler);
+            View root=widget.findViewById(rootId);
+            root.postOnAnimation(()->{
+                root.getViewTreeObserver().registerFrameCommitCallback(()->{
+                    int[] xy=new int[2];root.getLocationInWindow(xy);
+                    android.graphics.Bitmap b=android.graphics.Bitmap.createBitmap(root.getWidth(),root.getHeight(),android.graphics.Bitmap.Config.ARGB_8888);
+                    dump();
+                    final JSONObject geometry;
+                    try{geometry=new JSONObject(new String(java.nio.file.Files.readAllBytes(new java.io.File(getFilesDir(),"state.json").toPath()),java.nio.charset.StandardCharsets.UTF_8));}catch(Exception e){b.recycle();return;}
+                    PixelCopy.request(getWindow(),new android.graphics.Rect(xy[0],xy[1],xy[0]+root.getWidth(),xy[1]+root.getHeight()),b,result->{try{if(result==PixelCopy.SUCCESS){
+                        try(java.io.FileOutputStream out=openFileOutput(file,MODE_PRIVATE)){b.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}
+                        geometry.put("capture",file).put("frameCommitted",true);
+                        try(java.io.FileOutputStream out=openFileOutput("capture-state.json",MODE_PRIVATE)){out.write(geometry.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));}
+                    }}catch(Exception e){android.util.Log.e("WidgetHost",e.toString());}finally{b.recycle();}},handler);
+                });
+                root.invalidate();
+            });
         }else if("resize".equals(intent.getStringExtra("command"))&&widget!=null){
             caseTag=intent.getStringExtra("case");width=intent.getIntExtra("width",width);height=intent.getIntExtra("height",height);exact=intent.getBooleanExtra("exact",false);
             float d=getResources().getDisplayMetrics().density;ViewGroup.LayoutParams p=widget.getLayoutParams();p.width=Math.round(width*d);p.height=Math.round(height*d);widget.setLayoutParams(p);

@@ -62,6 +62,9 @@ class NativeEvidence:Instrumentation() {
             result.putString("targetVersionName",targetContext.packageManager.getPackageInfo(targetContext.packageName,0).versionName)
             when(arguments.getString("operation","state")){
                 "state"->{}
+                "device-time-caption"->{result.putString("aetherResult",DeviceTimeCaptionSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
+                "album-mock"->{result.putString("aetherResult",AlbumPresentationSuite(this,activity).renderMock().toString());finish(Activity.RESULT_OK,result);return}
+                "widget-sizing"->{result.putString("aetherResult",WidgetSizingSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
                 "widget-entry","widget-entry-baseline"->{result.putString("aetherResult",WidgetEntrySuite(this,activity).run(arguments.getString("operation")=="widget-entry-baseline").toString());finish(Activity.RESULT_OK,result);return}
                 "seed-local","seed-radio","restore-local","restore-radio"->{result.putString("aetherResult",WidgetEntrySuite(this,activity).persistence(arguments.getString("operation")!!).toString());finish(Activity.RESULT_OK,result);return}
                 "widget-host","widget-host-baseline"->{result.putString("aetherResult",ExternalWidgetSuite(this,activity).run(arguments.getString("operation")=="widget-host-baseline").toString());finish(Activity.RESULT_OK,result);return}
@@ -238,6 +241,10 @@ class NativeEvidence:Instrumentation() {
             val cache=java.io.File(targetContext.filesDir,"updates")
             data.put("cachedFiles",JSONArray(cache.listFiles()?.filter{it.extension=="apk"}?.map{JSONObject().put("name",it.name).put("bytes",it.length()).put("modified",it.lastModified()).put("sha256",Updates.sha(it))}?:emptyList<JSONObject>()))
             result.putString("aetherResult",data.toString());finish(Activity.RESULT_OK,result)
-        }catch(error:Throwable){result.putString("aetherError",error.stackTraceToString());finish(Activity.RESULT_CANCELED,result)}
+        }catch(error:Throwable){
+            result.putString("aetherError",error.stackTraceToString())
+            runCatching{result.putString("startupDiagnostics",main{JSONObject().put("uiReady",activity.uiReady).put("destroyed",activity.isDestroyed).apply{if(activity.uiReady){put("assetsReady",activity.surface.assetsReady);put("refreshing",activity.surface.refreshing);put("width",activity.surface.width);put("height",activity.surface.height);put("preparationMillis",activity.surface.preparationMillis);put("preparationError",AetherView::class.java.getDeclaredField("preparationError").apply{isAccessible=true}.get(activity.surface)?.toString())}}.toString()})}
+            finish(Activity.RESULT_CANCELED,result)
+        }
     }
 }

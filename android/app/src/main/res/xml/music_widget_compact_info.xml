@@ -1,1 +1,9 @@
-<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android" android:minWidth="248dp" android:minHeight="224dp" android:minResizeWidth="224dp" android:minResizeHeight="180dp" android:targetCellWidth="2" android:targetCellHeight="2" android:initialLayout="@layout/widget_live_square" android:previewLayout="@layout/widget_live_square" android:previewImage="@drawable/music_widget_compact_preview" android:resizeMode="horizontal|vertical" android:widgetCategory="home_screen" android:updatePeriodMillis="0" android:description="@string/widget_description" />
+<!-- Grid hints, not rendering dimensions. Xiaomi's documented 2x2 fallback is 110x110dp. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp" android:minHeight="110dp"
+    android:minResizeWidth="110dp" android:minResizeHeight="110dp"
+    android:targetCellWidth="2" android:targetCellHeight="2"
+    android:initialLayout="@layout/widget_preview_square" android:previewLayout="@layout/widget_preview_square"
+    android:previewImage="@drawable/music_widget_compact_preview"
+    android:resizeMode="horizontal|vertical" android:widgetCategory="home_screen"
+    android:updatePeriodMillis="0" android:description="@string/widget_description" />

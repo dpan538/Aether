@@ -20,7 +20,7 @@
             </LinearLayout>
         </LinearLayout>
         <FrameLayout android:id="@+id/widget_footer" android:layout_width="match_parent" android:layout_height="19dp">
-            <TextView android:id="@+id/widget_time" android:layout_width="match_parent" android:layout_height="16dp" android:gravity="end|center_vertical" android:text="@string/widget_time_zero" android:textColor="#a9aba8" android:textSize="11sp" android:maxLines="1" android:includeFontPadding="false"/>
+            <TextView android:id="@+id/widget_time" android:layout_width="match_parent" android:layout_height="16dp" android:gravity="end|center_vertical" android:text="@string/widget_time_zero" android:textColor="#a9aba8" android:textSize="11sp" android:maxLines="1" android:includeFontPadding="true"/>
             <ProgressBar android:padding="0dp" android:progressDrawable="@drawable/widget_progress" android:id="@+id/widget_progress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="3dp" android:layout_gravity="bottom" android:progressTint="#edede7" android:progressBackgroundTint="#40433f" android:max="1000" android:progress="0"/>
         </FrameLayout>
     </LinearLayout>
