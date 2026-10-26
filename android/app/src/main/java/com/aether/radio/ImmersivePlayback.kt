@@ -12,7 +12,7 @@ import java.util.concurrent.Executors
 /** Dynamic surfaces are outside the cached scene: real cover, rotation and real playback time. */
 class ImmersivePlayback(private val context:Context,private val state:Session,private val invalidate:()->Unit) {
     private val worker=Executors.newSingleThreadExecutor();private val main=Handler(Looper.getMainLooper())
-    private var closed=false;private var artworkKey="initial";private var artwork:Bitmap?=null
+    @Volatile private var closed=false;@Volatile private var artworkKey="initial";private var artwork:Bitmap?=null
     private var coverPending=false
     private var artworkPixels=3072
     val coverPixelWidth get()=artwork?.width?:0
@@ -24,7 +24,8 @@ class ImmersivePlayback(private val context:Context,private val state:Session,pr
     val coverLoaded get()=artwork!=null
     private val paint=Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val text=TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG)
-    private val path=Path()
+    private val path=Path().apply{fillType=Path.FillType.EVEN_ODD;addCircle(DISC.centerX(),DISC.centerY(),DISC.width()/2,Path.Direction.CW);addCircle(DISC.centerX(),DISC.centerY(),DISC.width()/16,Path.Direction.CW)}
+    private val face=Typeface.create("sans-serif",Typeface.NORMAL)
     private val white=Color.rgb(238,241,242)
     fun syncArtwork(){
         val uri=state.localTrack?.coverUri.orEmpty()
@@ -33,14 +34,13 @@ class ImmersivePlayback(private val context:Context,private val state:Session,pr
         artworkKey=key;artwork=null;coverPending=uri.isNotBlank()
         if(uri.isBlank())return
         val pixels=artworkPixels
-        worker.execute{val result=ArtworkStore.load(context.applicationContext,uri,pixels);main.post{if(!closed&&artworkKey==key){coverPending=false;artwork=result;invalidate()}else result?.recycle()}}
+        worker.execute{if(closed||artworkKey!=key)return@execute;val result=ArtworkStore.load(context.applicationContext,uri,pixels);result?.prepareToDraw();main.post{if(!closed&&artworkKey==key){coverPending=false;artwork=result;invalidate()}else result?.recycle()}}
     }
     fun advance(seconds:Float){if(!dragging)rotation=(rotation+seconds*18f)%360f}
     fun drawDisc(c:Canvas,fallback:Bitmap?){
         syncArtwork();val bitmap=artwork?:fallback?:return
-        c.save();c.rotate(rotation,DISC.centerX(),DISC.centerY())
-        path.reset();path.fillType=Path.FillType.EVEN_ODD;path.addCircle(DISC.centerX(),DISC.centerY(),DISC.width()/2,Path.Direction.CW);path.addCircle(DISC.centerX(),DISC.centerY(),DISC.width()/16,Path.Direction.CW)
-        c.clipPath(path)
+        if(c.quickReject(DISC))return
+        c.save();c.clipPath(path);c.rotate(rotation,DISC.centerX(),DISC.centerY())
         paint.reset();paint.isAntiAlias=true;paint.isFilterBitmap=true
         val scale=maxOf(DISC.width()/bitmap.width,DISC.height()/bitmap.height)
         val dst=RectF(DISC.centerX()-bitmap.width*scale/2,DISC.centerY()-bitmap.height*scale/2,DISC.centerX()+bitmap.width*scale/2,DISC.centerY()+bitmap.height*scale/2)
@@ -51,7 +51,7 @@ class ImmersivePlayback(private val context:Context,private val state:Session,pr
         previewMs?.let{ms->paint.reset();paint.color=0xdd0a0c0e.toInt();c.drawRoundRect(RectF(DISC.centerX()-92,DISC.centerY()+90,DISC.centerX()+92,DISC.centerY()+145),12f,12f,paint);label(c,LocalMusic.time(ms),DISC.centerX()-72,DISC.centerY()+126,25f,144f)}
     }
     private fun label(c:Canvas,value:String,x:Float,baseline:Float,size:Float,width:Float,color:Int=white){
-        text.reset();text.isAntiAlias=true;text.isSubpixelText=true;text.color=color;text.typeface=Typeface.create("sans-serif",Typeface.NORMAL);text.textSize=size
+        text.reset();text.isAntiAlias=true;text.isSubpixelText=true;text.color=color;text.typeface=face;text.textSize=size
         c.drawText(TextUtils.ellipsize(value,text,width,TextUtils.TruncateAt.END).toString(),x,baseline,text)
     }
     fun drawSelector(c:Canvas){

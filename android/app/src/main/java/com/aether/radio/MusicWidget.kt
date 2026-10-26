@@ -3,6 +3,7 @@ package com.aether.radio
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -16,6 +17,7 @@ import androidx.media3.session.SessionToken
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class MusicWidget:AppWidgetProvider() {
     override fun onUpdate(context:Context,manager:AppWidgetManager,ids:IntArray){
+        publishPreview(context)
         PlaybackService.current?.let{updateAll(context,it.live);return}
         val p=context.getSharedPreferences("aether-widget",Context.MODE_PRIVATE)
         ids.forEach{manager.updateAppWidget(it,views(context,p.getString("title","漫频")!!,p.getString("album","选择音乐，开始聆听")!!,p.getString("cover","")!!,false,p.getLong("position",0),p.getLong("duration",0),p.getBoolean("local",false),p.getBoolean("can-play",false),p.getBoolean("can-step",false)))}
@@ -38,6 +40,25 @@ class MusicWidget:AppWidgetProvider() {
         },context.mainExecutor)
     }
     companion object {
+        fun requestPin(context:Context):Boolean{
+            val manager=AppWidgetManager.getInstance(context)
+            if(!manager.isRequestPinAppWidgetSupported)return false
+            publishPreview(context)
+            return runCatching{manager.requestPinAppWidget(ComponentName(context,MusicWidget::class.java),null,null)}.getOrDefault(false)
+        }
+        fun publishPreview(context:Context){
+            if(android.os.Build.VERSION.SDK_INT<35)return
+            val preferences=context.getSharedPreferences("aether-widget-preview",Context.MODE_PRIVATE)
+            val manager=AppWidgetManager.getInstance(context)
+            val info=manager.getInstalledProvidersForPackage(context.packageName,null).firstOrNull{it.provider.className==MusicWidget::class.java.name}
+            if(preferences.getInt("version",-1)==BuildConfig.VERSION_CODE&&info!=null&&info.generatedPreviewCategories and AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN!=0)return
+            val now=System.currentTimeMillis()
+            if(now-preferences.getLong("attempt",0) in 0..1_800_000)return
+            preferences.edit().putLong("attempt",now).apply()
+            val sample=LocalMusic.bundled(context).firstOrNull()
+            val preview=views(context,sample?.title?:"漫频",sample?.album?:"选择音乐，开始聆听",sample?.coverUri.orEmpty(),false,0,sample?.durationMs?:0,sample!=null,true,true)
+            if(runCatching{AppWidgetManager.getInstance(context).setWidgetPreview(ComponentName(context,MusicWidget::class.java),AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN,preview)}.getOrDefault(false))preferences.edit().putInt("version",BuildConfig.VERSION_CODE).apply()
+        }
         private const val PREFIX="com.aether.radio.WIDGET."
         private var coverKey="";private var cover:android.graphics.Bitmap?=null
         private fun command(context:Context,name:String)=PendingIntent.getBroadcast(context,name.hashCode(),Intent(context,MusicWidget::class.java).setAction(PREFIX+name),PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
@@ -55,21 +76,21 @@ class MusicWidget:AppWidgetProvider() {
             progress(view,position,duration,local);return view
         }
         private fun progress(view:RemoteViews,position:Long,duration:Long,local:Boolean){
-            view.setTextViewText(R.id.widget_time,if(local)"${LocalMusic.time(position)} / ${LocalMusic.time(duration)}" else "FM · 直播")
+            view.setTextViewText(R.id.widget_time,if(local)"${LocalMusic.time(position)} / ${LocalMusic.time(duration)}" else "FM · ${LocalMusic.time(position)}")
             view.setProgressBar(R.id.widget_progress,1000,if(local&&duration>0)(position*1000/duration).toInt().coerceIn(0,1000)else 0,false)
         }
         private fun ids(context:Context)=AppWidgetManager.getInstance(context).getAppWidgetIds(ComponentName(context,MusicWidget::class.java))
         fun updateAll(context:Context,live:LivePlayback){
             val s=live.session;val t=s.localTrack;val title=t?.title?:s.station?.name?:"漫频";val album=t?.album?.ifBlank{t.artist}?:"FM ${s.displayOrdinal?.toString()?.padStart(3,'0')?:"—"}"
             val art=t?.coverUri.orEmpty()
-            context.getSharedPreferences("aether-widget",Context.MODE_PRIVATE).edit().putString("title",title).putString("album",album).putString("cover",art).putLong("position",s.localPositionMs).putLong("duration",s.localDurationMs).putBoolean("local",s.isLocal).putBoolean("can-play",s.canUse("play-toggle")).putBoolean("can-step",s.canUse("next")).apply()
+            context.getSharedPreferences("aether-widget",Context.MODE_PRIVATE).edit().putString("title",title).putString("album",album).putString("cover",art).putLong("position",s.displayPositionMs).putLong("duration",s.localDurationMs).putBoolean("local",s.isLocal).putBoolean("can-play",s.canUse("play-toggle")).putBoolean("can-step",s.canUse("next")).apply()
             val ids=ids(context);if(ids.isEmpty())return
-            AppWidgetManager.getInstance(context).updateAppWidget(ids,views(context,title,album,art,s.playing,s.localPositionMs,s.localDurationMs,s.isLocal,s.canUse("play-toggle"),s.canUse("next")))
+            AppWidgetManager.getInstance(context).updateAppWidget(ids,views(context,title,album,art,s.playing,s.displayPositionMs,s.localDurationMs,s.isLocal,s.canUse("play-toggle"),s.canUse("next")))
         }
         fun updateProgress(context:Context,live:LivePlayback){
-            val s=live.session;if(!s.playing||!s.isLocal)return
+            val s=live.session;if(!s.playing)return
             val ids=ids(context);if(ids.isEmpty())return
-            val view=RemoteViews(context.packageName,R.layout.music_widget);progress(view,s.localPositionMs,s.localDurationMs,true);AppWidgetManager.getInstance(context).partiallyUpdateAppWidget(ids,view)
+            val view=RemoteViews(context.packageName,R.layout.music_widget);progress(view,s.displayPositionMs,s.localDurationMs,s.isLocal);AppWidgetManager.getInstance(context).partiallyUpdateAppWidget(ids,view)
         }
     }
 }

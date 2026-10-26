@@ -39,7 +39,7 @@ class DiscRenderer(context:Context,private val delivered:(Boolean,Bitmap,Float)-
             }
             catch(error:Exception){android.util.Log.e("AetherDisc","Offscreen context unavailable",error)}
             finally {if(print&&result!=null)printComplete=true;busy=false}
-            result?.let {if(!closed)delivered(print,it,timeSeconds)else it.recycle()}
+            result?.let {if(!closed){it.prepareToDraw();delivered(print,it,timeSeconds)}else it.recycle()}
         }
     }
     private fun draw(print:Boolean,size:Int,time:Float):Bitmap? {

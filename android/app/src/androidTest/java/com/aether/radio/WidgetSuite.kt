@@ -44,9 +44,10 @@ class WidgetSuite(private val test:Instrumentation,private val activity:MainActi
         try{
             preview=test.startActivitySync(Intent().setComponent(ComponentName(test.targetContext.packageName,"com.aether.radio.WidgetHostFixture")).putExtra("widget-id",id).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             val screen=preview!!
-            fun find(id:Int)=(screen as WidgetHostFixture).widget.findViewById<View>(id)
+            fun hostView()=screen.javaClass.getMethod("getWidget").invoke(screen) as android.appwidget.AppWidgetHostView
+            fun find(id:Int)=hostView().findViewById<View>(id)
             fun captureWidget(name:String)=main{
-                val widget=(screen as WidgetHostFixture).widget
+                val widget=hostView()
                 val bitmap=android.graphics.Bitmap.createBitmap(widget.width,widget.height,android.graphics.Bitmap.Config.ARGB_8888)
                 widget.draw(android.graphics.Canvas(bitmap))
                 java.io.File(test.targetContext.getExternalFilesDir("evidence"),"$name.png").outputStream().use{bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)};bitmap.recycle()
@@ -59,7 +60,7 @@ class WidgetSuite(private val test:Instrumentation,private val activity:MainActi
             test.uiAutomation.takeScreenshot()!!.let{b->java.io.File(test.targetContext.getExternalFilesDir("evidence"),"widget-diagnostic.png").outputStream().use{b.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)};b.recycle()}
             waitFor{find(R.id.widget_title)!=null&&(find(R.id.widget_title) as TextView).text.toString()=="Before the First Light"}
             main{
-                val widget=(screen as WidgetHostFixture).widget
+                val widget=hostView()
                 val density=activity.resources.displayMetrics.density
                 widget.layoutParams=widget.layoutParams.apply{width=(280*density).toInt();height=(224*density).toInt()}
             }
@@ -71,7 +72,7 @@ class WidgetSuite(private val test:Instrumentation,private val activity:MainActi
             }
             captureWidget("widget-minimum-native-view")
             checks.put(JSONObject().put("name","At minimum 280×224 dp, controls retain at least 18 dp clearance above the progress track").put("passed",true))
-            main{val widget=(screen as WidgetHostFixture).widget;val density=activity.resources.displayMetrics.density;widget.layoutParams=widget.layoutParams.apply{width=(440*density).toInt();height=(240*density).toInt()}}
+            main{val widget=hostView();val density=activity.resources.displayMetrics.density;widget.layoutParams=widget.layoutParams.apply{width=(440*density).toInt();height=(240*density).toInt()}}
             Thread.sleep(400)
             captureWidget("widget-native-view")
             fun tap(id:Int){val xy=main{val v=find(id);val p=IntArray(2);v.getLocationOnScreen(p);(p[0]+v.width*.5f) to (p[1]+v.height*.5f)};val t=SystemClock.uptimeMillis();test.sendPointerSync(MotionEvent.obtain(t,t,MotionEvent.ACTION_DOWN,xy.first,xy.second,0));test.sendPointerSync(MotionEvent.obtain(t,t+80,MotionEvent.ACTION_UP,xy.first,xy.second,0));Thread.sleep(250)}

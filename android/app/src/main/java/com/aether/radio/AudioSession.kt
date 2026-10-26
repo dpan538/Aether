@@ -23,6 +23,7 @@ class AudioSession(context:Context,private val state:Session) {
     private var reconnect:Runnable?=null
     private var retryCount=0
     private var closed=false
+    private val radioElapsed=PlaybackElapsedClock()
     private val connectivity=context.applicationContext.getSystemService(android.net.ConnectivityManager::class.java)
     private val networkCallback=object:android.net.ConnectivityManager.NetworkCallback(){
         override fun onAvailable(network:android.net.Network){main.post{reconnect?.let{main.removeCallbacks(it);main.post(it)}}}
@@ -77,7 +78,7 @@ class AudioSession(context:Context,private val state:Session) {
                 state.changed()
             }
             override fun onIsPlayingChanged(isPlaying:Boolean){
-                state.playing=isPlaying
+                state.playing=isPlaying;samplePosition()
                 if(isPlaying)cancelReconnect()
                 if(player.playbackState==Player.STATE_READY)state.connection=if(isPlaying)Connection.CONNECTED else Connection.PAUSED
                 state.changed()
@@ -107,7 +108,7 @@ class AudioSession(context:Context,private val state:Session) {
         state.onPlay={play->if(play){if(player.mediaItemCount==0){if(state.isLocal)selectLocal(state.localQueue,state.localIndex)else state.station?.let{select(it)}}else {if(player.playbackState==Player.STATE_ENDED)player.seekTo(0);if(player.playbackState==Player.STATE_IDLE){state.issue=null;player.prepare()};player.play()}}else {cancelReconnect();player.pause()}}
     }
     fun select(station:Station){
-        cancelReconnect()
+        cancelReconnect();radioElapsed.reset(playbackClockMs())
         val url=station.stream?:return
         if(!url.startsWith("https://",true)){state.issue="HTTPS stream required";state.connection=Connection.ERROR;state.changed();return}
         generation++;latestSpectrum.set(null);state.spectrumFrame=null;state.metadata=null;state.decodedFormat=null
@@ -115,7 +116,7 @@ class AudioSession(context:Context,private val state:Session) {
         player.prepare();player.play()
     }
     fun selectLocal(queue:List<LocalTrack>,index:Int){
-        cancelReconnect()
+        cancelReconnect();radioElapsed.reset(playbackClockMs())
         if(index !in queue.indices)return
         require(queue.all{it.uri.startsWith("asset:///albums/before-the-rise/")||android.net.Uri.parse(it.uri).scheme=="content"})
         generation++;latestSpectrum.set(null);state.spectrumFrame=null;state.metadata=null;state.decodedFormat=null
@@ -127,7 +128,12 @@ class AudioSession(context:Context,private val state:Session) {
         if(state.isLocal&&state.localQueue.isNotEmpty())player.setMediaItems(state.localQueue.map{item(it)},state.localIndex,position.coerceIn(0,state.localDurationMs))
         else state.station?.stream?.takeIf{it.startsWith("https://")}?.let{url->player.setMediaItem(MediaItem.Builder().setUri(url).setMediaId(state.station!!.id).setMediaMetadata(MediaMetadata.Builder().setTitle(state.station!!.name).build()).build())}
     }
-    fun samplePosition(){state.playbackPositionMs=player.currentPosition.coerceAtLeast(0);state.positionSampleTime=playbackClockMs();state.seekable=player.isCurrentMediaItemSeekable;if(state.isLocal){state.localPositionMs=player.currentPosition.coerceAtLeast(0);if(player.duration!=C.TIME_UNSET&&player.duration>=0)state.localDurationMs=player.duration}}
+    fun samplePosition(){
+        val now=playbackClockMs()
+        state.playbackPositionMs=if(state.isLocal)player.currentPosition.coerceAtLeast(0)else radioElapsed.sample(now,player.isPlaying)
+        state.positionSampleTime=now;state.seekable=player.isCurrentMediaItemSeekable
+        if(state.isLocal){state.localPositionMs=state.playbackPositionMs;if(player.duration!=C.TIME_UNSET&&player.duration>=0)state.localDurationMs=player.duration}
+    }
     fun pause(){cancelReconnect();player.pause();samplePosition()}
     fun close(){closed=true;cancelReconnect();runCatching{connectivity.unregisterNetworkCallback(networkCallback)};player.release()}
 }

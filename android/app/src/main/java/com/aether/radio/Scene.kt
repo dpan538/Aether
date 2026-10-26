@@ -20,7 +20,8 @@ class SceneNode(val json:JSONObject) {
     val action=json.optString("action");val label=json.optString("label")
     val children=(json.optJSONArray("children")?:JSONArray()).let{a->(0 until a.length()).map{SceneNode(a.getJSONObject(it))}}
     fun find(id:String):SceneNode?=if(this.id==id)this else children.firstNotNullOfOrNull{it.find(id)}
-    fun flattened():List<SceneNode> = listOf(this)+children.flatMap{it.flattened()}
+    private val flat:List<SceneNode> by lazy(LazyThreadSafetyMode.PUBLICATION){listOf(this)+children.flatMap{it.flattened()}}
+    fun flattened():List<SceneNode> = flat
 }
 
 /** Native display list. Skins contain only empty individual material surfaces. */
@@ -46,6 +47,9 @@ class ScenePainter(val context:Context,val state:Session) {
     private val arimo=Typeface.createFromAsset(context.assets,"fonts/Arimo.ttf")
     private val cousine=Typeface.createFromAsset(context.assets,"fonts/Cousine.ttf")
     private val fonts=java.util.concurrent.ConcurrentHashMap<Pair<Boolean,Int>,Typeface>()
+    var renderScale=1f
+    private val mainSpectrumRect by lazy{scene("modern-ink").find("spectrum")?.r}
+    private val plotSpectrumRect by lazy{scene("immersive").flattened().firstOrNull{it.json.optString("svg").contains("0 0 600 190")}?.r}
     private val spectrumDrawing by lazy{SpectrumDrawing(font(true,400))}
     var mainDisc:Bitmap?=null;var smallDisc:Bitmap?=null
     var smallDiscPhase=Float.NaN
@@ -56,6 +60,7 @@ class ScenePainter(val context:Context,val state:Session) {
     var recordStatic=false
     var presetFont:String?="sans-serif-condensed"
     private var menuOverlay=false
+    private var drawingImmersive=false
     var ghostMode=0
     var gaugeRefresh:FloatArray?=null
     val updatePanel by lazy{UpdatePanel(this,state)}
@@ -73,10 +78,12 @@ class ScenePainter(val context:Context,val state:Session) {
             try {
                 // Decode once away from the UI thread. All 2x surfaces fit the
                 // bounded cache; window changes never redo this work in onDraw.
+                val flatBackground=if(!state.reference)scene("immersive").json.optString("skin")else""
                 for(key in skinMeta.keys()){
+                    if(key==flatBackground)continue
                     if(closed)return@execute
                     val bmp=context.assets.open("skins/$key.png").use{BitmapFactory.decodeStream(it)}
-                    if(closed){bmp.recycle();return@execute};bitmaps.put(key,bmp)
+                    if(closed){bmp.recycle();return@execute};bmp.prepareToDraw();bitmaps.put(key,bmp)
                 }
                 for(file in context.assets.list("scenes").orEmpty()){
                     if(closed)return@execute
@@ -99,18 +106,23 @@ class ScenePainter(val context:Context,val state:Session) {
         }
     }
     fun draw(canvas:Canvas,lit:Boolean,immersive:Boolean=false) {
+        val previous=drawingImmersive;drawingImmersive=immersive
+        try{
         val root=scene(if(immersive)"immersive" else name(lit))
-        drawNode(canvas,root,lit)
-        if(!immersive&&!state.reference&&state.updateOpen&&state.view=="settings")updatePanel.draw(canvas,lit)
+        if(immersive&&!state.reference){resetPaint();p.color=0xff080a0e.toInt();canvas.drawRect(0f,0f,1704f,1136f,p);root.children.forEach{drawNode(canvas,it,lit)}}else drawNode(canvas,root,lit)
+        if(!immersive&&state.reference&&state.updateOpen&&state.view=="settings")updatePanel.draw(canvas,lit)
         if(!immersive&&state.menu!=null){
             canvas.save();root.flattened().find{it.cls=="directory-screen"}?.r?.let{canvas.clipRect(it)}
             menuOverlay=true
             try{root.flattened().filter{it.cls=="filter-menu"}.forEach{drawNode(canvas,it,lit)}}finally{menuOverlay=false;canvas.restore()}
         }
+        }finally{drawingImmersive=previous}
     }
     fun drawNode(canvas:Canvas,n:SceneNode,lit:Boolean,parentId:String="",station:Station?=null,slot:Int=-1) {
         if(canvas.quickReject(RectF(n.r).apply{inset(-32f,-32f)}))return
         if(n.cls=="filter-menu"&&!menuOverlay)return
+        if(!state.reference&&state.view=="settings"&&n.cls=="directory-screen"){drawSkin(canvas,n.json.optString("skin"),n.r);return}
+        if(!state.reference&&n.id=="local-time")return
         if(n.cls.contains("pause-glyph")&&!state.playing)return
         val id=n.id.ifBlank{n.action.ifBlank{parentId}}
         if(!state.reference&&(n.cls=="record__inscription"||n.json.optString("disc")=="record"||n.id in listOf("station-name","station-subtitle","station-position")||n.cls=="station-selector__registration"))return
@@ -157,7 +169,8 @@ class ScenePainter(val context:Context,val state:Session) {
                 if(!print)canvas.rotate(-90f,r.centerX(),r.centerY())
                 canvas.drawBitmap(b,null,r,p)
             }
-        }else if(node.id=="station-list")drawStations(canvas,node,lit)
+        }else if(!state.reference&&node.cls.startsWith("hardware-key"))drawHardwareCaption(canvas,node,lit)
+        else if(node.id=="station-list")drawStations(canvas,node,lit)
         else if(node.id=="favorite-stations")drawPresets(canvas,node,lit)
         else if(node.cls=="filter-menu")drawMenu(canvas,node,lit)
         else if(node.cls=="volume-segments"){
@@ -169,12 +182,15 @@ class ScenePainter(val context:Context,val state:Session) {
             for(i in 0 until texts.length()){
                 val t=texts.getJSONObject(i);val original=t.getString("text")
                 var text=boundText(node,id,original,i,drawingStation,slot)
-                val inScreen=state.page==1||node.r.top in 244f..369f&&node.r.left in 437f..732f||node.r.top in 405f..521f&&node.r.left in 449f..722f||node.r.top in 83f..435f&&node.r.left>=806f||node.r.top in 629f..830f&&node.r.left in 145f..790f||node.r.top in 629f..720f&&node.r.left in 858f..1420f||node.r.top in 970f..1032f&&node.r.left in 260f..701f
+                val inScreen=drawingImmersive||node.r.top in 244f..369f&&node.r.left in 437f..732f||node.r.top in 405f..521f&&node.r.left in 449f..722f||node.r.top in 83f..435f&&node.r.left>=806f||node.r.top in 629f..830f&&node.r.left in 145f..790f||node.r.top in 629f..720f&&node.r.left in 858f..1420f||node.r.top in 970f..1032f&&node.r.left in 260f..701f
                 if(!state.reference&&inScreen)text=UiWords.screen(text,state.language=="zh")
                 var target=t
                 if(!state.reference&&node.cls=="volume-legend"){
                     target=JSONObject(t.toString()).put("size",13.5).put("spacing",1.4)
                     target.put("x",node.r.centerX()-textPaint(target).measureText(text)/2)
+                }
+                if(!state.reference&&id in listOf("stream-connection","stream-output")){
+                    target=JSONObject(t.toString());text=fit(text,target,node.r.width());target.put("x",node.r.right-textPaint(target).measureText(text))
                 }
                 if(!state.reference&&id=="scope-count"){
                     target=JSONObject(t.toString())
@@ -302,7 +318,7 @@ class ScenePainter(val context:Context,val state:Session) {
     }
     private fun boundText(n:SceneNode,id:String,original:String,line:Int,station:Station?,slot:Int):String {
         if(!state.reference&&original.contains("AETHER"))return if(original.startsWith("AETHER /"))if(state.language=="zh")"漫频 / ${if(state.view=="settings")"设置"else"电台目录"}"else original.replace("AETHER","漫频")else original.replace("AETHER","漫频")
-        if(!state.reference&&state.isLocal&&state.page==1&&n.r.top>600&&original.startsWith("LOCAL TIME"))return if(state.language=="zh")"时长"else"DURATION"
+        if(!state.reference&&state.isLocal&&drawingImmersive&&n.r.top>600&&original.startsWith("LOCAL TIME"))return if(state.language=="zh")"时长"else"DURATION"
         val retained=if(!state.powered)state.retainedInk else null
         val s=station?:retained?.station?:state.station
         val metadata=if(retained!=null)retained.metadata else state.metadata
@@ -433,6 +449,19 @@ class ScenePainter(val context:Context,val state:Session) {
     }
     private fun svg(n:SceneNode,id:String,lit:Boolean,s:Station?,slot:Int):String {
         var source=n.json.optString("svg")
+        if(!state.reference&&id=="favorite-toggle"){
+            source=source.replace("fill=\"currentColor\" stroke=\"none\"",if(state.activeStarred)"fill=\"#9c7439\" stroke=\"none\""else"fill=\"none\" stroke=\"#4b5551\" stroke-width=\"1.6\"")
+        }
+        if(!state.reference&&n.cls=="dial-scale"){
+            return buildString{
+                append("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 240 240\" fill=\"none\" stroke=\"#394640\" stroke-linecap=\"round\">")
+                for(i in 0 until 15){val angle=(-125+i*24-90)*PI/180;val inner=if(i%5==0)106.0 else 110.0
+                    append("<path d=\"M${120+cos(angle)*inner} ${120+sin(angle)*inner}L${120+cos(angle)*116} ${120+sin(angle)*116}\" stroke-width=\"${if(i%5==0)1.6 else 1.1}\"/>")}
+                append("</svg>")
+            }
+        }
+        // The outer sound wave extends beyond 24 units once its stroke is included.
+        if(!state.reference&&source.contains("id=\"output-glyph\""))source=source.replace("id=\"i-speaker\" viewBox=\"0 0 24 24\"","id=\"i-speaker\" viewBox=\"0 0 26 24\"").replace("id=\"i-muted\" viewBox=\"0 0 24 24\"","id=\"i-muted\" viewBox=\"0 0 26 24\"")
         if(id in listOf("device-power","device-lock","device-light","device-settings")){
             val enabled=when(id){"device-power"->!state.locked;"device-lock","device-light"->state.powered;else->state.enabled}
             source=source.replaceFirst(Regex("opacity=\"[^\"]*\""),"opacity=\"${if(enabled)1 else .48}\"")
@@ -502,12 +531,14 @@ class ScenePainter(val context:Context,val state:Session) {
         }
     }
     fun drawLiveSpectrum(c:Canvas,lit:Boolean,frame:SpectrumFrame?=state.spectrumFrame){
-        val r=scene(name(lit)).find("spectrum")?.r?:return
-        spectrumDrawing.bars(c,r,frame,lit,state.spectrumEnabled,spectrumCaption())
+        val r=mainSpectrumRect?:return
+        if(c.quickReject(r))return
+        spectrumDrawing.bars(c,r,frame,lit,state.spectrumEnabled,spectrumCaption(),renderScale)
     }
     fun drawImmersiveSpectrum(c:Canvas){
-        val node=scene("immersive").flattened().firstOrNull{it.json.optString("svg").contains("0 0 600 190")}?:return
-        spectrumDrawing.plot(c,node.r,state.spectrumFrame,state.spectrumEnabled,spectrumCaption(),state.language=="zh")
+        val r=plotSpectrumRect?:return
+        if(c.quickReject(r))return
+        spectrumDrawing.plot(c,r,state.spectrumFrame,state.spectrumEnabled,spectrumCaption(),state.language=="zh",renderScale)
     }
     private fun drawPresets(c:Canvas,n:SceneNode,lit:Boolean){
         val root=scene("modern-${if(lit)"lit" else "ink"}")
@@ -556,9 +587,20 @@ class ScenePainter(val context:Context,val state:Session) {
             drawSkin(c,source.json.optString("skin"),r)
             val t=JSONObject(optionTemplate.json.getJSONArray("text").getJSONObject(0).toString())
             t.put("y",t.f("y")+i*height);t.put("color",if(selected)if(lit)"#f5f0db" else "#d0d2c5" else if(lit)"#353932" else "#34483a")
-            val label=UiWords.option(key,value,state.language=="zh")
-            drawText(c,t,label,if(label==optionTemplate.json.getJSONArray("text").getJSONObject(0).optString("text"))t.f("w") else 0f)
+            var label=UiWords.option(key,value,state.language=="zh")
+            if(!state.reference){t.put("size",17);val paint=textPaint(t);t.put("y",r.centerY()-(paint.fontMetrics.ascent+paint.fontMetrics.descent)/2);label=fit(label,t,r.width()-44)}
+            c.save();c.clipRect(r);drawText(c,t,label,if(label==optionTemplate.json.getJSONArray("text").getJSONObject(0).optString("text"))t.f("w") else 0f);c.restore()
             if(selected){resetPaint();p.isAntiAlias=true;p.style=Paint.Style.STROKE;p.strokeWidth=1.7f;p.color=if(lit)0xfff5f0db.toInt() else 0xffd0d2c5.toInt();val x=r.right-14;val y=r.centerY();val path=Path();path.moveTo(x-4,y);path.lineTo(x-1,y+3);path.lineTo(x+5,y-3);c.drawPath(path,p)}
+        }
+    }
+    private fun drawHardwareCaption(c:Canvas,n:SceneNode,lit:Boolean){
+        val selected=state.powered&&when(n.action){"view:directory"->state.view=="directory";"view:favorites"->state.view=="favorites";"view:settings"->state.view=="settings";else->false}
+        val lamp=n.children.firstOrNull{it.r.top<n.r.top}?.r
+        lamp?.let{drawLamp(c,RectF(n.r.centerX()-it.width()/2,it.top,n.r.centerX()+it.width()/2,it.bottom),if(selected)"connected"else"off")}
+        for(child in n.children){
+            if(child.json.has("svg")){val r=RectF(n.r.centerX()-6f,516f,n.r.centerX()+6f,528f);drawSvg(c,svg(child,n.action,lit,null,-1),r,0f)}
+            val texts=child.json.optJSONArray("text")?:continue
+            for(i in 0 until texts.length()){val t=JSONObject(texts.getJSONObject(i).toString());val label=t.getString("text");val paint=textPaint(t);t.put("x",n.r.centerX()-paint.measureText(label)/2);t.put("y",522f-(paint.fontMetrics.ascent+paint.fontMetrics.descent)/2);drawText(c,t,label,0f)}
         }
     }
     private fun drawSettingsDetails(c:Canvas,n:SceneNode,lit:Boolean){
@@ -568,7 +610,7 @@ class ScenePainter(val context:Context,val state:Session) {
         if(state.updateMessage){c.drawText(if(state.language=="zh")"更新服务暂不可用。" else "Update service is currently unavailable.",n.r.left+36,y,p);y+=26}
         if(state.about){p.typeface=font(false,700);c.drawText("漫频",n.r.left+36,y,p);p.typeface=font(false,400);c.drawText("不设边界，漫游频率。",n.r.left+36,y+23,p);c.drawText("No boundaries. Just frequencies.",n.r.left+36,y+44,p);p.textSize=11.9f;c.drawText(if(state.reference)"Design preview · 0.0.0" else "Android preview · ${BuildConfig.VERSION_NAME}",n.r.left+36,y+65,p)}
     }
-    fun close(){closed=true;preparation.shutdownNow();bitmaps.evictAll();pictures.evictAll();mainDisc?.recycle();smallDisc?.recycle()}
+    fun close(){closed=true;spectrumDrawing.close();preparation.shutdownNow();bitmaps.evictAll();pictures.evictAll();mainDisc?.recycle();smallDisc?.recycle()}
     companion object {
         val translations=mapOf("settings" to "设置","uiLanguage" to "界面语言","checkUpdates" to "检查更新","about" to "关于","region" to "地区","genre" to "类型","language" to "语言","directory" to "目录","favorites" to "收藏","random" to "随机","favoriteStations" to "收藏电台","automaticSearch" to "直达搜索","audioFormat" to "音频规格")
         fun color(s:String):Int {

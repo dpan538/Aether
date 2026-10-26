@@ -56,11 +56,12 @@ class LivePlayback(val context:Context) {
             session.spectrumEnabled=preferences.getBoolean("spectrum-enabled",true)
             session.tempo=preferences.getInt("tempo",100).coerceIn(50,150);session.language=preferences.getString("language","en")?.takeIf{it in listOf("en","zh")}?:"en"
             runCatching{preferences.getString("last-station",null)?.takeIf{it.isNotBlank()}?.let{session.restoreStation(stationFromJson(JSONObject(it)))}}
+            session.starredTracks.addAll(preferences.getStringSet("starred-tracks",emptySet()).orEmpty())
             session.favorites.clear();runCatching{JSONArray(preferences.getString("favorites","[]")).let{a->for(i in 0 until a.length())session.favorites.add(a.getString(i))}}
             runCatching{JSONArray(preferences.getString("favorite-stations","[]")).let{a->for(i in 0 until a.length()){val s=a.getJSONObject(i);val station=Station(s.getString("id"),s.getString("name"),s.optString("region"),language=s.optString("language"),genre=s.optString("genre"),stream=s.optString("stream"));session.savedStations[station.id]=station}}}
             session.onFavorites={
                 val saved=JSONArray(session.favorites.mapNotNull{session.lookup(it)}.map{s->JSONObject().put("id",s.id).put("name",s.name).put("region",s.region).put("language",s.language).put("genre",s.genre).put("stream",s.stream)})
-                preferences.edit().putString("favorites",JSONArray(session.favorites).toString()).putString("favorite-stations",saved.toString()).apply()
+                preferences.edit().putStringSet("starred-tracks",session.starredTracks.toSet()).putString("favorites",JSONArray(session.favorites).toString()).putString("favorite-stations",saved.toString()).apply()
             }
             bundledAlbum=LocalMusic.bundled(context)
             importedTracks=runCatching{LocalMusic.restoreQueue(context,preferences.getString("imported-tracks","[]")?:"[]",bundledAlbum)}.getOrDefault(emptyList())

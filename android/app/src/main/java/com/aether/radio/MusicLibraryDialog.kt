@@ -82,6 +82,7 @@ class MusicLibraryDialog(context:Context,private val state:Session,private val a
             val subtitle=t.instruments.ifBlank{t.artist.ifBlank{t.album}}
             if(subtitle.isNotBlank())identity.add(text(subtitle,12f,muted).apply{maxLines=2})
             row.add(identity,0,-2,1f);row.space(10)
+            row.add(ImageView(context).apply{id=TRACK_STAR_BASE+i;setImageResource(R.drawable.track_star);contentDescription=if(cn)"已星标"else"Starred";visibility=if(t.id in state.starredTracks)View.VISIBLE else View.INVISIBLE},18,18);row.space(8)
             row.add(text(LocalMusic.time(t.durationMs),14f,muted).apply{gravity=Gravity.END},48)
             list.add(row);rows.add(t to row);list.add(line(),-1,1)
         }}
@@ -139,10 +140,11 @@ class MusicLibraryDialog(context:Context,private val state:Session,private val a
     private val tick=object:Runnable{override fun run(){if(isShowing){update();main.postDelayed(this,500)}}}
     private fun update(){
         position();val t=state.localTrack
+        rows.forEachIndexed{i,(track,row)->row.findViewById<View>(TRACK_STAR_BASE+i)?.visibility=if(track.id in state.starredTracks)View.VISIBLE else View.INVISIBLE}
         if(t?.id!=renderedTrackId){renderedTrackId=t?.id;rows.forEach{(track,row)->row.background=shape(if(t?.id==track.id)Color.rgb(230,230,228)else Color.TRANSPARENT,6);row.isSelected=t?.id==track.id}}
         albumPlay.text=if(state.isLocal&&state.localQueue==album&&state.playing)if(cn)"Ⅱ  暂停" else "Ⅱ  Pause" else if(state.isLocal&&state.localQueue==album)if(cn)"▶  继续播放" else "▶  Resume" else if(cn)"▶  播放专辑" else "▶  Play album"
         albumPlay.isEnabled=state.enabled
     }
     override fun show(){super.show();window?.apply{setBackgroundDrawableResource(android.R.color.transparent);addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);attributes=attributes.apply{dimAmount=.72f};val d=context.resources.displayMetrics;setLayout(minOf(dp(1480),(d.widthPixels*.94f).toInt()),(d.heightPixels*.94f).toInt());decorView.windowInsetsController?.hide(android.view.WindowInsets.Type.systemBars())};update();main.post(tick)}
-    companion object {const val DELETE_EXPLANATION=0x7116;const val DELETE_RESTORE=0x7117;const val MORE=0x7110;const val STAR=0x7111;const val DELETE=0x7112;const val CONFIRM_DELETE=0x7113;const val CANCEL_DELETE=0x7114;const val OPTIONS_CLOSE=0x7115;const val CLOSE=0x7100;const val TRACK_LIST=0x7107;const val NOTES=0x7108;const val ALBUM_PLAY=0x7109;const val TRACK_BASE=0x7200}
+    companion object {const val TRACK_STAR_BASE=0x7400;const val DELETE_EXPLANATION=0x7116;const val DELETE_RESTORE=0x7117;const val MORE=0x7110;const val STAR=0x7111;const val DELETE=0x7112;const val CONFIRM_DELETE=0x7113;const val CANCEL_DELETE=0x7114;const val OPTIONS_CLOSE=0x7115;const val CLOSE=0x7100;const val TRACK_LIST=0x7107;const val NOTES=0x7108;const val ALBUM_PLAY=0x7109;const val TRACK_BASE=0x7200}
 }

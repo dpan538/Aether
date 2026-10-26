@@ -23,6 +23,14 @@ class NativeEvidence:Instrumentation() {
     private fun tap(action:String,fractionX:Float=.5f){
         val point=main {
             val surface=activity.surface
+            if(!activity.session.reference&&activity.session.view=="settings"){
+                fun descendants(v:android.view.View):List<android.view.View> = listOf(v)+(if(v is android.view.ViewGroup)(0 until v.childCount).flatMap{descendants(v.getChildAt(it))}else emptyList())
+                val root=descendants(activity.window.decorView)
+                val popup=root.filterIsInstance<InkSettingsView>().firstOrNull()?.languageMenuView
+                val key=when(action){"check-updates"->"settings:menu:1";"update:back"->"settings:back";"menu:ui-language"->"settings:menu:0";"option:0"->if(popup!=null)"settings:language:en"else action;"option:1"->if(popup!=null)"settings:language:zh"else action;else->action}
+                val native=(root+if(popup!=null)descendants(popup)else emptyList()).firstOrNull{it.tag==key&&it.isShown}
+                if(native!=null){val position=IntArray(2);native.getLocationOnScreen(position);return@main (position[0]+native.width*fractionX) to (position[1]+native.height*.5f)}
+            }
             val nodes=if(action.startsWith("update:"))surface.painter.updatePanel.nodes()else surface.painter.scene(if(activity.session.page==1)"immersive" else surface.painter.name(activity.session.light)).flattened()
             val r=nodes.first{it.action==action||it.id==action}.r
             val scale=minOf(surface.width/1704f,surface.height/1136f)
@@ -49,7 +57,11 @@ class NativeEvidence:Instrumentation() {
             arguments.putLong("launchStart",SystemClock.elapsedRealtime())
             activity=startActivitySync(launch) as MainActivity
             waitFor{activity.surface.assetsReady&&activity.surface.width>0&&!activity.surface.refreshing};Thread.sleep(700)
+            result.putString("operation",arguments.getString("operation","state"))
+            result.putInt("targetVersionCode",targetContext.packageManager.getPackageInfo(targetContext.packageName,0).longVersionCode.toInt())
+            result.putString("targetVersionName",targetContext.packageManager.getPackageInfo(targetContext.packageName,0).versionName)
             when(arguments.getString("operation","state")){
+                "state"->{}
                 "ime"->{
                     tap("station-search")
                     main {
@@ -69,6 +81,9 @@ class NativeEvidence:Instrumentation() {
                     waitFor{activity.session.updateUi.phase==UpdatePhase.READY}
                     check(main{updater()!!.downloadRequests}==before){"Repeated check downloaded the same APK again"}
                 }
+                "star-controls","star-controls-restore"->{result.putString("aetherResult",StarControlsSuite(this,activity).run(arguments.getString("operation")=="star-controls-restore").toString());finish(Activity.RESULT_OK,result);return}
+                "navigation-performance"->{result.putString("aetherResult",NavigationPerformanceSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
+                "hardware-refinement"->{result.putString("aetherResult",HardwareRefinementSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
                 "render-regression"->{
                     main {
                         val v=activity.surface;val painter=v.painter
@@ -206,6 +221,7 @@ class NativeEvidence:Instrumentation() {
                     tap("device-settings");tap("menu:ui-language");tap("option:1");tap("device-settings")
                     waitFor{activity.session.volume==17&&activity.session.tempo==90&&activity.session.language=="zh"}
                 }
+                else->error("Unknown verification operation: ${arguments.getString("operation")}")
             }
             Thread.sleep(450)
             val operation=arguments.getString("operation","state").replace(Regex("[^A-Za-z0-9-]"),"").take(32)

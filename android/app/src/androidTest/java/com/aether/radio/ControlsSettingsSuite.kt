@@ -60,12 +60,12 @@ class ControlsSettingsSuite(private val test:Instrumentation,private val activit
             val v=main{activity.surface.painter.scene(activity.surface.painter.name(s.light)).find("volume")!!.r}
             val before=main{activity.surface.haptics.attempts};val sound=main{activity.surface.haptics.soundPlays}
             pointer((0..10).map{i->v.centerX() to (v.centerY()-72*i/10f)})
-            check(main{s.volume in 20..21&&abs(activity.surface.painter.volumeAngle-(-135+s.volume*9))<.1f&&abs(audio().player.volume-s.volume/30f)<.001})
+            check(main{s.volume in 18..19&&abs(activity.surface.painter.volumeAngle-(-135+s.volume*9))<.1f&&abs(audio().player.volume-s.volume/30f)<.001})
             val volume=main{s.volume};pointer(listOf(v.centerX() to v.centerY(),v.centerX() to v.centerY()));check(main{s.volume}==volume)
             record("Center dragging follows fresh relative travel and the real player gain; pressing never jumps")
             val start=main{s.volume}
             pointer((0..10).map{i->val a=i*54.0/10*PI/180;(v.centerX()+v.width()*.42*cos(a)).toFloat() to (v.centerY()+v.width()*.42*sin(a)).toFloat()})
-            check(main{s.volume-start in 5..6});record("Outer rotation follows the printed 9-degree detents without timer-dropped travel")
+            check(main{s.volume-start in 4..5});record("Outer rotation follows the relative damped detents without timer-dropped travel")
             val tempo=main{activity.surface.painter.scene(activity.surface.painter.name(s.light)).find("tempo")!!.r}
             pointer((0..16).map{i->(tempo.left+21.58f+(tempo.width()-43.16f)*(.5f+i*.5f/16)) to tempo.centerY()})
             check(main{s.tempo==150&&audio().player.playbackParameters.speed==1.5f&&audio().player.playbackParameters.pitch==1f})
@@ -82,7 +82,7 @@ class ControlsSettingsSuite(private val test:Instrumentation,private val activit
             val health=(java.net.URL("https://manpin-feedback.vercel.app/healthz").openConnection() as javax.net.ssl.HttpsURLConnection).apply{connectTimeout=10000;readTimeout=10000}
             val configured=try{health.inputStream.use{JSONObject(it.bufferedReader().readText()).getBoolean("configured")}}finally{health.disconnect()}
             if(!configured){tapText("Send feedback");waitFor{!client().busy&&client().status=="service_unconfigured"};check(main{client().draft==message});shot("feedback-unconfigured");record("A real unconfigured-server response stays inline and retains the original draft; no success is invented")}
-            main{s.settingsPage="menu";s.language="zh";s.changed()};tapText("界面语言");waitFor{s.menu=="ui-language"};shot("language-menu")
+            main{s.settingsPage="menu";s.language="zh";s.changed()};tapText("界面语言");waitFor{overlay().languageMenuView!=null&&s.settingsPage=="menu"&&s.menu==null};shot("language-menu")
             main{s.menu=null;s.showView("directory");activity.surface.activate("menu:language")};waitFor{s.menu=="language"};shot("station-language-menu")
             check(UiWords.option("language","german",true)=="德语"&&UiWords.option("language","american english",true)=="美式英语"&&UiWords.option("language","español argentina",true)=="阿根廷西班牙语")
             record("Custom language menus use translated display labels while original filter values retain their identity")

@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">漫频</string>
+    <string name="widget_name">漫频 · 正在播放</string>
     <string name="widget_description">专辑封面、当前播放和上一首／下一首控制</string>
     <string name="widget_cover_description">专辑封面</string>
     <string name="widget_empty">选择音乐，开始聆听</string>

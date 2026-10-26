@@ -34,7 +34,7 @@ class Session(val reference: Boolean) {
     var playbackPositionMs=0L
     var positionSampleTime=0L
     var seekable=false
-    val displayPositionMs get()=(playbackPositionMs+if(playing&&positionSampleTime>0)((playbackClockMs()-positionSampleTime)*tempo/100f).toLong()else 0L).coerceAtLeast(0).let{if(isLocal)it.coerceAtMost(localDurationMs)else it}
+    val displayPositionMs get()=(playbackPositionMs+if(playing&&positionSampleTime>0)((playbackClockMs()-positionSampleTime)*(if(isLocal)tempo/100f else 1f)).toLong()else 0L).coerceAtLeast(0).let{if(isLocal&&localDurationMs>0)it.coerceAtMost(localDurationMs)else it}
     var localPositionMs=0L
     var localDurationMs=0L
     var onLocalSelect:(List<LocalTrack>,Int)->Unit={_,_->}
@@ -67,6 +67,8 @@ class Session(val reference: Boolean) {
     var directoryIssue:String?=null
     var retainedInk:RetainedInk?=null
     fun freezeInk(){retainedInk=RetainedInk(station,metadata,decodedFormat,connection,playing)}
+    val starredTracks=linkedSetOf<String>()
+    val activeStarred get()=if(isLocal)localTrack?.id in starredTracks else station?.id in favorites
     val favorites = if(reference) mutableListOf("ref:0", "ref:2", "ref:1", "ref:3") else mutableListOf()
     var view = "directory"
     var lastBrowseView="directory"
@@ -129,7 +131,7 @@ class Session(val reference: Boolean) {
         action.startsWith("favorite-step:")->if(isLocal)localQueue.isNotEmpty() else favorites.any{lookup(it)!=null}
         action in listOf("previous","next")||action.startsWith("step:")->if(isLocal)localQueue.isNotEmpty() else tuningPool().isNotEmpty()
         action=="play-toggle"->if(isLocal)localTrack!=null else station!=null
-        action=="favorite-toggle"->!isLocal&&station!=null
+        action=="favorite-toggle"->if(isLocal)localTrack!=null else station!=null
         action=="random-station"->filtered().isNotEmpty()
         else->true
     }
@@ -162,7 +164,12 @@ class Session(val reference: Boolean) {
     }
     fun changeVolume(v: Int) {if(!enabled)return;val next=v.coerceIn(0,30);if(next==volume)return;volume=next;onVolume(volume);changed()}
     fun toggleMute() { if(volume>0){unmutedVolume=volume;changeVolume(0)}else changeVolume(unmutedVolume) }
-    fun toggleFavorite() {if(!enabled||isLocal)return;station?.let {if(!favorites.remove(it.id)){favorites.add(it.id);savedStations[it.id]=it}else savedStations.remove(it.id)};presetOffset=presetOffset.coerceAtMost((favorites.size-4).coerceAtLeast(0));listOffset=0;onFavorites();changed()}
+    fun toggleFavorite(){
+        if(!enabled)return
+        if(isLocal){localTrack?.let{if(!starredTracks.remove(it.id))starredTracks.add(it.id)};onFavorites();changed();return}
+        station?.let{if(!favorites.remove(it.id)){favorites.add(0,it.id);savedStations[it.id]=it}else savedStations.remove(it.id)}
+        presetOffset=0;listOffset=0;onFavorites();changed()
+    }
     fun togglePlay() {if(!enabled)return;playIntent=if(!reference&&connection in listOf(Connection.CONNECTING,Connection.BUFFERING))false else !playing;if(reference)playing=playIntent;onPlay(playIntent);changed()}
     fun changeTempo(value:Int){if(!enabled)return;val next=(value/5.0).roundToInt().times(5).coerceIn(50,150);if(next==tempo)return;tempo=next;onTempo(next);changed()}
     fun options(key:String):List<String> = when(key) {

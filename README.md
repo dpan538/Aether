@@ -2,7 +2,23 @@
 
 **不设边界，漫游频率。**
 
-漫频是一款专为 **小米 Pad 9 Pro Max** 横屏打造的原生音乐与电台应用。它把收音机的实体触感、清晰的声音信息与唱片的视觉体验收进同一块屏幕。
+**专为小米 Pad 9 Pro Max 横屏打造。** 漫频是一款原生音乐与电台应用，把收音机的实体触感、清晰的声音信息与唱片的视觉体验收进同一块屏幕。
+
+[![Android 预览版](https://img.shields.io/github/v/release/dpan538/Aether?include_prereleases&label=preview&color=3569d6)](https://github.com/dpan538/Aether/releases)
+![Kotlin Native Android](https://img.shields.io/badge/Kotlin-Native%20Android-7f52ff?logo=kotlin&logoColor=white)
+![Android 12+](https://img.shields.io/badge/Android-12%2B-4c8b64?logo=android&logoColor=white)
+[![Code license: MIT](https://img.shields.io/badge/code-MIT-4c6b5b)](LICENSE)
+[![Visual assets: contribution use only](https://img.shields.io/badge/visuals-contribution%20use%20only-b67c49)](VISUAL-LICENSE.md)
+
+[**下载 Android 预览版 ↗**](https://github.com/dpan538/Aether/releases) · [下载与更新](#下载与更新) · [适配与贡献](CONTRIBUTING.md)
+
+<table>
+  <tr>
+    <td width="33.33%"><a href="media/posters/sound-on-an-axis.jpg"><img src="media/posters/sound-on-an-axis.jpg" alt="漫频海报：纯粹，无界，把控制权交还给双手。" width="100%"></a></td>
+    <td width="33.33%"><a href="media/posters/hear-the-distant.jpg"><img src="media/posters/hear-the-distant.jpg" alt="漫频海报：在看不见的天空里，听见远方。" width="100%"></a></td>
+    <td width="33.33%"><a href="media/posters/sound-and-space.jpg"><img src="media/posters/sound-and-space.jpg" alt="漫频海报：不设边界，漫游频率。声音与空间。" width="100%"></a></td>
+  </tr>
+</table>
 
 ## 两种聆听方式
 
@@ -19,7 +35,9 @@
 ## 声音与音乐
 
 - 通过真实电台目录搜索、按地区／类型／语言筛选、收藏与主动随机探索。
+- 支持后台播放、系统媒体控制与可调整尺寸的桌面小组件。
 - 原生音频播放，支持 50%–150% 速度调整并保持音高，频谱来自实际解码的音频。
+- 歌曲可独立星标，收藏电台可立即从四枚预设键调取。
 - 支持本地音乐与设备文件导入，附带 Dai Pan（潘岱）的器乐专辑 **Before the Rise**。
 - 无广告、推荐信息流、热度榜单或算法个性化。
 

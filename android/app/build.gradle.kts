@@ -10,8 +10,8 @@ android {
         applicationId = "io.github.dpan538.aether"
         minSdk = 31
         targetSdk = 36
-        versionCode = providers.gradleProperty("aetherVersionCode").orElse("8").get().toInt()
-        versionName = providers.gradleProperty("aetherVersionName").orElse("0.1.0-preview.7").get()
+        versionCode = providers.gradleProperty("aetherVersionCode").orElse("9").get().toInt()
+        versionName = providers.gradleProperty("aetherVersionName").orElse("0.1.0-preview.8").get()
         testInstrumentationRunner = "com.aether.radio.NativeEvidence"
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }

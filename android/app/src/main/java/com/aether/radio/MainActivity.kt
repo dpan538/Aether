@@ -78,11 +78,13 @@ class MainActivity:Activity() {
         surface=AetherView(this,session)
         if(!session.reference)feedback=FeedbackClient(applicationContext){if(!destroyed)session.changed()}
         surface.musicSources={showMusicSources()}
+        surface.languageChoices={inkSettings?.openLanguageMenu()}
+        surface.onVisualFrame={inkSettings?.alignWithSurface()}
         session.onSpectrum={surface.invalidate()}
         surface.touchTrace=BuildConfig.DEBUG&&intent.getBooleanExtra("touch_trace",false)
         if(BuildConfig.DEBUG&&intent.hasExtra("preset_font"))surface.painter.presetFont=intent.getStringExtra("preset_font")?.takeUnless{it=="Arimo"}
         surface.onFirstFrame={filesDir.resolve("frame-ready.txt").writeText(intent.getStringExtra("scenario")?:"modern-ink");reportState()}
-        surface.onResourcesReady={surface.beginRefresh();sampleControls();inkSettings?.place();inkSettings?.refresh();reportState()}
+        surface.onResourcesReady={if(!session.reference)MusicWidget.publishPreview(applicationContext);surface.beginRefresh();sampleControls();inkSettings?.place();inkSettings?.refresh();reportState()}
         val redraw=session.onChange
         uiChange={if(foreground){redraw();inkSettings?.refresh();inkSettings?.place()};savePreferences();if(foreground&&!session.reference&&session.powered&&directoryQuery!=session.query)searchDirectory(session.query,true);if(!session.enabled){searchField?.clearFocus();searchField?.windowToken?.let{(getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(it,0)}};reportState()}
         session.onChange=uiChange!!

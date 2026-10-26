@@ -40,7 +40,7 @@ object LocalMusic {
             return LocalTrack("document:${uri}",title,uri.toString(),album,duration,artist,coverUri=ArtworkStore.saveEmbedded(context,uri,picture))
         }finally{reader.release()}
     }
-    fun time(ms:Long):String {val seconds=ms.coerceAtLeast(0)/1000;return "%d:%02d".format(java.util.Locale.ROOT,seconds/60,seconds%60)}
+    fun time(ms:Long):String {val seconds=ms.coerceAtLeast(0)/1000;return "${seconds/60}:${(seconds%60).toString().padStart(2,'0')}"}
     fun restoreQueue(context:Context,json:String,bundled:List<LocalTrack>):List<LocalTrack>{
         val grants=context.contentResolver.persistedUriPermissions.filter{it.isReadPermission}.map{it.uri.toString()}.toSet()
         val a=JSONArray(json)

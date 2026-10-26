@@ -15,6 +15,7 @@ import kotlin.math.*
 class AetherView(context:Context,val state:Session):View(context) {
     val painter=ScenePainter(context,state)
     val haptics=ControlHaptics(this)
+    val mainPlayback=MainPlaybackPanel(state,painter)
     val immersivePlayback=ImmersivePlayback(context,state){invalidate()}
     private var selectorTouch=false
     private var seekBaseMs=0L
@@ -26,8 +27,13 @@ class AetherView(context:Context,val state:Session):View(context) {
     var reducedMotion=false
     var search:()->Unit={}
     var musicSources:()->Unit={}
+    var languageChoices:()->Unit={}
     var touchTrace=false
     var onFirstFrame:()->Unit={}
+    var onVisualFrame:()->Unit={}
+    var externalInputActive=false
+    val modernOffsetPixels get()=(if(state.page==0)offset else if(offset!=0f)offset+if(offset>0)-1704f else 1704f else 0f)*sx
+    val modernVisible get()=state.page==0||offset!=0f
     var onResourcesReady:()->Unit={}
     var assetsReady=false;private set
     var preparationMillis=0L;private set
@@ -64,6 +70,15 @@ class AetherView(context:Context,val state:Session):View(context) {
     private var refreshStart=0L
     private var refreshGeneration=0
     private var offset=0f
+    private var frozenScenes:Map<String,Picture>?=null
+    private val warmScenes=Runnable{
+        if(assetsReady&&!released&&active&&offset==0f&&width>0&&height>0){
+            for((lit,immersive)in listOf(false to false,true to false,false to true)){val list=sceneList(lit,immersive);if(isHardwareAccelerated)sceneLayer(list,lit,immersive)}
+        }
+    }
+    private fun scheduleWarm(){removeCallbacks(warmScenes);if(!state.reference)postDelayed(warmScenes,180)}
+    private fun freezeNavigation(){if(frozenScenes==null)frozenScenes=listOf(false to false,true to false,false to true).associate{(lit,immersive)->"$lit:$immersive" to sceneList(lit,immersive)}}
+
     private var downX=0f;private var downY=0f;private var lastY=0f;private var lastAngle:Double?=null
     private var action="";private var moved=false;private var consumedGesture=false;private var verticalVolume=false
     private var focusAction="volume"
@@ -71,11 +86,13 @@ class AetherView(context:Context,val state:Session):View(context) {
     private val rotaryGate=DetentGate(.57,180,.2)
     private val modeGate=DetentGate(.66,180,.2)
     private val liveVolume=RelativeEncoder()
+    private val liveTuning=RelativeEncoder(-1000000,1000000,.999)
+    private var tuningDetent=0
     private val volumeGate=DetentGate(.3,140,.12)
     private val verticalGate=DetentGate(18.0,140,9.0)
     private val wheelGate=DetentGate(96.0,180,48.0)
     private val volumeWheelGate=DetentGate(120.0,160,48.0)
-    private val disc=DiscRenderer(context){print,bmp,phase->post {if(released)bmp.recycle()else {if(print)painter.mainDisc=bmp else {painter.smallDisc=bmp;painter.smallDiscPhase=phase};displayLists.evictAll();invalidate();if(print)discSmall()}}}
+    private val disc=DiscRenderer(context){print,bmp,phase->post {if(released)bmp.recycle()else {if(print)painter.mainDisc=bmp else {painter.smallDisc=bmp;painter.smallDiscPhase=phase};displayLists.evictAll();scheduleWarm();invalidate();if(print)discSmall()}}}
     private var phaseMillis=0L
     private var phaseTick=SystemClock.uptimeMillis()
     private var previousMotion=state.motion
@@ -92,7 +109,7 @@ class AetherView(context:Context,val state:Session):View(context) {
             preparationStarted=true;val started=SystemClock.uptimeMillis()
             painter.prepare{error->post{
                 if(!released){preparationMillis=SystemClock.uptimeMillis()-started;preparationError=error;assetsReady=error==null
-                    if(assetsReady){onResourcesReady();immersivePlayback.syncArtwork();postDelayed({if(!released&&active){if(immersivePlayback.needsFallback)disc.render(true,3801)else discSmall()}},250)}
+                    if(assetsReady){scheduleWarm();onResourcesReady();immersivePlayback.syncArtwork();postDelayed({if(!released&&active){if(immersivePlayback.needsFallback)disc.render(true,3801)else discSmall()}},250)}
                     invalidate()
                 }
             }}
@@ -100,7 +117,7 @@ class AetherView(context:Context,val state:Session):View(context) {
     }
     init {
         isFocusable=true;isFocusableInTouchMode=true;isHapticFeedbackEnabled=true;importantForAccessibility=IMPORTANT_FOR_ACCESSIBILITY_YES
-        state.onChange={if(state.motion&&!previousMotion)phaseTick=SystemClock.uptimeMillis();previousMotion=state.motion;revision++;displayLists.evictAll();sync();invalidate();sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)}
+        state.onChange={if(state.motion&&!previousMotion)phaseTick=SystemClock.uptimeMillis();previousMotion=state.motion;revision++;displayLists.evictAll();scheduleWarm();sync();invalidate();sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)}
         sync(false)
         viewTreeObserver.addOnPreDrawListener {
             if(assetsReady){
@@ -118,7 +135,7 @@ class AetherView(context:Context,val state:Session):View(context) {
         fun pointer(key:String,target:Float,duration:Long,get:()->Float,set:(Float)->Unit){
             if(abs(target-get())<.01f)return
             pointerAnimators.remove(key)?.cancel()
-            if(!animate||reducedMotion||(key=="volume"&&action=="volume"&&!state.reference)){set(target);return}
+            if(!animate||reducedMotion||(key in listOf("volume","tune")&&action in listOf("volume","tuning-dial")&&!state.reference)){set(target);return}
             pointerAnimators[key]=ValueAnimator.ofFloat(get(),target).apply{this.duration=duration;interpolator=physical;addUpdateListener{set(it.animatedValue as Float);invalidate()};start()}
         }
         pointer("tune",state.tuningAngle,230,{painter.tuningAngle},{painter.tuningAngle=it})
@@ -131,7 +148,7 @@ class AetherView(context:Context,val state:Session):View(context) {
         val target=if(state.light)1f else 0f
         if(abs(frontlight-target)<.0001f){frontlight=target;state.changed();return}
         if(reducedMotion){frontlight=target;state.changed();return}
-        lightAnimator=ValueAnimator.ofFloat(frontlight,target).apply{duration=1050;interpolator=lightCurve;addUpdateListener{frontlight=it.animatedValue as Float;invalidate()};addListener(object:android.animation.AnimatorListenerAdapter(){override fun onAnimationEnd(a:android.animation.Animator){state.changed()}});start()}
+        lightAnimator=ValueAnimator.ofFloat(frontlight,target).apply{duration=1050;interpolator=lightCurve;addUpdateListener{frontlight=it.animatedValue as Float;invalidate()};addListener(object:android.animation.AnimatorListenerAdapter(){override fun onAnimationEnd(a:android.animation.Animator){scheduleWarm();invalidate()}});start()}
         state.changed()
     }
     fun power(){
@@ -170,20 +187,21 @@ class AetherView(context:Context,val state:Session):View(context) {
         if(!state.reference&&state.page==0&&!reducedMotion){
             val nav="${state.view}:${state.menu}:${state.language}:${state.settingsPage}:${state.listOffset}:${state.updateOpen}"
             if(nav!=inkNavigation){if(inkNavigation.isNotEmpty())partialNavigations++;inkNavigation=nav;navigationChangedAt=frameTime}
-            if(partialNavigations>=12&&frameTime-navigationChangedAt>800&&action.isBlank()&&!refreshing){partialNavigations=0;beginRefresh()}
+            if(partialNavigations>=12&&frameTime-navigationChangedAt>800&&action.isBlank()&&!externalInputActive&&!refreshing){partialNavigations=0;beginRefresh()}
         }
         if(active&&state.powered&&state.playing&&!reducedMotion)immersivePlayback.advance((frameTime-phaseTick).coerceIn(0,100)/1000f)
         if(state.motion&&active&&state.powered){phaseMillis+=(frameTime-phaseTick).coerceAtLeast(0);painter.phase=(testTime?:phaseMillis)/1000f}
         phaseTick=frameTime
+        painter.renderScale=sx
         if(!state.reference){immersivePlayback.setRenderScale(sx);immersivePlayback.syncArtwork()}
         if((state.page==1||offset!=0f)&&painter.mainDisc==null&&(state.reference||immersivePlayback.needsFallback))disc.render(true,3801)
         if(state.page==1&&testTime!=null&&state.motion&&(!painter.smallDiscPhase.isFinite()||abs(painter.smallDiscPhase-painter.phase)>.0001f))disc.render(false,966,painter.phase)
         canvas.save();canvas.translate(ox,oy);canvas.scale(sx,sx);canvas.clipRect(0f,0f,1704f,1136f)
         fun page(immersive:Boolean,x:Float){canvas.save();canvas.translate(x,0f)
-            if(immersive)drawScene(canvas,false,true)
+            if(immersive){if(!state.reference){p.reset();p.color=0xff080a0e.toInt();canvas.drawRect(0f,0f,1704f,1136f,p)};drawScene(canvas,false,true)}
             else {
-                drawScene(canvas,false,false)
-                if(frontlight>0f){val a=(frontlight*255).toInt().coerceIn(0,255);canvas.saveLayerAlpha(0f,0f,1704f,1136f,a);drawScene(canvas,true,false);canvas.restore()}
+                if(frontlight>=.999f)drawScene(canvas,true,false)else drawScene(canvas,false,false)
+                if(frontlight>0f&&frontlight<.999f){val a=(frontlight*255).toInt().coerceIn(0,255);canvas.saveLayerAlpha(0f,0f,1704f,1136f,a);drawScene(canvas,true,false);canvas.restore()}
                 if(refreshing)drawRefresh(canvas)
             }
             canvas.restore()
@@ -191,7 +209,9 @@ class AetherView(context:Context,val state:Session):View(context) {
         page(state.page==1,offset)
         if(offset!=0f)page(state.page!=1,offset+if(offset>0)-1704f else 1704f)
         canvas.restore()
+        onVisualFrame()
         if(active&&!state.reference&&state.page==1&&state.powered&&state.playing&&!reducedMotion)postInvalidateOnAnimation()
+        if(active&&!state.reference&&state.page==0&&state.powered&&state.playing)postInvalidateDelayed(200)
         if(active&&testTime==null&&(refreshing||state.motion&&state.powered&&!reducedMotion)){
             val now=testTime?:phaseMillis
             if(state.page==1&&now-lastSmallPhase>42){disc.render(false,966,painter.phase);lastSmallPhase=now}
@@ -202,36 +222,44 @@ class AetherView(context:Context,val state:Session):View(context) {
             }else postInvalidateDelayed(42)
         }
     }
-    private fun drawScene(c:Canvas,lit:Boolean,immersive:Boolean){
-        val tick=if(state.reference&&state.motion)(painter.phase*10).toInt() else 0
+    private fun sceneList(lit:Boolean,immersive:Boolean):Picture{
+        frozenScenes?.get("$lit:$immersive")?.let{return it}
+        val tick=if(state.reference&&state.motion)(painter.phase*10).toInt()else 0
         val key="$revision:$lit:$immersive:$tick"
-        val list=displayLists.get(key)?:Picture().also {picture->
+        return displayLists.get(key)?:Picture().also{picture->
             val target=picture.beginRecording(1704,1136);painter.recordStatic=true
             val pressed=painter.pressProgress;painter.pressProgress=0f
             try{painter.draw(target,lit,immersive)}finally{painter.pressProgress=pressed;painter.recordStatic=false;picture.endRecording()}
             displayLists.put(key,picture)
         }
-        if(c.isHardwareAccelerated){
-            // Native display-list layers are rasterized at device pixel size,
-            // including 3408x2272. Reusing them avoids repainting every material
-            // during alpha/drag animation; no interface screenshot is shipped.
-            val kind="$lit:$immersive"
-            val layer=nativeLayers.getOrPut(kind){SceneLayer(RenderNode("Aether $kind"))}
-            val pixelsW=ceil(1704*sx).toInt();val pixelsH=ceil(1136*sx).toInt()
-            if(layer.source!==list||layer.width!=pixelsW||layer.height!=pixelsH){
-                layer.node.setPosition(0,0,pixelsW,pixelsH);layer.node.setUseCompositingLayer(true,null)
-                val target=layer.node.beginRecording(pixelsW,pixelsH)
-                target.scale(sx,sx);target.drawPicture(list);layer.node.endRecording()
-                layer.source=list;layer.width=pixelsW;layer.height=pixelsH
-            }
-            c.save();c.scale(1/sx,1/sx);c.drawRenderNode(layer.node);c.restore()
-        }else c.drawPicture(list)
+    }
+    private fun sceneLayer(list:Picture,lit:Boolean,immersive:Boolean):SceneLayer{
+        val kind="$lit:$immersive"
+        val layer=nativeLayers.getOrPut(kind){SceneLayer(RenderNode("漫频 $kind"))}
+        // The large CD is a separate live, full-resolution surface. Cache only the
+        // right-hand instruments instead of a mostly empty 3408-pixel-wide layer.
+        val bounds=if(immersive&&!state.reference)RectF(1048f,8f,1696f,1128f)else RectF(0f,0f,1704f,1136f)
+        val left=floor(bounds.left*sx).toInt();val top=floor(bounds.top*sx).toInt()
+        val right=ceil(bounds.right*sx).toInt();val bottom=ceil(bounds.bottom*sx).toInt()
+        val pixelsW=right-left;val pixelsH=bottom-top
+        if(layer.source!==list||layer.width!=pixelsW||layer.height!=pixelsH){
+            layer.node.setPosition(left,top,right,bottom);layer.node.setClipToBounds(true);layer.node.setUseCompositingLayer(true,null)
+            val target=layer.node.beginRecording(pixelsW,pixelsH)
+            target.translate(-left.toFloat(),-top.toFloat());target.scale(sx,sx);target.drawPicture(list);layer.node.endRecording()
+            layer.source=list;layer.width=pixelsW;layer.height=pixelsH
+        }
+        return layer
+    }
+    private fun drawScene(c:Canvas,lit:Boolean,immersive:Boolean){
+        val list=sceneList(lit,immersive)
+        if(c.isHardwareAccelerated){val layer=sceneLayer(list,lit,immersive);c.save();c.scale(1/sx,1/sx);c.drawRenderNode(layer.node);c.restore()}else c.drawPicture(list)
         if(!state.reference){if(immersive){immersivePlayback.drawDisc(c,painter.mainDisc);immersivePlayback.drawSelector(c);painter.drawImmersiveSpectrum(c)}else{
             val now=SystemClock.uptimeMillis()
             val ink=inkFrames.getOrPut(lit){InkResponse()}
             ink.offer(list,revision,now,reducedMotion||refreshing||!active)
             val rects=inkRects?:painter.scene("modern-ink").flattened().filter{it.cls in listOf("directory-screen","mint-display","now-display","scope-display","area-display","indicator-strip")}.map{RectF(it.r)}.also{inkRects=it}
             for(r in rects){
+                if(state.view=="settings"&&r.top<100f)continue // Native settings own their page residuals.
                 c.save();c.clipRect(r)
                 if(ink.displayed!==list)ink.displayed?.let{c.drawPicture(it)}
                 val alpha=(ink.residual(now)*255).toInt()
@@ -241,6 +269,7 @@ class AetherView(context:Context,val state:Session):View(context) {
             if(ink.animating(now)&&active)postInvalidateDelayed(24)
             if(now-spectrumSampleAt>=160||reducedMotion||inkSpectrum==null){inkSpectrum=state.spectrumFrame;spectrumSampleAt=now}
             painter.drawLiveSpectrum(c,lit,inkSpectrum)
+            mainPlayback.draw(c,lit)
         }}
         if(!immersive)painter.drawPointers(c)
         if(painter.pressProgress>0f)painter.drawPressOverlay(c,lit,immersive)
@@ -266,9 +295,9 @@ class AetherView(context:Context,val state:Session):View(context) {
         painter.ghostMode=0;painter.gaugeRefresh=values
         try{root.flattened().filter{it.cls=="gauge"}.forEach{painter.drawNode(c,it,false)}}finally{painter.gaugeRefresh=null}
     }
-    fun pause(){active=false;pausedAt=SystemClock.uptimeMillis();cancelInput();lightAnimator?.end();pageAnimator?.end();pressAnimator?.end();pointerAnimators.values.forEach{it.end()}}
+    fun pause(){externalInputActive=false;active=false;pausedAt=SystemClock.uptimeMillis();cancelInput();lightAnimator?.end();pageAnimator?.end();pressAnimator?.end();pointerAnimators.values.forEach{it.end()}}
     fun resume(){active=true;phaseTick=SystemClock.uptimeMillis();pausedAt=0;reducedMotion=Settings.Global.getFloat(context.contentResolver,Settings.Global.ANIMATOR_DURATION_SCALE,1f)==0f;if(reducedMotion){refreshing=false;state.motion=false};invalidate()}
-    fun close(){released=true;assetsReady=false;pause();displayLists.evictAll();inkFrames.values.forEach{it.clear()};inkFrames.clear();nativeLayers.values.forEach{it.node.discardDisplayList()};nativeLayers.clear();disc.close();immersivePlayback.close();haptics.close();painter.close()}
+    fun close(){removeCallbacks(warmScenes);frozenScenes=null;released=true;assetsReady=false;pause();displayLists.evictAll();inkFrames.values.forEach{it.clear()};inkFrames.clear();nativeLayers.values.forEach{it.node.discardDisplayList()};nativeLayers.clear();disc.close();immersivePlayback.close();haptics.close();painter.close()}
     private fun nodes():List<SceneNode>{
         if(!assetsReady)return emptyList()
         val all=painter.scene(if(state.page==1)"immersive" else painter.name(frontlight>.5f)).flattened().map{
@@ -277,6 +306,12 @@ class AetherView(context:Context,val state:Session):View(context) {
         if(state.page==1&&!state.reference){
             fun node(action:String,r:RectF,label:String)=SceneNode(org.json.JSONObject().put("id",action).put("action",action).put("label",label).put("r",org.json.JSONArray(listOf(r.left,r.top,r.width(),r.height()))))
             return all.filter{it.action!="music-sources"}+node("disc-control",ImmersivePlayback.DISC,"唱片：点击播放或暂停，旋转调整进度")+node("playback-progress",ImmersivePlayback.PROGRESS,"播放进度")+node("music-sources",ImmersivePlayback.MORE,"音乐")
+        }
+        if(state.page==0&&!state.reference){
+            val panel=painter.scene(painter.name(state.light)).flattened().first{it.cls=="directory-screen"}.r
+            val visible=if(state.view=="settings")all.filter{!panel.contains(it.r.centerX(),it.r.centerY())}else all
+            if(state.isLocal&&state.seekable)return visible+SceneNode(org.json.JSONObject().put("id","main-progress").put("action","main-progress").put("label",if(state.language=="zh")"播放进度"else"Playback progress").put("r",org.json.JSONArray(listOf(MainPlaybackPanel.PROGRESS.left,MainPlaybackPanel.PROGRESS.top,MainPlaybackPanel.PROGRESS.width(),MainPlaybackPanel.PROGRESS.height()))))
+            return visible
         }
         if(state.page!=0||!state.updateOpen||state.view!="settings")return all
         val panel=painter.updatePanel.bounds()
@@ -302,7 +337,7 @@ class AetherView(context:Context,val state:Session):View(context) {
             if(raw=="playback-progress"&&(!state.isLocal||!state.seekable))raw="selector-swipe"
             if(raw.isBlank()&&ImmersivePlayback.SELECTOR.contains(x,y))raw="selector-swipe"
         }
-        if(state.page==0&&state.view=="settings"&&state.updateOpen&&painter.updatePanel.bounds().contains(x,y))return painter.updatePanel.nodes().lastOrNull{it.r.contains(x,y)}?.action?:"update:body"
+        if(state.reference&&state.page==0&&state.view=="settings"&&state.updateOpen&&painter.updatePanel.bounds().contains(x,y))return painter.updatePanel.nodes().lastOrNull{it.r.contains(x,y)}?.action?:"update:body"
         if(state.menu!=null){
             val root=painter.scene(painter.name(frontlight>.5f))
             val menu=root.flattened().find{it.cls=="filter-menu"}
@@ -338,7 +373,7 @@ class AetherView(context:Context,val state:Session):View(context) {
     }
     override fun onSizeChanged(w:Int,h:Int,oldw:Int,oldh:Int){
         super.onSizeChanged(w,h,oldw,oldh)
-        if(oldw>0&&oldh>0){ignoreGesture=true;pageAnimator?.cancel();pageAnimator=null;cancelInput()}
+        if(oldw>0&&oldh>0){ignoreGesture=true;pageAnimator?.cancel();pageAnimator=null;cancelInput()};if(assetsReady)scheduleWarm()
     }
     private fun trackDiscDrag(x:Float,y:Float){
         if(hypot(x-downX,y-downY)>ViewConfiguration.get(context).scaledTouchSlop/sx)moved=true
@@ -357,7 +392,7 @@ class AetherView(context:Context,val state:Session):View(context) {
         if(sx<=0)return false
         if(e.actionMasked==MotionEvent.ACTION_DOWN)ignoreGesture=!assetsReady||refreshing||pageAnimator?.isRunning==true
         if(ignoreGesture||!assetsReady||refreshing){
-            if(e.actionMasked==MotionEvent.ACTION_UP||e.actionMasked==MotionEvent.ACTION_CANCEL){cancelInput();ignoreGesture=false}
+            if(e.actionMasked==MotionEvent.ACTION_UP||e.actionMasked==MotionEvent.ACTION_CANCEL){cancelInput(pageAnimator?.isRunning!=true);ignoreGesture=false}
             return true
         }
         val (x,y)=coordinates(e)
@@ -385,6 +420,7 @@ class AetherView(context:Context,val state:Session):View(context) {
                 val r=nodeFor(action)?.r
                 verticalVolume=action=="volume"&&r!=null&&hypot(x-r.centerX(),y-r.centerY())<=r.width()*.27f
                 if(action=="volume")liveVolume.begin(state.volume)
+                if(action=="tuning-dial"){liveTuning.begin(0);tuningDetent=0}
                 if(action=="tempo")tempo(x)
                 if(action=="segmented-volume")strip(x)
                 parent.requestDisallowInterceptTouchEvent(true);return true
@@ -398,6 +434,7 @@ class AetherView(context:Context,val state:Session):View(context) {
                     trackDiscDrag(x,y)
                     invalidate();return true
                 }
+                if(action=="main-progress"){consumedGesture=true;mainPlayback.previewMs=mainPlayback.seekPosition(x);invalidate();return true}
                 if(action=="playback-progress"){consumedGesture=true;immersivePlayback.previewMs=(((x-ImmersivePlayback.PROGRESS.left)/ImmersivePlayback.PROGRESS.width()).coerceIn(0f,1f)*state.localDurationMs).toLong();invalidate();return true}
                 if(selectorTouch&&hypot(x-downX,y-downY)>64){consumedGesture=true;invalidate();return true}
                 if(state.view=="settings"&&state.about&&!state.updateOpen&&state.menu==null&&painter.scene(painter.name(false)).find("settings-view")?.r?.contains(downX,downY)==true&&abs(y-downY)>12){consumedGesture=true;state.settingsScroll=(settingsStartScroll+downY-y).coerceIn(0f,if(state.about)100f else 0f);state.changed()}
@@ -409,6 +446,7 @@ class AetherView(context:Context,val state:Session):View(context) {
                 else if(action=="volume"&&!state.reference){
                     trackLiveVolume(x,y)
                 }
+                else if(action=="tuning-dial"&&!state.reference)trackLiveTuning(x,y)
                 else if(action=="volume"&&verticalVolume){val d=verticalGate.push((lastY-y).toDouble(),now);lastY=y;if(d!=0)stepControl("volume",d)}
                 else if(action in listOf("volume","tuning-dial","tuning-mode")){
                     if(moved)consumedGesture=true
@@ -421,17 +459,19 @@ class AetherView(context:Context,val state:Session):View(context) {
                     }
                 } else if(action.isBlank()){
                     val dx=x-downX;val dy=y-downY
-                    if(abs(dx)>abs(dy)*1.3f){offset=dx.coerceIn(-1704f,1704f);invalidate()}
+                    if(abs(dx)>abs(dy)*1.3f){freezeNavigation();offset=dx.coerceIn(-1704f,1704f);invalidate()}
                 }
                 return true
             }
             MotionEvent.ACTION_UP->{
                 if(state.enabled&&action=="volume"&&!state.reference)trackLiveVolume(x,y)
+                if(state.enabled&&action=="tuning-dial"&&!state.reference)trackLiveTuning(x,y)
                 if(state.enabled&&action=="disc-control"){
                     trackDiscDrag(x,y)
                     if(consumedGesture)immersivePlayback.previewMs?.let{state.seekLocal(it);haptics.tick()}else if(!moved&&hypot(x-downX,y-downY)<18){state.togglePlay();haptics.press()}
                     immersivePlayback.previewMs=null;immersivePlayback.dragging=false;selectorTouch=false;cancelInput(false);invalidate();performClick();return true
                 }
+                if(state.enabled&&action=="main-progress"){state.seekLocal(mainPlayback.previewMs?:mainPlayback.seekPosition(x));mainPlayback.previewMs=null;cancelInput(false);invalidate();return true}
                 if(state.enabled&&action=="playback-progress"){val target=immersivePlayback.previewMs?:(((x-ImmersivePlayback.PROGRESS.left)/ImmersivePlayback.PROGRESS.width()).coerceIn(0f,1f)*state.localDurationMs).toLong();state.seekLocal(target);immersivePlayback.previewMs=null;cancelInput(false);invalidate();return true}
                 if(selectorTouch&&state.enabled&&maxOf(abs(x-downX),abs(y-downY))>=64){val dx=x-downX;val dy=y-downY;if(maxOf(abs(dx),abs(dy))>=64){state.step(if(abs(dx)>abs(dy))if(dx<0)1 else -1 else if(dy<0)1 else -1);haptics.tick()};selectorTouch=false;cancelInput(false);return true}
                 if(state.enabled&&action=="tempo")tempo(x)
@@ -441,7 +481,8 @@ class AetherView(context:Context,val state:Session):View(context) {
                     if(abs(dx)>=72&&abs(dx)>abs(dy)*1.3f)settle(true,if(dx>0)1 else -1)
                     else settle(false,if(dx>0)1 else -1)
                 } else if(!consumedGesture&&(!moved||state.page!=1)&&(hitAction(x,y)==action||nodeFor(action)?.let{touchBounds(it).contains(x,y)}==true)){
-                    if(action=="tuning-dial"||action=="tuning-mode"){val r=nodeFor(action)?.r;if(r!=null&&angle(action,x,y)!=null)stepControl(action,if(x<r.centerX())-1 else 1)}
+                    if(action=="tuning-dial"&&!state.reference){/* Relative encoder: a tap never changes the station. */}
+                    else if(action=="tuning-dial"||action=="tuning-mode"){val r=nodeFor(action)?.r;if(r!=null&&angle(action,x,y)!=null)stepControl(action,if(x<r.centerX())-1 else 1)}
                     else if(action!in listOf("volume","tempo","segmented-volume","empty-preset","update:body","selector-swipe")){if(action.isNotBlank()&&!physical(action))haptics.press();activate(action)}
                 }
                 cancelInput(false);performClick();return true
@@ -451,11 +492,20 @@ class AetherView(context:Context,val state:Session):View(context) {
         return true
     }
     private fun physical(a:String)=a.startsWith("device-")||a.startsWith("preset:")||a.startsWith("step:")||a.startsWith("favorite-step:")||a in listOf("play-toggle","stereo-button","equalizer-preview")
+    private fun trackLiveTuning(x:Float,y:Float){
+        if(hypot(x-downX,y-downY)>ViewConfiguration.get(context).scaledTouchSlop/sx)moved=true
+        if(moved)consumedGesture=true
+        val next=angle("tuning-dial",x,y);val previous=lastAngle;lastAngle=next
+        if(next!=null&&previous!=null){
+            var delta=next-previous;if(delta>PI)delta-=2*PI;if(delta< -PI)delta+=2*PI
+            if(abs(delta)<1.0){val value=liveTuning.push(delta/(PI*24/180));val steps=value-tuningDetent;tuningDetent=value;repeat(abs(steps)){stepControl("tuning-dial",if(steps>0)1 else -1)}}
+        }
+    }
     private fun trackLiveVolume(x:Float,y:Float){
         if(hypot(x-downX,y-downY)>ViewConfiguration.get(context).scaledTouchSlop/sx)moved=true
         if(moved)consumedGesture=true
-        if(verticalVolume){changeLiveVolume((lastY-y)/12.0);lastY=y}
-        else{val next=angle("volume",x,y);val previous=lastAngle;lastAngle=next;if(next!=null&&previous!=null){var delta=next-previous;if(delta>PI)delta-=2*PI;if(delta< -PI)delta+=2*PI;if(abs(delta)<1.0)changeLiveVolume(delta/(PI/20))}}
+        if(verticalVolume){changeLiveVolume((lastY-y)/20.0);lastY=y}
+        else{val next=angle("volume",x,y);val previous=lastAngle;lastAngle=next;if(next!=null&&previous!=null){var delta=next-previous;if(delta>PI)delta-=2*PI;if(delta< -PI)delta+=2*PI;if(abs(delta)<1.0)changeLiveVolume(delta/(PI/15))}}
     }
     private fun changeLiveVolume(units:Double){
         val before=state.volume;val next=liveVolume.push(units)
@@ -472,14 +522,15 @@ class AetherView(context:Context,val state:Session):View(context) {
     }}
     private fun settle(change:Boolean,direction:Int){
         pageAnimator?.cancel()
+        if(change)freezeNavigation()
         val target=if(change)direction*1704f else 0f
         if(!change&&abs(offset)<.001f){pageAnimator=null;offset=0f;return}
         if(change)haptics.confirm()
         val destination=if(change)1-state.page else state.page
-        if(reducedMotion){state.page=destination;offset=0f;invalidate();return}
-        pageAnimator=ValueAnimator.ofFloat(offset,target).apply {duration=if(change)280 else 220;interpolator=android.view.animation.LinearInterpolator();addUpdateListener{offset=it.animatedValue as Float;invalidate()};addListener(object:android.animation.AnimatorListenerAdapter(){var cancelled=false;override fun onAnimationCancel(a:android.animation.Animator){cancelled=true};override fun onAnimationEnd(a:android.animation.Animator){if(!cancelled){state.page=destination;offset=0f;state.changed()};if(pageAnimator===a)pageAnimator=null}});start()}
+        if(reducedMotion){state.page=destination;offset=0f;frozenScenes=null;invalidate();scheduleWarm();return}
+        pageAnimator=ValueAnimator.ofFloat(offset,target).apply {duration=if(change)280 else 220;interpolator=android.view.animation.LinearInterpolator();addUpdateListener{offset=it.animatedValue as Float;invalidate()};addListener(object:android.animation.AnimatorListenerAdapter(){var cancelled=false;override fun onAnimationCancel(a:android.animation.Animator){cancelled=true};override fun onAnimationEnd(a:android.animation.Animator){if(!cancelled){state.page=destination;offset=0f;frozenScenes=null;invalidate();scheduleWarm();sendAccessibilityEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)};if(pageAnimator===a)pageAnimator=null}});start()}
     }
-    fun cancelInput(resetPage:Boolean=true){immersivePlayback.previewMs=null;immersivePlayback.dragging=false;selectorTouch=false;action="";press(null,false);lastAngle=null;listOf(rotaryGate,modeGate,volumeGate,verticalGate,wheelGate,volumeWheelGate).forEach{it.reset()};if(resetPage)offset=0f;invalidate()}
+    fun cancelInput(resetPage:Boolean=true){mainPlayback.previewMs=null;immersivePlayback.previewMs=null;immersivePlayback.dragging=false;selectorTouch=false;action="";press(null,false);lastAngle=null;listOf(rotaryGate,modeGate,volumeGate,verticalGate,wheelGate,volumeWheelGate).forEach{it.reset()};if(resetPage){offset=0f;frozenScenes=null};invalidate()}
     fun activate(a:String){
         if(refreshing||!state.canUse(a))return
         if(a=="device-lock"&&state.powered){state.locked=!state.locked;if(state.locked)state.menu=null;state.changed();return}
@@ -492,7 +543,7 @@ class AetherView(context:Context,val state:Session):View(context) {
             a=="device-power"->power()
             a=="device-settings"->state.showView(if(state.view=="settings")state.lastBrowseView else "settings")
             a.startsWith("view:")->state.showView(a.substringAfter(':'))
-            a.startsWith("menu:")->{val key=a.substringAfter(':').removeSuffix("-filter");state.menu=if(state.menu==key)null else key;state.settingsScroll=0f;state.changed()}
+            a.startsWith("menu:")->{val key=a.substringAfter(':').removeSuffix("-filter");if(!state.reference&&key=="ui-language"){state.menu=null;languageChoices()}else state.menu=if(state.menu==key)null else key;state.settingsScroll=0f;state.changed()}
             a.startsWith("option:")->{val key=state.menu?:return;val i=a.substringAfter(':').toIntOrNull()?:return;state.options(key).getOrNull(i)?.let{state.filter(key,it)}}
             a.startsWith("station:")->{val i=a.substringAfter(':').toIntOrNull()?:return;state.catalog.getOrNull(i)?.let{state.select(it.id)}}
             a.startsWith("choose:")->state.select(a.substringAfter(':'))
@@ -504,6 +555,7 @@ class AetherView(context:Context,val state:Session):View(context) {
             a=="favorite-toggle"->state.toggleFavorite()
             a=="play-toggle"->state.togglePlay()
             a=="stereo-button"->state.toggleMute()
+            a=="monitor-toggle"&&!state.reference->{if(state.page==0)settle(true,-1)}
             a in listOf("monitor-toggle","equalizer-preview")->{
                 if(state.reference){if(!reducedMotion)state.motion=!state.motion}
                 else if(a=="monitor-toggle"){if(!reducedMotion)state.motion=!state.motion}
@@ -559,19 +611,20 @@ class AetherView(context:Context,val state:Session):View(context) {
                 if(item.action=="tuning-mode")contentDescription="Tuning dimension: ${listOf("station","region","genre","language")[state.mode]}"
                 if(item.action=="play-toggle")contentDescription=if(state.playing)"Pause" else "Play"
                 if(item.action=="equalizer-preview"&&!state.reference)contentDescription="Live PCM spectrum ${if(state.spectrumEnabled)"on" else "off"}"
-                if(item.action=="monitor-toggle"&&!state.reference)contentDescription="Artwork motion ${if(state.motion)"on" else "off"}"
+                if(item.action=="monitor-toggle"&&!state.reference)contentDescription=if(state.language=="zh")"进入沉浸播放"else"Open immersive player"
+                if(item.action=="favorite-toggle"){contentDescription=if(state.language=="zh")if(state.activeStarred)"取消星标"else if(state.isLocal)"星标歌曲"else"收藏电台并加入预设"else if(state.activeStarred)"Remove star"else if(state.isLocal)"Star track"else"Favorite station and add to presets";isCheckable=true;isChecked=state.activeStarred}
                 isEnabled=state.canUse(actual);isClickable=true;isFocusable=true;isVisibleToUser=true
                 addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_CLICK)
                 val r=touchBounds(item);val b=Rect((ox+r.left*sx).toInt(),(oy+r.top*sx).toInt(),(ox+r.right*sx).toInt(),(oy+r.bottom*sx).toInt());setBoundsInParent(b)
                 val loc=IntArray(2);getLocationOnScreen(loc);b.offset(loc[0],loc[1]);setBoundsInScreen(b)
-                if(item.action=="playback-progress"){rangeInfo=AccessibilityNodeInfo.RangeInfo.obtain(AccessibilityNodeInfo.RangeInfo.RANGE_TYPE_FLOAT,0f,state.localDurationMs.toFloat(),state.displayPositionMs.toFloat());contentDescription="播放进度 ${LocalMusic.time(state.displayPositionMs)} / ${LocalMusic.time(state.localDurationMs)}";addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD);addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD)}
+                if(item.action in listOf("playback-progress","main-progress")){rangeInfo=AccessibilityNodeInfo.RangeInfo.obtain(AccessibilityNodeInfo.RangeInfo.RANGE_TYPE_FLOAT,0f,state.localDurationMs.toFloat(),state.displayPositionMs.toFloat());contentDescription="播放进度 ${LocalMusic.time(state.displayPositionMs)} / ${LocalMusic.time(state.localDurationMs)}";addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD);addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD)}
                 if(item.action=="volume"){rangeInfo=AccessibilityNodeInfo.RangeInfo.obtain(AccessibilityNodeInfo.RangeInfo.RANGE_TYPE_INT,0f,30f,state.volume.toFloat());contentDescription="Volume ${state.volume} / 30";addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD);addAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD)}
             }
         }
         override fun performAction(virtualViewId:Int,action:Int,arguments:android.os.Bundle?):Boolean {
             val item=nodes().filter{it.action.isNotBlank()}.getOrNull(virtualViewId)?:return false
             if(action==AccessibilityNodeInfo.ACTION_CLICK){activate(hitAction(item.r.centerX(),item.r.centerY()));return true}
-            if(action==AccessibilityNodeInfo.ACTION_SCROLL_FORWARD||action==AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD){if(item.action=="playback-progress")state.seekLocal(state.displayPositionMs+if(action==AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)5000 else -5000)else stepControl(item.action,if(action==AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)1 else -1);return true}
+            if(action==AccessibilityNodeInfo.ACTION_SCROLL_FORWARD||action==AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD){if(item.action in listOf("playback-progress","main-progress"))state.seekLocal(state.displayPositionMs+if(action==AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)5000 else -5000)else stepControl(item.action,if(action==AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)1 else -1);return true}
             return false
         }
     }
