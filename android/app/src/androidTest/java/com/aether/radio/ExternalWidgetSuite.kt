@@ -40,7 +40,7 @@ class ExternalWidgetSuite(private val test:Instrumentation,private val activity:
         val player=main{PlaybackService.current!!.live.audio.player}
         if(!baseline){
             val pm=test.targetContext.packageManager
-            for(type in listOf(MusicWidget::class.java,CompactMusicWidget::class.java,StripMusicWidget::class.java)){
+            for(type in listOf(CompactMusicWidget::class.java)){
                 val info=pm.getReceiverInfo(android.content.ComponentName(test.targetContext,type),0)
                 check(info.permission==android.Manifest.permission.BIND_APPWIDGET)
             }
@@ -61,7 +61,7 @@ class ExternalWidgetSuite(private val test:Instrumentation,private val activity:
             }
             waitFor{host()?.optJSONObject("widget_play")?.optString("description") in listOf("播放","暂停")&&host()?.optBoolean("resumed")==true&&host()?.optInt("widthDp")==900&&host()?.optString("case")==caseTag};Thread.sleep(1000)
         }
-        val styles=if(pausedOnly)emptyList()else if(baseline)listOf("card")else listOf("compact","strip","card")
+        val styles=if(pausedOnly)emptyList()else listOf("compact")
         for(style in styles){
             val caseTag="${style}-${SystemClock.uptimeMillis()}"
             shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es case $caseTag --es style $style --ei width 900 --ei height 400 --ez exact false")
@@ -77,27 +77,6 @@ class ExternalWidgetSuite(private val test:Instrumentation,private val activity:
             }
             val padding=h.getJSONArray("padding");val filled=kotlin.math.abs(content.getInt("w")-(bounds.getInt("w")-padding.getInt(0)-padding.getInt(2)))<=2&&kotlin.math.abs(content.getInt("h")-(bounds.getInt("h")-padding.getInt(1)-padding.getInt(3)))<=2
             record(JSONObject().put("name","$style $width × $height fills the external allocation (exact sizes: $exact)").put("passed",filled).put("host",bounds).put("content",content));if(!baseline)check(filled){"Not filled: $h"}
-            if(!baseline&&width==900&&style=="card"){
-                val symbols=JSONObject()
-                val title=h.getJSONObject("widget_title");val play=h.getJSONObject("widget_play")
-                check(h.getJSONObject("widget_time").getInt("gravity") and android.view.Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK==android.view.Gravity.END){"Time must stay right-aligned above the progress track"}
-                for(key in listOf("widget_title","widget_album")){
-                    val label=h.getJSONObject(key);check(label.getBoolean("fontPadding")&&label.getInt("fontTop")>=0&&label.getInt("fontBottom")<=label.getInt("h")){"Clipped text metrics: $key $label"}
-                }
-                val cover=h.getJSONObject("widget_cover")
-                check(title.getInt("y")==cover.getInt("y"))
-                check(kotlin.math.abs(play.getInt("y")+play.getInt("h")-cover.getInt("y")-cover.getInt("h"))<=1){"Transport bottom must align with the artwork bottom"}
-                val cells=listOf("widget_previous_cell","widget_play_cell","widget_next_cell").map{h.getJSONObject(it)}
-                check(cells.maxOf{it.getInt("w")}-cells.minOf{it.getInt("w")}<=1)
-                check(cells.first().getInt("x")==title.getInt("x")&&cells.last().getInt("x")+cells.last().getInt("w")==title.getInt("x")+title.getInt("w"))
-                check(kotlin.math.abs(play.getDouble("x")+play.getDouble("w")/2-title.getDouble("x")-title.getDouble("w")/2)<=2){"Transport is not centred in its information column: $h"}
-                for(key in listOf("widget_previous","widget_play","widget_next")){
-                    val button=h.getJSONObject(key);check(button.getDouble("iconHeight")/button.getDouble("h") in .55.. .75){"Undersized transport symbol: $key $button"}
-                    check(button.getInt("y")==play.getInt("y")&&button.getInt("h")==play.getInt("h"))
-                    symbols.put(key,JSONObject().put("touchHeightPx",button.getInt("h")).put("drawableHeightPx",button.getDouble("iconHeight")))
-                }
-                record(JSONObject().put("name","$style large-card symbols scale with full-size touch targets on one centred column grid").put("passed",true).put("symbols",symbols))
-            }
             capture("$style-$width-$height-$exact-baseline-$baseline")
             shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es command capture --es name sample-$style-$width-$height")
             tap("widget_play");Thread.sleep(500)
@@ -132,7 +111,7 @@ class ExternalWidgetSuite(private val test:Instrumentation,private val activity:
             val stations=listOf(Station("widget:soma-groove","SomaFM Groove Salad",stream="https://ice6.somafm.com/groovesalad-128-aac"),Station("widget:soma-drone","SomaFM Drone Zone",stream="https://ice6.somafm.com/dronezone-128-aac"))
             main{s.catalog=stations;s.select(stations[0].id)};waitFor{main{s.playing&&!s.isLocal}}
             val caseTag="radio-${SystemClock.uptimeMillis()}"
-            shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es case $caseTag --es style card --ei width 900 --ei height 400 --ez exact false");awaitHost(caseTag)
+            shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es case $caseTag --es style compact --ei width 900 --ei height 400 --ez exact false");awaitHost(caseTag)
             tap("widget_play");waitFor{main{!player.isPlaying}};tap("widget_play",.85f,.85f);waitFor{main{player.isPlaying}}
             record(JSONObject().put("name","Real HTTPS radio pauses/resumes from the external widget without opening the player").put("passed",true))
             tap("widget_next",.90f,.15f);waitFor{main{s.station?.id==stations[1].id&&s.playing}};check(host()?.optBoolean("resumed")==true)
@@ -146,7 +125,7 @@ class ExternalWidgetSuite(private val test:Instrumentation,private val activity:
         if(!baseline){
             main{s.togglePlay()};waitFor{main{!player.isPlaying}}
             val pausedCase="paused-${SystemClock.uptimeMillis()}"
-            shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es case $pausedCase --es style card --ei width 900 --ei height 400 --ez exact false");awaitHost(pausedCase)
+            shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es case $pausedCase --es style compact --ei width 900 --ei height 400 --ez exact false");awaitHost(pausedCase)
             check(host()!!.getJSONObject("widget_title").getString("text")==main{s.localTrack!!.title})
             tap("widget_play");waitFor{main{player.isPlaying}};check(host()?.optBoolean("resumed")==true)
             record(JSONObject().put("name","A newly added widget while paused receives real metadata and active controls rather than remaining a placeholder").put("passed",true))
@@ -157,12 +136,12 @@ class ExternalWidgetSuite(private val test:Instrumentation,private val activity:
                 main{activity.finishAndRemoveTask()};waitFor{main{activity.isDestroyed&&player.isPlaying}}
                 record(JSONObject().put("name","Removing the actual player task leaves the same foreground-service player running").put("passed",true))
                 val caseTag="cold-${SystemClock.uptimeMillis()}"
-                shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es case $caseTag --es style card --ei width 900 --ei height 400 --ez exact false");awaitHost(caseTag)
+                shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es case $caseTag --es style compact --ei width 900 --ei height 400 --ez exact false");awaitHost(caseTag)
                 tap("widget_play");waitFor{main{!player.isPlaying}};tap("widget_play");waitFor{main{player.isPlaying}}
                 tap("widget_next",.90f,.15f);waitFor{main{s.localIndex==1}};tap("widget_previous",.10f,.85f);waitFor{main{s.localIndex==0}}
                 check(host()?.optBoolean("resumed")==true&&monitor.hits==0)
                 record(JSONObject().put("name","After task removal, external widget pause/resume/next/previous remain background controls").put("passed",true))
-                tap("widget_cover")
+                tap("widget_art_open")
                 val fresh=monitor.waitForActivityWithTimeout(20000) as? MainActivity?:error("Artwork did not open a new player Activity")
                 waitFor{main{fresh.uiReady&&fresh.surface.assetsReady&&fresh.session.page==1&&fresh.hasWindowFocus()}}
                 check(main{fresh.session.isLocal&&PlaybackService.current!!.live.audio.player===player})

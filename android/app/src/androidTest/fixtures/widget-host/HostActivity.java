@@ -31,7 +31,7 @@ public class HostActivity extends Activity {
             finish();return;
         }
         super.onCreate(saved);if("reset".equals(getIntent().getStringExtra("command"))){new AppWidgetHost(this,9500).deleteHost();finish();return;}if("finish".equals(getIntent().getStringExtra("command"))){finish();return;}getWindow().setDecorFitsSystemWindows(false);
-        caseTag=getIntent().getStringExtra("case");if(caseTag==null)caseTag="";style=getIntent().getStringExtra("style");if(style==null)style="card";
+        caseTag=getIntent().getStringExtra("case");if(caseTag==null)caseTag="";style=getIntent().getStringExtra("style");if(style==null)style="compact";
         width=getIntent().getIntExtra("width",600);height=getIntent().getIntExtra("height",300);exact=getIntent().getBooleanExtra("exact",true);
         if(sharedHost==null)sharedHost=new AppWidgetHost(getApplicationContext(),9500);
         host=sharedHost;ownsHost=true;hostUsers++;maxHostUsers=Math.max(maxHostUsers,hostUsers);host.startListening();id=host.allocateAppWidgetId();
@@ -98,7 +98,7 @@ public class HostActivity extends Activity {
         java.io.FileOutputStream out=state.startWrite();
         try{out.write(j.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));state.finishWrite(out);}catch(Exception e){state.failWrite(out);throw e;}
     }catch(Exception e){android.util.Log.e("WidgetHost",e.toString());}}
-    protected void onResume(){super.onResume();resumed=true;dump();}
-    protected void onPause(){resumed=false;dump();super.onPause();}
+    protected void onResume(){super.onResume();resumed=true;handler.removeCallbacks(snapshot);if(widget!=null)handler.post(snapshot);dump();}
+    protected void onPause(){handler.removeCallbacks(snapshot);resumed=false;dump();super.onPause();}
     protected void onDestroy(){handler.removeCallbacksAndMessages(null);if(host!=null&&ownsHost){if(id!=-1)host.deleteAppWidgetId(id);ownsHost=false;hostUsers--;if(hostUsers==0)host.stopListening();}super.onDestroy();}
 }

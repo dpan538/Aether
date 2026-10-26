@@ -24,7 +24,7 @@ class WidgetSuite(private val test:Instrumentation,private val activity:MainActi
         val manager=AppWidgetManager.getInstance(test.targetContext);val host=AppWidgetHost(test.targetContext,9001);host.deleteHost()
         val id=host.allocateAppWidgetId()
         val options=Bundle().apply{putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH,440);putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,240);putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH,440);putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,240)}
-        val provider=ComponentName(test.targetContext,MusicWidget::class.java)
+        val provider=ComponentName(test.targetContext,CompactMusicWidget::class.java)
         if(!manager.bindAppWidgetIdIfAllowed(id,provider,options)){
             main{activity.startActivityForResult(Intent(AppWidgetManager.ACTION_APPWIDGET_BIND).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID,id).putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER,provider).putExtra(AppWidgetManager.EXTRA_APPWIDGET_OPTIONS,options),99)}
             val deadline=SystemClock.uptimeMillis()+20000

@@ -62,6 +62,9 @@ class NativeEvidence:Instrumentation() {
             result.putString("targetVersionName",targetContext.packageManager.getPackageInfo(targetContext.packageName,0).versionName)
             when(arguments.getString("operation","state")){
                 "state"->{}
+                "release-upgrade-seed"->{result.putString("aetherResult",ReleaseUpgradeSuite(this,activity).seed().toString());finish(Activity.RESULT_OK,result);return}
+                "release-upgrade-verify"->{result.putString("aetherResult",ReleaseUpgradeSuite(this,activity).verify().toString());finish(Activity.RESULT_OK,result);return}
+                "about-release"->{result.putString("aetherResult",AboutReleaseSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
                 "device-time-caption"->{result.putString("aetherResult",DeviceTimeCaptionSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}
                 "album-mock"->{result.putString("aetherResult",AlbumPresentationSuite(this,activity).renderMock().toString());finish(Activity.RESULT_OK,result);return}
                 "widget-sizing"->{result.putString("aetherResult",WidgetSizingSuite(this,activity).run().toString());finish(Activity.RESULT_OK,result);return}

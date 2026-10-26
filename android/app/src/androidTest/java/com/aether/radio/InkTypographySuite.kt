@@ -16,7 +16,7 @@ class InkTypographySuite(private val test:Instrumentation,private val activity:M
         val checks=JSONArray();val sizes=JSONArray();val s=activity.session
         main{s.language="zh";s.page=0;s.showView("settings");s.settingsPage="menu";s.changed()};Thread.sleep(1700)
         val ink=main{tree(activity.window.decorView).filterIsInstance<InkSettingsView>().single()}
-        for(page in listOf("menu","about","haptics","widget","feedback","update")){
+        for(page in listOf("menu","about","haptics","feedback","update")){
             main{s.updateOpen=page=="update";s.settingsPage=if(page=="update")"menu"else page;s.changed()};Thread.sleep(900)
             main{
                 val scale=minOf(activity.surface.width/1704f,activity.surface.height/1136f)

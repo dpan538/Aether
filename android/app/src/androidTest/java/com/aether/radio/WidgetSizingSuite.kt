@@ -22,7 +22,8 @@ class WidgetSizingSuite(private val test:Instrumentation,private val activity:Ma
         val manager=AppWidgetManager.getInstance(test.targetContext)
         main{MusicWidget.publishPreview(test.targetContext)}
         val density=test.targetContext.resources.displayMetrics.density
-        for((name,expected) in listOf("CompactMusicWidget" to listOf(110,110,2,2),"MusicWidget" to listOf(180,110,3,2),"StripMusicWidget" to listOf(180,40,3,1))){
+        check(manager.installedProviders.count{it.provider.packageName==test.targetContext.packageName}==1)
+        for((name,expected) in listOf("CompactMusicWidget" to listOf(110,110,2,2))){
             val p=manager.installedProviders.single{it.provider.packageName==test.targetContext.packageName&&it.provider.className.endsWith(".$name")}
             val w=kotlin.math.round(p.minWidth/density).toInt();val h=kotlin.math.round(p.minHeight/density).toInt()
             check(w==expected[0]&&h==expected[1]){"Installed legacy sizing is $w x $h, expected $expected for $name"}
@@ -45,18 +46,26 @@ class WidgetSizingSuite(private val test:Instrumentation,private val activity:Ma
         main{s.powered=true;s.locked=false;s.selectLocal(LocalMusic.bundled(test.targetContext),6)}
         waitFor{main{s.playing}};main{s.togglePlay()};waitFor{main{!s.playing}}
         shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es command reset");Thread.sleep(250)
-        val cases=mapOf("compact" to listOf(110 to 110,180 to 180,280 to 280,600 to 300),"card" to listOf(180 to 110,320 to 180,600 to 300,900 to 400),"strip" to listOf(180 to 40,320 to 72,480 to 104,600 to 200))
-        for((style,sizes) in cases)for(exact in listOf(false,true))for((w,h) in sizes){
-            val tag="$style-$w-$h-$exact-${SystemClock.uptimeMillis()}"
-            shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es case $tag --es style $style --ei width $w --ei height $h --ez exact $exact")
+        val cases=mapOf("compact" to listOf(110 to 110,180 to 180,280 to 280,320 to 320,280 to 400,600 to 300))
+        for((style,sizes) in cases){
+            val initial="sizing-${SystemClock.uptimeMillis()}"
+            shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es case $initial --es style $style --ei width 280 --ei height 280 --ez exact false")
             val end=SystemClock.uptimeMillis()+20000
-            while((host()?.optString("case")!=tag||host()?.optBoolean("resumed")!=true)&&SystemClock.uptimeMillis()<end){
+            while((host()?.optString("case")!=initial||host()?.optBoolean("resumed")!=true)&&SystemClock.uptimeMillis()<end){
                 fun walk(n:android.view.accessibility.AccessibilityNodeInfo):List<android.view.accessibility.AccessibilityNodeInfo> = listOf(n)+(0 until n.childCount).flatMap{n.getChild(it)?.let{walk(it)}?:emptyList()}
                 test.uiAutomation.rootInActiveWindow?.let{root->walk(root).firstOrNull{it.viewIdResourceName=="android:id/button1"&&it.isClickable}?.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK)};Thread.sleep(150)
             }
-            waitFor{host()?.optString("case")==tag&&host()?.optJSONObject("widget_play")?.optString("description")=="播放"&&host()?.optJSONObject("widget_title")?.optString("text")==main{s.localTrack!!.title}}
+            waitFor{host()?.optString("case")==initial&&host()?.optJSONObject("widget_play")?.optString("description")=="播放"}
+            for(exact in listOf(false,true))for((w,h) in sizes){
+            val tag="$style-$w-$h-$exact-${SystemClock.uptimeMillis()}"
+            shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es command resize --es case $tag --ei width $w --ei height $h --ez exact $exact")
+            waitFor{host()?.optString("case")==tag&&host()?.optBoolean("resumed")==true&&host()?.optJSONObject("widget_title")?.optString("text")==main{s.localTrack!!.title}}
             Thread.sleep(700)
-            val state=host()!!;val root=state.getJSONObject("widget_root");val outer=state.getJSONObject("host");val padding=state.getJSONArray("padding")
+            val capture="sizing-${SystemClock.uptimeMillis()}"
+            shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es command capture --es name $capture")
+            var frame:JSONObject?=null
+            waitFor{frame=runCatching{JSONObject(shell("run-as io.github.dpan538.widgethost cat files/capture-state.json"))}.getOrNull();frame?.optString("capture")=="$capture.png"&&frame?.optBoolean("frameCommitted")==true}
+            val state=frame!!;val root=state.getJSONObject("widget_root");val outer=state.getJSONObject("host");val padding=state.getJSONArray("padding")
             check(state.getInt("uid")!=android.os.Process.myUid())
             check(root.getInt("w")==outer.getInt("w")-padding.getInt(0)-padding.getInt(2)&&root.getInt("h")==outer.getInt("h")-padding.getInt(1)-padding.getInt(3))
             check(state.has("widget_art_open")== (style=="compact")) {"Cover provider changed presentation: $state"}
@@ -68,11 +77,12 @@ class WidgetSizingSuite(private val test:Instrumentation,private val activity:Ma
             }
             val clock=state.getJSONObject("widget_time");val bar=state.getJSONObject("widget_progress")
             check(clock.getInt("y")+clock.getInt("h")<=bar.getInt("y")+1)
-            val b=test.uiAutomation.takeScreenshot()!!
-            check(listOf(.25,.5,.75).any{f->val c=b.getPixel(bar.getInt("x")+(bar.getInt("w")*f).toInt(),bar.getInt("y")+bar.getInt("h")/2);android.graphics.Color.red(c)+android.graphics.Color.green(c)+android.graphics.Color.blue(c)>110}){"Invisible progress track: $state"}
+            val b=android.os.ParcelFileDescriptor.AutoCloseInputStream(test.uiAutomation.executeShellCommand("run-as io.github.dpan538.widgethost cat files/$capture.png")).use{android.graphics.BitmapFactory.decodeStream(it)}!!
+            check(listOf(.25,.5,.75).any{f->val c=b.getPixel(bar.getInt("x")-root.getInt("x")+(bar.getInt("w")*f).toInt(),bar.getInt("y")-root.getInt("y")+bar.getInt("h")/2);android.graphics.Color.red(c)+android.graphics.Color.green(c)+android.graphics.Color.blue(c)>110}){"Invisible progress track: $state"}
             java.io.File(test.targetContext.getExternalFilesDir("evidence"),"sizing-$style-$w-$h-$exact.png").outputStream().use{b.compress(Bitmap.CompressFormat.PNG,100,it)};b.recycle()
             allocations.put(state);java.io.File(test.targetContext.getExternalFilesDir("evidence"),"widget-sizing-allocations.json").writeText(allocations.toString(2))
             record("$style $w x $h dp (exact=$exact): identity, full allocation, long-title glyphs, time, track and controls stay inside bounds")
+            }
             shell("am start -W -n io.github.dpan538.widgethost/.HostActivity --es command finish")
         }
         return JSONObject().put("passed",true).put("checks",checks).put("providers",providers).put("allocations",allocations).put("physicalXiaomiLauncherTested",false)

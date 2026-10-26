@@ -102,6 +102,7 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
         if(visibility!=View.VISIBLE||translationX!=0f||!state.enabled)dismissLanguageMenu()
     }
     fun refresh(){
+        if(state.settingsPage=="widget")state.settingsPage="about"
         // The dropdown and updater retain this native ink renderer.
         alignWithSurface()
         if(visibility!=View.VISIBLE){
@@ -159,9 +160,9 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
         val current=if(state.updateOpen)"update"else state.settingsPage
         val header=LinearLayout(context).apply{gravity=Gravity.CENTER_VERTICAL}
         if(current!="menu")header.addView(button("‹","settings:back"){
-            if(state.updateOpen){state.updateOpen=false;state.changed()}else page(if(current in listOf("haptics","widget"))"about"else"menu")
+            if(state.updateOpen){state.updateOpen=false;state.changed()}else page(if(current=="haptics")"about"else"menu")
         }.apply{contentDescription=words("返回","Back")},LayoutParams(dp(48),dp(38)).apply{marginEnd=dp(14)})
-        val title=when(current){"about"->words("关于漫频","About 漫频");"feedback"->words("意见反馈","Feedback");"update"->words("检查更新","Check updates");"haptics"->words("触感检测","Haptic feedback");"widget"->words("桌面小组件","Home screen widget");else->words("漫频 / 设置","漫频 / SETTINGS")}
+        val title=when(current){"about"->words("关于漫频","About 漫频");"feedback"->words("意见反馈","Feedback");"update"->words("检查更新","Check updates");"haptics"->words("触感检测","Haptic feedback");else->words("漫频 / 设置","漫频 / SETTINGS")}
         header.addView(text(title,16f).apply{typeface=surface.painter.font(false,600)},LayoutParams(0,-2,1f))
         if(current in listOf("about","update"))header.addView(text(BuildConfig.VERSION_NAME,12f,secondary))
         addView(header,LayoutParams(-1,dp(38)));addView(View(context).apply{setBackgroundColor(0xff929d89.toInt())},LayoutParams(-1,dp(1)).apply{topMargin=dp(8);bottomMargin=dp(10)})
@@ -172,9 +173,13 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
                 body.paragraph(words("不设边界，漫游频率。","No boundaries. Just frequencies."),17f,top=8)
                 body.paragraph(words("为小米 Pad 9 Pro Max 打造的原生聆听体验。\n在电台与本地音乐之间，保留声音，也留出安静的画面。","A native listening experience for Xiaomi Pad 9 Pro Max.\nRadio and local music, with space to simply listen."))
                 body.paragraph(words("无需账户 · 无广告 · 无第三方遥测\n电台来自 Radio Browser；可播放状态随音源与网络变化。","No account · No ads · No third-party telemetry\nRadio directory: Radio Browser. Availability varies by source and network."),13f,true)
+                diagnostic=text("",13f,secondary);body.addView(diagnostic,LayoutParams(-1,-2))
                 val actions=LinearLayout(context)
                 actions.addView(button(words("触感检测","Haptic feedback"),"settings:haptics"){page("haptics")},LayoutParams(0,dp(44),1f).apply{marginEnd=dp(12)})
-                actions.addView(button(words("桌面小组件","Home screen widget"),"settings:widget"){page("widget")},LayoutParams(0,dp(44),1f))
+                actions.addView(button(words("GitHub 仓库","GitHub repository"),"settings:github"){
+                    val intent=android.content.Intent(android.content.Intent.ACTION_VIEW,android.net.Uri.parse("https://github.com/dpan538/Aether")).addCategory(android.content.Intent.CATEGORY_BROWSABLE).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    runCatching{context.startActivity(intent)}.onFailure{diagnostic?.text=words("无法打开浏览器：github.com/dpan538/Aether","Unable to open browser: github.com/dpan538/Aether")}
+                },LayoutParams(0,dp(44),1f))
                 addView(actions,LayoutParams(-1,dp(44)).apply{topMargin=dp(12)})
             }
             "haptics"->{
@@ -183,21 +188,6 @@ class InkSettingsView(context:Context,private val state:Session,private val surf
                 diagnostic=text(surface.haptics.description(zh),14f);body.addView(diagnostic,LayoutParams(-1,-2).apply{topMargin=dp(18)})
                 body.paragraph(words("请同时开启系统的触感反馈与触摸提示音。若设备没有振动马达，应用无法用软件产生真实震动。","Enable system haptic feedback and touch sounds. A device without a vibration motor cannot produce physical haptics."),13f,true)
                 addView(button(words("测试触感","Test haptics"),"settings:test-haptics"){surface.haptics.testPulse();diagnostic?.text=surface.haptics.description(zh)},LayoutParams(dp(180),dp(44)).apply{gravity=Gravity.END;topMargin=dp(12)})
-            }
-            "widget"->{
-                val body=scrollBody()
-                body.paragraph(words("将正在播放放到桌面。","Keep your music on the home screen."),17f,top=8)
-                body.paragraph(words("显示封面、曲目、播放进度与控制键；与后台播放器使用同一会话。提供 1×3 横条、2×3 唱片和 2×2 封面三种组件，填满桌面分配的空间。","Artwork, track, progress and controls share the background playback session. Choose Compact, Strip or Album card, then resize on your home screen."))
-                body.paragraph(words("小米桌面：添加小部件 → 支持小部件应用 → 全部 → 安卓小部件 → 漫频。系统版本不同，入口名称可能略有差异。","Xiaomi Home: Add widgets → Apps with widgets → All → Android widgets → 漫频. Names may vary by system version."),14f,true)
-                diagnostic=text("",14f,secondary);body.addView(diagnostic,LayoutParams(-1,-2).apply{topMargin=dp(12)})
-                val styles=LinearLayout(context)
-                listOf("compact" to words("2×2 封面","2×2 Cover"),"strip" to words("1×3 横条","1×3 Strip"),"card" to words("2×3 唱片","2×3 Album")).forEachIndexed{i,(style,label)->
-                    styles.addView(button(label,if(style=="card")"settings:pin-widget"else"settings:pin-$style"){
-                        val supported=MusicWidget.requestPin(context,style)
-                        diagnostic?.text=if(supported)words("请在系统窗口中确认添加。","Confirm adding in the system window.")else words("请通过桌面的安卓小部件列表选择样式。","Choose a style from your launcher's Android widget list.")
-                    },LayoutParams(0,dp(44),1f).apply{if(i>0)marginStart=dp(10)})
-                }
-                addView(styles,LayoutParams(-1,dp(44)).apply{topMargin=dp(12)})
             }
             "feedback"->{
                 editor=EditText(context).apply{setText(feedback.draft);inkSize(14f);typeface=surface.painter.font(false,400);setTextColor(ink);setHintTextColor(0xff6e7b67.toInt());hint=words("描述问题、发生步骤或修改建议…","Describe the issue, steps or suggestion…");gravity=Gravity.TOP;setPadding(dp(12),dp(10),dp(12),dp(10));background=background(0x16565e4f,true);inputType=android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES;filters=arrayOf(android.text.InputFilter.LengthFilter(1000));isSingleLine=false;contentDescription=words("反馈内容","Feedback message");addTextChangedListener(object:TextWatcher{override fun beforeTextChanged(s:CharSequence?,a:Int,c:Int,f:Int){};override fun onTextChanged(s:CharSequence?,a:Int,b:Int,c:Int){feedback.edit(s.toString())};override fun afterTextChanged(e:Editable?){}})}

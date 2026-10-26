@@ -629,7 +629,7 @@ class ScenePainter(val context:Context,val state:Session) {
         resetPaint();p.isAntiAlias=true;p.typeface=font(false,400);p.textSize=13.6f;p.color=if(lit)0xff353932.toInt() else 0xff34483a.toInt()
         var y=n.r.top+231f
         if(state.updateMessage){c.drawText(if(state.language=="zh")"更新服务暂不可用。" else "Update service is currently unavailable.",n.r.left+36,y,p);y+=26}
-        if(state.about){p.typeface=font(false,700);c.drawText("漫频",n.r.left+36,y,p);p.typeface=font(false,400);c.drawText("不设边界，漫游频率。",n.r.left+36,y+23,p);c.drawText("No boundaries. Just frequencies.",n.r.left+36,y+44,p);p.textSize=11.9f;c.drawText(if(state.reference)"Design preview · 0.0.0" else "Android preview · ${BuildConfig.VERSION_NAME}",n.r.left+36,y+65,p)}
+        if(state.about){p.typeface=font(false,700);c.drawText("漫频",n.r.left+36,y,p);p.typeface=font(false,400);c.drawText("不设边界，漫游频率。",n.r.left+36,y+23,p);c.drawText("No boundaries. Just frequencies.",n.r.left+36,y+44,p);p.textSize=11.9f;c.drawText(if(state.reference)"Design preview · 0.0.0" else "Android · ${BuildConfig.VERSION_NAME}",n.r.left+36,y+65,p)}
     }
     fun resetRenderLayers(direct:Boolean){spectrumDrawing.reset(direct)}
     fun close(){closed=true;spectrumDrawing.close();preparation.shutdownNow();bitmaps.evictAll();pictures.evictAll();mainDisc?.recycle();smallDisc?.recycle()}

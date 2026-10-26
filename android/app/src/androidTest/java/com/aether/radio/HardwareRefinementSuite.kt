@@ -52,19 +52,16 @@ class HardwareRefinementSuite(private val test:Instrumentation,private val activ
         check(main{s.updateOpen&&tree(activity.window.decorView).filterIsInstance<InkSettingsView>().single().isShown})
         capture("update-zh");record("The real repository response stays on the same native ink material, with readable typography")
         tapNative("settings:back");tapNative("settings:menu:2");capture("about-zh")
+        check(main{tree(activity.window.decorView).filterIsInstance<android.widget.Button>().filter{it.isShown&&it.tag.toString().startsWith("settings:")&&it.tag!="settings:back"}.map{it.tag}.toSet()==setOf("settings:haptics","settings:github")})
         tapNative("settings:haptics");capture("haptics-zh")
         val attempts=main{activity.surface.haptics.attempts};tapNative("settings:test-haptics")
         check(main{activity.surface.haptics.attempts>attempts&&activity.surface.haptics.last=="test"})
         record("A real native diagnostic page exposes motor availability and system switches and routes its test through the functional touch-vibration API")
-        tapNative("settings:back");tapNative("settings:widget");capture("widget-help-zh")
-        if(android.os.Build.VERSION.SDK_INT>=35){
-            val providers=android.appwidget.AppWidgetManager.getInstance(test.targetContext).installedProviders.filter{it.provider.packageName==test.targetContext.packageName}
-            check(providers.size==3)
-            for((type,cells) in listOf(MusicWidget::class.java.name to (3 to 2),StripMusicWidget::class.java.name to (3 to 1),CompactMusicWidget::class.java.name to (2 to 2))){
-                val info=providers.single{it.provider.className==type};check(info.previewLayout!=0&&info.targetCellWidth==cells.first&&info.targetCellHeight==cells.second)
-            }
-        }
-        record("The widget provider provides a scalable preview and a default cell size consistent with its minimum height; generated previews respect Android rate limits")
+        tapNative("settings:back")
+        val providers=android.appwidget.AppWidgetManager.getInstance(test.targetContext).installedProviders.filter{it.provider.packageName==test.targetContext.packageName}
+        check(providers.size==1&&providers.single().provider.className==CompactMusicWidget::class.java.name)
+        check(providers.single().previewLayout!=0&&providers.single().targetCellWidth==2&&providers.single().targetCellHeight==2)
+        record("Only the 2x2 cover provider remains; About offers haptics and GitHub without a widget promotion or pinning action")
         main{s.showView("directory");s.changeVolume(15);s.selectLocal(LocalMusic.bundled(test.targetContext),0);s.changed()};waitFor{s.playing&&s.seekable}
         Thread.sleep(1700)
         val before=main{activity.surface.mainPlayback.position};Thread.sleep(1100);check(main{activity.surface.mainPlayback.position}>before+800)

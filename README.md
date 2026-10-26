@@ -4,13 +4,13 @@
 
 **专为小米 Pad 9 Pro Max 横屏打造。** 漫频是一款原生音乐与电台应用，把收音机的实体触感、清晰的声音信息与唱片的视觉体验收进同一块屏幕。
 
-[![Android 预览版](https://img.shields.io/github/v/release/dpan538/Aether?include_prereleases&label=preview&color=3569d6)](https://github.com/dpan538/Aether/releases)
+[![Android 正式版](https://img.shields.io/github/v/release/dpan538/Aether?label=release&color=3569d6)](https://github.com/dpan538/Aether/releases/latest)
 ![Kotlin Native Android](https://img.shields.io/badge/Kotlin-Native%20Android-7f52ff?logo=kotlin&logoColor=white)
 ![Android 12+](https://img.shields.io/badge/Android-12%2B-4c8b64?logo=android&logoColor=white)
 [![Code license: MIT](https://img.shields.io/badge/code-MIT-4c6b5b)](LICENSE)
 [![Visual assets: contribution use only](https://img.shields.io/badge/visuals-contribution%20use%20only-b67c49)](VISUAL-LICENSE.md)
 
-[**下载 Android 预览版 ↗**](https://github.com/dpan538/Aether/releases) · [下载与更新](#下载与更新) · [适配与贡献](CONTRIBUTING.md)
+[**下载漫频 1.0.0 APK ↗**](https://github.com/dpan538/Aether/releases/download/v1.0.0/Aether-1.0.0.apk) · [下载与更新](#下载与更新) · [适配与贡献](CONTRIBUTING.md)
 
 <table>
   <tr>
@@ -39,7 +39,7 @@
 ## 声音与音乐
 
 - 通过真实电台目录搜索、按地区／类型／语言筛选、收藏与主动随机探索。
-- 支持后台播放与系统媒体控制，桌面小组件提供横条、唱片和封面三种样式，并随桌面分配空间调整。
+- 支持后台播放与系统媒体控制，并提供 2×2 封面桌面小组件。
 - 原生音频播放，支持 50%–150% 速度调整并保持音高，频谱来自实际解码的音频。
 - 歌曲可独立星标，收藏电台可立即从四枚预设键调取。
 - 支持本地音乐与设备文件导入，附带 Dai Pan（潘岱）的器乐专辑 **Before the Rise**。
@@ -51,13 +51,13 @@
 
 ## 下载与更新
 
-项目目前提供 Android 预览版，适配目标为小米 Pad 9 Pro Max 的 **3408 × 2272 横屏**。
+当前正式版为 **1.0.0**，适配目标为小米 Pad 9 Pro Max 的 **3408 × 2272 横屏**。
 
-[前往下载预览版](https://github.com/dpan538/Aether/releases)
+[下载正式版 APK](https://github.com/dpan538/Aether/releases/download/v1.0.0/Aether-1.0.0.apk) · [版本记录](https://github.com/dpan538/Aether/releases)
 
-安装后可在应用设置中检查仓库发布的更新。已完成校验的更新文件会保留并复用，覆盖升级保留本地设置。当前公开预览版与持续改进中的源码可能存在功能差异。
+安装后可在应用设置中检查仓库发布的更新。已完成校验的更新文件会保留并复用，覆盖升级保留本地设置。
 
-小组件占格由桌面网格决定。升级调整默认尺寸后，请移除旧组件再重新添加；已放置组件的占格由桌面保留，移除组件不会删除音乐、收藏或设置。
+1.0.0 仅保留 2×2 封面组件，已移除横条与唱片组件。小组件占格由桌面网格决定，移除组件不会删除音乐、收藏或设置。
 
 ## 隐私
 
